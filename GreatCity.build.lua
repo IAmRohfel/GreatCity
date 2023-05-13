@@ -37,12 +37,20 @@ project "GreatCity"
         defines "GC_PLATFORM_WINDOWS"
 
     filter "configurations:Debug"
-        defines "GC_BUILD_TYPE_DEBUG"
+        defines
+        {
+            "GC_BUILD_TYPE_DEBUG",
+            "GC_ASSERT_ENABLED"
+        }
         runtime "Debug"
         symbols "On"
 
     filter "configurations:Release"
-        defines "GC_BUILD_TYPE_RELEASE"
+        defines
+        {
+            "GC_BUILD_TYPE_RELEASE",
+            "GC_ASSERT_ENABLED"
+        }
         runtime "Release"
         symbols "On"
 
