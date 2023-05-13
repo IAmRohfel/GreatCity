@@ -1,8 +1,10 @@
-#include <stdio.h>
+#include "ApplicationCore/Application.h"
 
 int main()
 {
-    printf("Hello World!");
+    GCApplication_Create();
+    GCApplication_Run();
+    GCApplication_Destroy();
 
     return 0;
 }
