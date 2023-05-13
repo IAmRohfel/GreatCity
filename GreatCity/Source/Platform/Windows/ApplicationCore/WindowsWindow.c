@@ -1,39 +1,46 @@
-#include "ApplicationCore/GenericWindow.h"
+#include "ApplicationCore/GenericPlatform/Window.h"
+#include "ApplicationCore/GenericPlatform/MouseButtonCode.h"
+#include "ApplicationCore/Event/Event.h"
+#include "ApplicationCore/Event/ApplicationEvent.h"
+#include "ApplicationCore/Event/KeyEvent.h"
+#include "ApplicationCore/Event/MouseEvent.h"
 #include "Core/Memory/Allocator.h"
 #include "Core/Container/String.h"
+
+#include <stdint.h>
 
 #include <Windows.h>
 
 typedef struct GCPlatformWindow
 {
-	GCGenericWindowProperties Properties;
+	GCWindowProperties Properties;
 	LPCWSTR ClassName;
 	HINSTANCE InstanceHandle;
 	HWND WindowHandle;
-} GCGenericWindow, GCWindowsWindow;
+} GCWindow, GCWindowsWindow;
 
-static GCWindowsWindow* GCWindowsWindow_Create(const GCGenericWindowProperties* const Properties);
+static GCWindowsWindow* GCWindowsWindow_Create(const GCWindowProperties* const Properties);
 static LRESULT CALLBACK GCWindowsWindow_SetupMessageHandler(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam);
 static LRESULT CALLBACK GCWindowsWindow_MessageHandler(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam);
 static void GCWindowsWindow_ProcessEvents(GCWindowsWindow* const Window);
 static void GCWindowsWindow_Destroy(GCWindowsWindow* Window);
 
-GCGenericWindow* GCGenericWindow_Create(const GCGenericWindowProperties* const Properties)
+GCWindow* GCWindow_Create(const GCWindowProperties* const Properties)
 {
 	return GCWindowsWindow_Create(Properties);
 }
 
-void GCGenericWindow_ProcessEvents(GCGenericWindow* const Window)
+void GCWindow_ProcessEvents(GCWindow* const Window)
 {
 	GCWindowsWindow_ProcessEvents(Window);
 }
 
-void GCGenericWindow_Destroy(GCGenericWindow* Window)
+void GCWindow_Destroy(GCWindow* Window)
 {
 	GCWindowsWindow_Destroy(Window);
 }
 
-GCWindowsWindow* GCWindowsWindow_Create(const GCGenericWindowProperties* const Properties)
+GCWindowsWindow* GCWindowsWindow_Create(const GCWindowProperties* const Properties)
 {
 	GCWindowsWindow* Window = (GCWindowsWindow*)GCMemory_Allocate(sizeof(GCWindowsWindow));
 	Window->Properties = *Properties;
@@ -86,9 +93,141 @@ LRESULT CALLBACK GCWindowsWindow_SetupMessageHandler(HWND WindowHandle, UINT Mes
 
 LRESULT CALLBACK GCWindowsWindow_MessageHandler(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam)
 {
+	GCWindowsWindow* const Window = (GCWindowsWindow* const)GetWindowLongPtrW(WindowHandle, GWLP_USERDATA);
+
 	switch (Message)
 	{
+		case WM_KEYDOWN:
+		case WM_SYSKEYDOWN:
+		case WM_KEYUP:
+		case WM_SYSKEYUP:
+		{
+			WORD KeyCode = LOWORD(WParam);
+			const WORD KeyFlags = HIWORD(LParam);
+			WORD ScanCode = LOBYTE(KeyFlags);
+			const BOOL IsExtendedKey = (KeyFlags & KF_EXTENDED) == KF_EXTENDED;
+
+			if (IsExtendedKey)
+			{
+				ScanCode = MAKEWORD(ScanCode, 0xE0);
+			}
+
+			switch (KeyCode)
+			{
+				case VK_SHIFT:
+				case VK_CONTROL:
+				case VK_MENU:
+				{
+					KeyCode = LOWORD(MapVirtualKeyW(ScanCode, MAPVK_VSC_TO_VK_EX));
+
+					break;
+				}
+			}
+
+			if (Message == WM_KEYDOWN || Message == WM_SYSKEYDOWN)
+			{
+				const GCKeyPressedEvent EventDetail = GCKeyPressedEvent_Create((GCKeyCode)KeyCode);
+				GCEvent Event = GCEvent_Create(GCEventType_KeyPressed, &EventDetail);
+				Window->Properties.EventCallback(Window, &Event);
+			}
+			else if (Message == WM_KEYUP || Message == WM_SYSKEYUP)
+			{
+				const GCKeyReleasedEvent EventDetail = GCKeyReleasedEvent_Create((GCKeyCode)KeyCode);
+				GCEvent Event = GCEvent_Create(GCEventType_KeyReleased, &EventDetail);
+				Window->Properties.EventCallback(Window, &Event);
+			}
+
+			break;
+		}
+
+		case WM_LBUTTONDOWN:
+		{
+			const GCMouseButtonPressedEvent EventDetail = GCMouseButtonPressedEvent_Create(GCMouseButtonCode_Left);
+			GCEvent Event = GCEvent_Create(GCEventType_MouseButtonPressed, &EventDetail);
+			Window->Properties.EventCallback(Window, &Event);
+
+			break;
+		}
+		case WM_RBUTTONDOWN:
+		{
+			const GCMouseButtonPressedEvent EventDetail = GCMouseButtonPressedEvent_Create(GCMouseButtonCode_Right);
+			GCEvent Event = GCEvent_Create(GCEventType_MouseButtonPressed, &EventDetail);
+			Window->Properties.EventCallback(Window, &Event);
+
+			break;
+		}
+		case WM_MBUTTONDOWN:
+		{
+			const GCMouseButtonPressedEvent EventDetail = GCMouseButtonPressedEvent_Create(GCMouseButtonCode_Middle);
+			GCEvent Event = GCEvent_Create(GCEventType_MouseButtonPressed, &EventDetail);
+			Window->Properties.EventCallback(Window, &Event);
+
+			break;
+		}
+		case WM_LBUTTONUP:
+		{
+			const GCMouseButtonReleasedEvent EventDetail = GCMouseButtonReleasedEvent_Create(GCMouseButtonCode_Left);
+			GCEvent Event = GCEvent_Create(GCEventType_MouseButtonReleased, &EventDetail);
+			Window->Properties.EventCallback(Window, &Event);
+
+			break;
+		}
+		case WM_RBUTTONUP:
+		{
+			const GCMouseButtonReleasedEvent EventDetail = GCMouseButtonReleasedEvent_Create(GCMouseButtonCode_Right);
+			GCEvent Event = GCEvent_Create(GCEventType_MouseButtonReleased, &EventDetail);
+			Window->Properties.EventCallback(Window, &Event);
+
+			break;
+		}
+		case WM_MBUTTONUP:
+		{
+			const GCMouseButtonReleasedEvent EventDetail = GCMouseButtonReleasedEvent_Create(GCMouseButtonCode_Middle);
+			GCEvent Event = GCEvent_Create(GCEventType_MouseButtonReleased, &EventDetail);
+			Window->Properties.EventCallback(Window, &Event);
+
+			break;
+		}
+
+		case WM_MOUSEMOVE:
+		{
+			const POINTS Position = MAKEPOINTS(LParam);
+
+			const GCMouseMovedEvent EventDetail = GCMouseMovedEvent_Create(Position.x, Position.y);
+			GCEvent Event = GCEvent_Create(GCEventType_MouseMoved, &EventDetail);
+			Window->Properties.EventCallback(Window, &Event);
+
+			break;
+		}
+		case WM_MOUSEWHEEL:
+		{
+			const GCMouseScrolledEvent EventDetail = GCMouseScrolledEvent_Create(0.0f, (SHORT)HIWORD(WParam) / (float)WHEEL_DELTA);
+			GCEvent Event = GCEvent_Create(GCEventType_MouseScrolled, &EventDetail);
+			Window->Properties.EventCallback(Window, &Event);
+
+			break;
+		}
+
+		case WM_SIZE:
+		{
+			const uint32_t Width = LOWORD(LParam);
+			const uint32_t Height = HIWORD(LParam);
+
+			const GCWindowResizedEvent EventDetail = GCWindowResizedEvent_Create(Width, Height);
+			GCEvent Event = GCEvent_Create(GCEventType_WindowResized, &EventDetail);
+			Window->Properties.EventCallback(Window, &Event);
+
+			break;
+		}
 		case WM_CLOSE:
+		{
+			const GCWindowClosedEvent EventDetail = GCWindowClosedEvent_Create();
+			GCEvent Event = GCEvent_Create(GCEventType_WindowClosed, &EventDetail);
+			Window->Properties.EventCallback(Window, &Event);
+
+			break;
+		}
+		case WM_DESTROY:
 		{
 			PostQuitMessage(0);
 
