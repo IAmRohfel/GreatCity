@@ -48,6 +48,11 @@ void GCApplication_Run(void)
 	}
 }
 
+const GCWindow* const GCApplication_GetWindow(void)
+{
+	return Application->Window;
+}
+
 void GCApplication_Destroy(void)
 {
 	GCRenderer_Terminate();

@@ -25,6 +25,9 @@ static LRESULT CALLBACK GCWindowsWindow_MessageHandler(HWND WindowHandle, UINT M
 static void GCWindowsWindow_ProcessEvents(GCWindowsWindow* const Window);
 static void GCWindowsWindow_Destroy(GCWindowsWindow* Window);
 
+HWND GCWindowsWindow_GetWindowHandle(const GCWindowsWindow* const Window);
+HINSTANCE GCWindowsWindow_GetInstanceHandle(const GCWindowsWindow* const Window);
+
 GCWindow* GCWindow_Create(const GCWindowProperties* const Properties)
 {
 	return GCWindowsWindow_Create(Properties);
@@ -257,4 +260,14 @@ void GCWindowsWindow_Destroy(GCWindowsWindow* Window)
 	UnregisterClassW(Window->ClassName, Window->InstanceHandle);
 
 	GCMemory_Free(Window);
+}
+
+HWND GCWindowsWindow_GetWindowHandle(const GCWindowsWindow* const Window)
+{
+	return Window->WindowHandle;
+}
+
+HINSTANCE GCWindowsWindow_GetInstanceHandle(const GCWindowsWindow* const Window)
+{
+	return Window->InstanceHandle;
 }

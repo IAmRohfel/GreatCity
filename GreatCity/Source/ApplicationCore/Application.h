@@ -6,8 +6,11 @@ extern "C"
 {
 #endif
 
+	typedef struct GCPlatformWindow GCWindow;
+
 	void GCApplication_Create(void);
 	void GCApplication_Run(void);
+	const GCWindow* const GCApplication_GetWindow(void);
 	void GCApplication_Destroy(void);
 
 #ifdef __cplusplus
