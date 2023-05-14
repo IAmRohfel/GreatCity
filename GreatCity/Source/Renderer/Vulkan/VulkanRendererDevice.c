@@ -16,14 +16,28 @@ typedef struct GCRendererDevice
 {
 	VkInstance InstanceHandle;
 	VkDebugUtilsMessengerEXT DebugMessengerHandle;
+	VkPhysicalDevice PhysicalDeviceHandle;
+	VkDevice DeviceHandle;
+	VkQueue GraphicsQueueHandle;
 
 	bool IsValidationLayerEnabled;
 } GCRendererDevice;
 
+typedef struct GCRendererDeviceQueueFamilyIndices
+{
+	uint32_t GraphicsFamily;
+	bool GraphicsFamilyHasValue;
+} GCRendererDeviceQueueFamilyIndices;
+
 static bool GCRendererDevice_IsValidationLayerSupported(void);
+static bool GCRendererDevice_IsDeviceSuitable(const VkPhysicalDevice PhysicalDeviceHandle);
+static GCRendererDeviceQueueFamilyIndices GCRendererDevice_FindQueueFamilies(const VkPhysicalDevice PhysicalDeviceHandle);
+
 static VkDebugUtilsMessengerCreateInfoEXT GCRendererDevice_InitializeDebugMessengerInformation(void);
 static void GCRendererDevice_CreateInstance(GCRendererDevice* const Device);
 static void GCRendererDevice_CreateDebugMessenger(GCRendererDevice* const Device);
+static void GCRendererDevice_SelectPhysicalDevice(GCRendererDevice* const Device);
+static void GCRendererDevice_CreateDevice(GCRendererDevice* const Device);
 static VKAPI_ATTR VkBool32 VKAPI_CALL GCRendererDevice_DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT Severity, VkDebugUtilsMessageTypeFlagsEXT Type, const VkDebugUtilsMessengerCallbackDataEXT* CallbackData, void* UserData);
 
 static VkResult GCRendererDevice_vkCreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pMessenger);
@@ -34,6 +48,9 @@ GCRendererDevice* GCRendererDevice_Create(void)
 	GCRendererDevice* Device = (GCRendererDevice*)GCMemory_Allocate(sizeof(GCRendererDevice));
 	Device->InstanceHandle = VK_NULL_HANDLE;
 	Device->DebugMessengerHandle = VK_NULL_HANDLE;
+	Device->PhysicalDeviceHandle = VK_NULL_HANDLE;
+	Device->DeviceHandle = VK_NULL_HANDLE;
+	Device->GraphicsQueueHandle = VK_NULL_HANDLE;
 
 #ifndef GC_BUILD_TYPE_DISTRIBUTION
 	Device->IsValidationLayerEnabled = true;
@@ -53,11 +70,16 @@ GCRendererDevice* GCRendererDevice_Create(void)
 		GCRendererDevice_CreateDebugMessenger(Device);
 	}
 
+	GCRendererDevice_SelectPhysicalDevice(Device);
+	GCRendererDevice_CreateDevice(Device);
+
 	return Device;
 }
 
 void GCRendererDevice_Destroy(GCRendererDevice* Device)
 {
+	vkDestroyDevice(Device->DeviceHandle, NULL);
+
 	if (Device->IsValidationLayerEnabled)
 	{
 		GCRendererDevice_vkDestroyDebugUtilsMessengerEXT(Device->InstanceHandle, Device->DebugMessengerHandle, NULL);
@@ -91,6 +113,39 @@ bool GCRendererDevice_IsValidationLayerSupported(void)
 	GCMemory_Free(AvailableLayers);
 
 	return IsLayerFound;
+}
+
+bool GCRendererDevice_IsDeviceSuitable(const VkPhysicalDevice PhysicalDeviceHandle)
+{
+	const GCRendererDeviceQueueFamilyIndices QueueFamilyIndices = GCRendererDevice_FindQueueFamilies(PhysicalDeviceHandle);
+
+	return QueueFamilyIndices.GraphicsFamilyHasValue;
+}
+
+GCRendererDeviceQueueFamilyIndices GCRendererDevice_FindQueueFamilies(const VkPhysicalDevice PhysicalDeviceHandle)
+{
+	GCRendererDeviceQueueFamilyIndices QueueFamilyIndices = { 0 };
+
+	uint32_t QueueFamilyCount = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDeviceHandle, &QueueFamilyCount, NULL);
+
+	VkQueueFamilyProperties* QueueFamilies = (VkQueueFamilyProperties*)GCMemory_Allocate(QueueFamilyCount * sizeof(VkQueueFamilyProperties));
+	vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDeviceHandle, &QueueFamilyCount, QueueFamilies);
+
+	for (uint32_t Counter = 0; Counter < QueueFamilyCount; Counter++)
+	{
+		if (QueueFamilies[Counter].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+		{
+			QueueFamilyIndices.GraphicsFamily = Counter;
+			QueueFamilyIndices.GraphicsFamilyHasValue = true;
+
+			break;
+		}
+	}
+
+	GCMemory_Free(QueueFamilies);
+
+	return QueueFamilyIndices;
 }
 
 VkDebugUtilsMessengerCreateInfoEXT GCRendererDevice_InitializeDebugMessengerInformation(void)
@@ -148,6 +203,71 @@ void GCRendererDevice_CreateDebugMessenger(GCRendererDevice* const Device)
 	const VkDebugUtilsMessengerCreateInfoEXT DebugMessengerInformation = GCRendererDevice_InitializeDebugMessengerInformation();
 	
 	GC_VULKAN_VALIDATE(GCRendererDevice_vkCreateDebugUtilsMessengerEXT(Device->InstanceHandle, &DebugMessengerInformation, NULL, &Device->DebugMessengerHandle), "Failed to create a Vulkan debug messenger");
+}
+
+void GCRendererDevice_SelectPhysicalDevice(GCRendererDevice* const Device)
+{
+	uint32_t DeviceCount = 0;
+	vkEnumeratePhysicalDevices(Device->InstanceHandle, &DeviceCount, NULL);
+
+	if (!DeviceCount)
+	{
+		GC_ASSERT_WITH_MESSAGE(false, "Failed to find GPUs with Vulkan support");
+	}
+
+	VkPhysicalDevice* PhysicalDeviceHandles = (VkPhysicalDevice*)GCMemory_Allocate(DeviceCount * sizeof(VkPhysicalDevice));
+	vkEnumeratePhysicalDevices(Device->InstanceHandle, &DeviceCount, PhysicalDeviceHandles);
+
+	for (uint32_t Counter = 0; Counter < DeviceCount; Counter++)
+	{
+		if (GCRendererDevice_IsDeviceSuitable(PhysicalDeviceHandles[Counter]))
+		{
+			Device->PhysicalDeviceHandle = PhysicalDeviceHandles[Counter];
+
+			break;
+		}
+	}
+
+	if (!Device->PhysicalDeviceHandle)
+	{
+		GC_ASSERT_WITH_MESSAGE(false, "Failed to find a suitable GPU");
+	}
+
+	GCMemory_Free(PhysicalDeviceHandles);
+}
+
+void GCRendererDevice_CreateDevice(GCRendererDevice* const Device)
+{
+	const GCRendererDeviceQueueFamilyIndices QueueFamilyIndices = GCRendererDevice_FindQueueFamilies(Device->PhysicalDeviceHandle);
+
+	VkDeviceQueueCreateInfo DeviceQueueInformation = { 0 };
+	DeviceQueueInformation.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	DeviceQueueInformation.queueFamilyIndex = QueueFamilyIndices.GraphicsFamily;
+	DeviceQueueInformation.queueCount = 1;
+
+	const float QueuePriority = 1.0f;
+	DeviceQueueInformation.pQueuePriorities = &QueuePriority;
+
+	VkPhysicalDeviceFeatures DeviceFeatures = { 0 };
+
+	VkDeviceCreateInfo DeviceInformation = { 0 };
+	DeviceInformation.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	DeviceInformation.queueCreateInfoCount = 1;
+	DeviceInformation.pQueueCreateInfos = &DeviceQueueInformation;
+
+	if (Device->IsValidationLayerEnabled)
+	{
+		const char* const ValidationLayerName = "VK_LAYER_KHRONOS_validation";
+
+		DeviceInformation.enabledLayerCount = 1;
+		DeviceInformation.ppEnabledLayerNames = &ValidationLayerName;
+	}
+
+	DeviceInformation.pEnabledFeatures = &DeviceFeatures;
+
+	GC_VULKAN_VALIDATE(vkCreateDevice(Device->PhysicalDeviceHandle, &DeviceInformation, NULL, &Device->DeviceHandle), "Failed to create a Vulkan device");
+
+	vkGetDeviceQueue(Device->DeviceHandle, QueueFamilyIndices.GraphicsFamily, 0, &Device->GraphicsQueueHandle);
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL GCRendererDevice_DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT Severity, VkDebugUtilsMessageTypeFlagsEXT Type, const VkDebugUtilsMessengerCallbackDataEXT* CallbackData, void* UserData)
