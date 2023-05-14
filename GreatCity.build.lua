@@ -26,7 +26,19 @@ project "GreatCity"
 
     includedirs
     {
-        "%{wks.location}/GreatCity/Source"
+        "%{wks.location}/GreatCity/Source",
+
+        "$(VULKAN_SDK)/Include"
+    }
+
+    libdirs
+    {
+        "$(VULKAN_SDK)/Lib"
+    }
+
+    links
+    {
+        "vulkan-1"
     }
 
     flags "FatalWarnings"

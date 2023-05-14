@@ -3,6 +3,7 @@
 #include "ApplicationCore/Event/Event.h"
 #include "ApplicationCore/Event/ApplicationEvent.h"
 #include "Core/Memory/Allocator.h"
+#include "Renderer/Renderer.h"
 
 #include <stdbool.h>
 
@@ -33,18 +34,23 @@ void GCApplication_Create(void)
 	WindowProperties.EventCallback = GCApplication_OnEvent;
 
 	Application->Window = GCWindow_Create(&WindowProperties);
+
+	GCRenderer_Initialize();
 }
 
 void GCApplication_Run(void)
 {
 	while (Application->IsRunning)
 	{
+		GCRenderer_Present();
+
 		GCWindow_ProcessEvents(Application->Window);
 	}
 }
 
 void GCApplication_Destroy(void)
 {
+	GCRenderer_Terminate();
 	GCWindow_Destroy(Application->Window);
 
 	GCMemory_Free(Application);
