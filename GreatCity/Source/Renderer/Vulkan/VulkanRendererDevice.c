@@ -1,6 +1,7 @@
 #include "Renderer/RendererDevice.h"
 #include "Renderer/Vulkan/VulkanUtilities.h"
 #include "Core/Memory/Allocator.h"
+#include "Core/Log.h"
 #include "Core/Assert.h"
 
 #include <string.h>
@@ -23,6 +24,7 @@ typedef struct GCRendererDevice
 	VkQueue PresentQueueHandle;
 
 	bool IsValidationLayerEnabled;
+	uint32_t GraphicsFamilyQueueIndex, PresentFamilyQueueIndex;
 } GCRendererDevice;
 
 typedef struct GCRendererDeviceQueueFamilyIndices
@@ -33,9 +35,17 @@ typedef struct GCRendererDeviceQueueFamilyIndices
 	bool PresentFamilyHasValue;
 } GCRendererDeviceQueueFamilyIndices;
 
+VkSurfaceKHR GCRendererDevice_GetSurfaceHandle(const GCRendererDevice* const Device);
+VkPhysicalDevice GCRendererDevice_GetPhysicalDeviceHandle(const GCRendererDevice* const Device);
+VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
+uint32_t GCRendererDevice_GetGraphicsFamilyQueueIndex(const GCRendererDevice* const Device);
+uint32_t GCRendererDevice_GetPresentFamilyQueueIndex(const GCRendererDevice* const Device);
+
 static bool GCRendererDevice_IsValidationLayerSupported(void);
 static bool GCRendererDevice_IsDeviceSuitable(const VkPhysicalDevice PhysicalDeviceHandle, const VkSurfaceKHR SurfaceHandle);
 static GCRendererDeviceQueueFamilyIndices GCRendererDevice_FindQueueFamilies(const VkPhysicalDevice PhysicalDeviceHandle, const VkSurfaceKHR SurfaceHandle);
+static bool GCRendererDevice_CheckDeviceExtensionSupport(const VkPhysicalDevice PhysicalDeviceHandle);
+extern bool GCRendererSwapChain_IsSwapChainSupported(const VkPhysicalDevice PhysicalDeviceHandle, const VkSurfaceKHR SurfaceHandle);
 
 static VkDebugUtilsMessengerCreateInfoEXT GCRendererDevice_InitializeDebugMessengerInformation(void);
 static void GCRendererDevice_CreateInstance(GCRendererDevice* const Device);
@@ -64,6 +74,9 @@ GCRendererDevice* GCRendererDevice_Create(void)
 #else
 	Device->IsValidationLayerEnabled = false;
 #endif
+
+	Device->GraphicsFamilyQueueIndex = 0;
+	Device->PresentFamilyQueueIndex = 0;
 
 	if (Device->IsValidationLayerEnabled && !GCRendererDevice_IsValidationLayerSupported())
 	{
@@ -99,6 +112,31 @@ void GCRendererDevice_Destroy(GCRendererDevice* Device)
 	GCMemory_Free(Device);
 }
 
+VkSurfaceKHR GCRendererDevice_GetSurfaceHandle(const GCRendererDevice* const Device)
+{
+	return Device->SurfaceHandle;
+}
+
+VkPhysicalDevice GCRendererDevice_GetPhysicalDeviceHandle(const GCRendererDevice* const Device)
+{
+	return Device->PhysicalDeviceHandle;
+}
+
+VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device)
+{
+	return Device->DeviceHandle;
+}
+
+uint32_t GCRendererDevice_GetGraphicsFamilyQueueIndex(const GCRendererDevice* const Device)
+{
+	return Device->GraphicsFamilyQueueIndex;
+}
+
+uint32_t GCRendererDevice_GetPresentFamilyQueueIndex(const GCRendererDevice* const Device)
+{
+	return Device->PresentFamilyQueueIndex;
+}
+
 bool GCRendererDevice_IsValidationLayerSupported(void)
 {
 	uint32_t LayerCount = 0;
@@ -127,8 +165,15 @@ bool GCRendererDevice_IsValidationLayerSupported(void)
 bool GCRendererDevice_IsDeviceSuitable(const VkPhysicalDevice PhysicalDeviceHandle, const VkSurfaceKHR SurfaceHandle)
 {
 	const GCRendererDeviceQueueFamilyIndices QueueFamilyIndices = GCRendererDevice_FindQueueFamilies(PhysicalDeviceHandle, SurfaceHandle);
+	const bool IsExtensionSupported = GCRendererDevice_CheckDeviceExtensionSupport(PhysicalDeviceHandle);
+	bool IsSwapChainSupported = false;
 
-	return QueueFamilyIndices.GraphicsFamilyHasValue && QueueFamilyIndices.PresentFamilyHasValue;
+	if (IsExtensionSupported)
+	{
+		IsSwapChainSupported = GCRendererSwapChain_IsSwapChainSupported(PhysicalDeviceHandle, SurfaceHandle);
+	}
+
+	return QueueFamilyIndices.GraphicsFamilyHasValue && QueueFamilyIndices.PresentFamilyHasValue && IsExtensionSupported && IsSwapChainSupported;
 }
 
 GCRendererDeviceQueueFamilyIndices GCRendererDevice_FindQueueFamilies(const VkPhysicalDevice PhysicalDeviceHandle, const VkSurfaceKHR SurfaceHandle)
@@ -147,16 +192,19 @@ GCRendererDeviceQueueFamilyIndices GCRendererDevice_FindQueueFamilies(const VkPh
 		{
 			QueueFamilyIndices.GraphicsFamily = Counter;
 			QueueFamilyIndices.GraphicsFamilyHasValue = true;
+		}
 
-			VkBool32 PresentSupport = VK_FALSE;
-			vkGetPhysicalDeviceSurfaceSupportKHR(PhysicalDeviceHandle, Counter, SurfaceHandle, &PresentSupport);
+		VkBool32 IsPresentSupported = VK_FALSE;
+		vkGetPhysicalDeviceSurfaceSupportKHR(PhysicalDeviceHandle, Counter, SurfaceHandle, &IsPresentSupported);
 
-			if (PresentSupport)
-			{
-				QueueFamilyIndices.PresentFamily = Counter;
-				QueueFamilyIndices.PresentFamilyHasValue = true;
-			}
+		if (IsPresentSupported)
+		{
+			QueueFamilyIndices.PresentFamily = Counter;
+			QueueFamilyIndices.PresentFamilyHasValue = true;
+		}
 
+		if (QueueFamilyIndices.GraphicsFamilyHasValue && QueueFamilyIndices.PresentFamilyHasValue)
+		{
 			break;
 		}
 	}
@@ -164,6 +212,31 @@ GCRendererDeviceQueueFamilyIndices GCRendererDevice_FindQueueFamilies(const VkPh
 	GCMemory_Free(QueueFamilies);
 
 	return QueueFamilyIndices;
+}
+
+bool GCRendererDevice_CheckDeviceExtensionSupport(const VkPhysicalDevice PhysicalDeviceHandle)
+{
+	uint32_t ExtensionCount = 0;
+	vkEnumerateDeviceExtensionProperties(PhysicalDeviceHandle, NULL, &ExtensionCount, NULL);
+
+	VkExtensionProperties* AvailableExtensions = (VkExtensionProperties*)GCMemory_Allocate(ExtensionCount * sizeof(VkExtensionProperties));
+	vkEnumerateDeviceExtensionProperties(PhysicalDeviceHandle, NULL, &ExtensionCount, AvailableExtensions);
+
+	bool IsExtensionFound = false;
+
+	for (uint32_t Counter = 0; Counter < ExtensionCount; Counter++)
+	{
+		if (!strcmp(VK_KHR_SWAPCHAIN_EXTENSION_NAME, AvailableExtensions[Counter].extensionName))
+		{
+			IsExtensionFound = true;
+
+			break;
+		}
+	}
+
+	GCMemory_Free(AvailableExtensions);
+
+	return IsExtensionFound;
 }
 
 VkDebugUtilsMessengerCreateInfoEXT GCRendererDevice_InitializeDebugMessengerInformation(void)
@@ -257,6 +330,8 @@ void GCRendererDevice_SelectPhysicalDevice(GCRendererDevice* const Device)
 void GCRendererDevice_CreateDevice(GCRendererDevice* const Device)
 {
 	const GCRendererDeviceQueueFamilyIndices QueueFamilyIndices = GCRendererDevice_FindQueueFamilies(Device->PhysicalDeviceHandle, Device->SurfaceHandle);
+	Device->GraphicsFamilyQueueIndex = QueueFamilyIndices.GraphicsFamily;
+	Device->PresentFamilyQueueIndex = QueueFamilyIndices.PresentFamily;
 
 	VkDeviceQueueCreateInfo DeviceQueueInformation[2] = { 0 };
 	uint32_t DeviceQueueInformationCount = 0;
@@ -303,6 +378,11 @@ void GCRendererDevice_CreateDevice(GCRendererDevice* const Device)
 		DeviceInformation.enabledLayerCount = 1;
 		DeviceInformation.ppEnabledLayerNames = &ValidationLayerName;
 	}
+
+	const char* const DeviceExtensionName = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+
+	DeviceInformation.enabledExtensionCount = 1;
+	DeviceInformation.ppEnabledExtensionNames = &DeviceExtensionName;
 
 	DeviceInformation.pEnabledFeatures = &DeviceFeatures;
 

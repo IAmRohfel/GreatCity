@@ -22,6 +22,7 @@ extern "C"
 
 	GCWindow* GCWindow_Create(const GCWindowProperties* const Properties);
 	void GCWindow_ProcessEvents(GCWindow* const Window);
+	void GCWindow_GetWindowSize(const GCWindow* const Window, uint32_t* const Width, uint32_t* const Height);
 	void GCWindow_Destroy(GCWindow* Window);
 
 #ifdef __cplusplus

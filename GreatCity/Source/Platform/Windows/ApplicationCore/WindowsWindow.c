@@ -23,6 +23,7 @@ static GCWindowsWindow* GCWindowsWindow_Create(const GCWindowProperties* const P
 static LRESULT CALLBACK GCWindowsWindow_SetupMessageHandler(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam);
 static LRESULT CALLBACK GCWindowsWindow_MessageHandler(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam);
 static void GCWindowsWindow_ProcessEvents(GCWindowsWindow* const Window);
+static void GCWindowsWindow_GetWindowSize(const GCWindowsWindow* const Window, uint32_t* const Width, uint32_t* const Height);
 static void GCWindowsWindow_Destroy(GCWindowsWindow* Window);
 
 HWND GCWindowsWindow_GetWindowHandle(const GCWindowsWindow* const Window);
@@ -36,6 +37,11 @@ GCWindow* GCWindow_Create(const GCWindowProperties* const Properties)
 void GCWindow_ProcessEvents(GCWindow* const Window)
 {
 	GCWindowsWindow_ProcessEvents(Window);
+}
+
+void GCWindow_GetWindowSize(const GCWindow* const Window, uint32_t* const Width, uint32_t* const Height)
+{
+	GCWindowsWindow_GetWindowSize(Window, Width, Height);
 }
 
 void GCWindow_Destroy(GCWindow* Window)
@@ -251,6 +257,22 @@ void GCWindowsWindow_ProcessEvents(GCWindowsWindow* const Window)
 	{
 		TranslateMessage(&MessageHandle);
 		DispatchMessageW(&MessageHandle);
+	}
+}
+
+void GCWindowsWindow_GetWindowSize(const GCWindowsWindow* const Window, uint32_t* const Width, uint32_t* const Height)
+{
+	RECT Coordinate = { 0 };
+	GetClientRect(Window->WindowHandle, &Coordinate);
+
+	if (Width)
+	{
+		*Width = Coordinate.right;
+	}
+
+	if (Height)
+	{
+		*Height = Coordinate.bottom;
 	}
 }
 

@@ -1,8 +1,6 @@
 #ifndef GC_CORE_ASSERT_H
 #define GC_CORE_ASSERT_H
 
-#include "Core/Log.h"
-
 #include <intrin.h>
 
 #ifdef GC_ASSERT_ENABLED
