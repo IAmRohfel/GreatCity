@@ -1,6 +1,7 @@
 .vs/
 Binaries/
 Intermediates/
+GreatCity/Assets/Cache/
 
 *.sln
 *.vcxproj
