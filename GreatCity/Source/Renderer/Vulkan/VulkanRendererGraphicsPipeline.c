@@ -19,6 +19,8 @@ typedef struct GCRendererGraphicsPipeline
 	VkPipeline PipelineHandle;
 } GCRendererGraphicsPipeline;
 
+VkRenderPass GCRendererGraphicsPipeline_GetRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
+
 extern VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
 extern VkFormat GCRendererSwapChain_GetFormat(const GCRendererSwapChain* const SwapChain);
 extern VkExtent2D GCRendererSwapChain_GetExtent(const GCRendererSwapChain* const SwapChain);
@@ -53,6 +55,11 @@ void GCRendererGraphicsPipeline_Destroy(GCRendererGraphicsPipeline* GraphicsPipe
 	vkDestroyRenderPass(DeviceHandle, GraphicsPipeline->RenderPassHandle, NULL);
 
 	GCMemory_Free(GraphicsPipeline);
+}
+
+VkRenderPass GCRendererGraphicsPipeline_GetRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline)
+{
+	return GraphicsPipeline->RenderPassHandle;
 }
 
 void GCRendererGraphicsPipeline_CreateRenderPass(GCRendererGraphicsPipeline* const GraphicsPipeline)
