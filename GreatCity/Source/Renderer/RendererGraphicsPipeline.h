@@ -8,9 +8,10 @@ extern "C"
 
 	typedef struct GCRendererGraphicsPipeline GCRendererGraphicsPipeline;
 	typedef struct GCRendererDevice GCRendererDevice;
+	typedef struct GCRendererSwapChain GCRendererSwapChain;
 	typedef struct GCRendererShader GCRendererShader;
 
-	GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(const GCRendererDevice* const Device, const GCRendererShader* const Shader);
+	GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(const GCRendererDevice* const Device, const GCRendererSwapChain* const SwapChain, const GCRendererShader* const Shader);
 	void GCRendererGraphicsPipeline_Destroy(GCRendererGraphicsPipeline* GraphicsPipeline);
 
 #ifdef __cplusplus

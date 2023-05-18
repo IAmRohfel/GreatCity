@@ -27,6 +27,8 @@ typedef struct GCRendererSwapChain
 } GCRendererSwapChain;
 
 bool GCRendererSwapChain_IsSwapChainSupported(const VkPhysicalDevice PhysicalDeviceHandle, const VkSurfaceKHR SurfaceHandle);
+VkFormat GCRendererSwapChain_GetFormat(const GCRendererSwapChain* const SwapChain);
+VkExtent2D GCRendererSwapChain_GetExtent(const GCRendererSwapChain* const SwapChain);
 
 extern VkSurfaceKHR GCRendererDevice_GetSurfaceHandle(const GCRendererDevice* const Device);
 extern VkPhysicalDevice GCRendererDevice_GetPhysicalDeviceHandle(const GCRendererDevice* const Device);
@@ -88,6 +90,16 @@ bool GCRendererSwapChain_IsSwapChainSupported(const VkPhysicalDevice PhysicalDev
 	vkGetPhysicalDeviceSurfacePresentModesKHR(PhysicalDeviceHandle, SurfaceHandle, &PresentModeCount, NULL);
 
 	return FormatCount && PresentModeCount;
+}
+
+VkFormat GCRendererSwapChain_GetFormat(const GCRendererSwapChain* const SwapChain)
+{
+	return SwapChain->SurfaceFormat.format;
+}
+
+VkExtent2D GCRendererSwapChain_GetExtent(const GCRendererSwapChain* const SwapChain)
+{
+	return SwapChain->Extent;
 }
 
 void GCRendererSwapChain_QuerySwapChainSupport(GCRendererSwapChain* const SwapChain)

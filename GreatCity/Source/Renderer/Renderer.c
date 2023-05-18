@@ -21,7 +21,7 @@ void GCRenderer_Initialize(void)
 	Renderer->Device = GCRendererDevice_Create();
 	Renderer->SwapChain = GCRendererSwapChain_Create(Renderer->Device);
 	Renderer->BasicShader = GCRendererShader_Create(Renderer->Device, "Assets/Shader/Basic/Basic.vertex.glsl", "Assets/Shader/Basic/Basic.fragment.glsl");
-	Renderer->GraphicsPipeline = GCRendererGraphicsPipeline_Create(Renderer->Device, Renderer->BasicShader);
+	Renderer->GraphicsPipeline = GCRendererGraphicsPipeline_Create(Renderer->Device, Renderer->SwapChain, Renderer->BasicShader);
 }
 
 void GCRenderer_Present(void)
