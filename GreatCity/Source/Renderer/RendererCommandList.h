@@ -25,7 +25,7 @@ extern "C"
 	void GCRendererCommandList_Draw(const GCRendererCommandList* const CommandList, const uint32_t VertexCount, const uint32_t FirstVertex);
 	void GCRendererCommandList_EndRenderPass(const GCRendererCommandList* const CommandList);
 	void GCRendererCommandList_EndRecord(const GCRendererCommandList* const CommandList);
-	void GCRendererCommandList_SubmitAndPresent(const GCRendererCommandList* const CommandList, const GCRendererCommandListRecordFunction RecordFunction);
+	void GCRendererCommandList_SubmitAndPresent(GCRendererCommandList* const CommandList, const GCRendererCommandListRecordFunction RecordFunction);
 	void GCRendererCommandList_Destroy(GCRendererCommandList* CommandList);
 
 #ifdef __cplusplus

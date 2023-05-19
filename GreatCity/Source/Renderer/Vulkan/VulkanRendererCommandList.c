@@ -17,9 +17,13 @@ typedef struct GCRendererCommandList
 	const GCRendererFramebuffer* Framebuffer;
 
 	VkCommandPool CommandPoolHandle;
-	VkCommandBuffer CommandBufferHandle;
-	VkSemaphore ImageAvailableSemaphoreHandle, RenderFinishedSemaphoreHandle;
-	VkFence InFlightFenceHandle;
+	VkCommandBuffer* CommandBufferHandles;
+	VkSemaphore* ImageAvailableSemaphoreHandles;
+	VkSemaphore* RenderFinishedSemaphoreHandles;
+	VkFence* InFlightFenceHandles;
+
+	uint32_t MaximumFramesInFlight;
+	uint32_t CurrentFrame;
 } GCRendererCommandList;
 
 typedef struct GCRendererCommandListRecordData
@@ -38,9 +42,9 @@ extern VkPipeline GCRendererGraphicsPipeline_GetPipelineHandle(const GCRendererG
 extern VkFramebuffer* GCRendererFramebuffer_GetFramebufferHandles(const GCRendererFramebuffer* const Framebuffer);
 
 static void GCRendererCommandList_CreateCommandPool(GCRendererCommandList* const CommandList);
-static void GCRendererCommandList_CreateCommandBuffer(GCRendererCommandList* const CommandList);
+static void GCRendererCommandList_CreateCommandBuffers(GCRendererCommandList* const CommandList);
 static void GCRendererCommandList_CreateSemaphores(GCRendererCommandList* const CommandList);
-static void GCRendererCommandList_CreateFence(GCRendererCommandList* const CommandList);
+static void GCRendererCommandList_CreateFences(GCRendererCommandList* const CommandList);
 
 GCRendererCommandList* GCRendererCommandList_Create(const GCRendererDevice* const Device, const GCRendererSwapChain* const SwapChain, const GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererFramebuffer* const Framebuffer)
 {
@@ -50,15 +54,17 @@ GCRendererCommandList* GCRendererCommandList_Create(const GCRendererDevice* cons
 	CommandList->GraphicsPipeline = GraphicsPipeline;
 	CommandList->Framebuffer = Framebuffer;
 	CommandList->CommandPoolHandle = VK_NULL_HANDLE;
-	CommandList->CommandBufferHandle = VK_NULL_HANDLE;
-	CommandList->ImageAvailableSemaphoreHandle = VK_NULL_HANDLE;
-	CommandList->RenderFinishedSemaphoreHandle = VK_NULL_HANDLE;
-	CommandList->InFlightFenceHandle = VK_NULL_HANDLE;
+	CommandList->CommandBufferHandles = NULL;
+	CommandList->ImageAvailableSemaphoreHandles = NULL;
+	CommandList->RenderFinishedSemaphoreHandles = NULL;
+	CommandList->InFlightFenceHandles = NULL;
+	CommandList->MaximumFramesInFlight = 2;
+	CommandList->CurrentFrame = 0;
 
 	GCRendererCommandList_CreateCommandPool(CommandList);
-	GCRendererCommandList_CreateCommandBuffer(CommandList);
+	GCRendererCommandList_CreateCommandBuffers(CommandList);
 	GCRendererCommandList_CreateSemaphores(CommandList);
-	GCRendererCommandList_CreateFence(CommandList);
+	GCRendererCommandList_CreateFences(CommandList);
 
 	return CommandList;
 }
@@ -68,7 +74,7 @@ void GCRendererCommandList_BeginRecord(const GCRendererCommandList* const Comman
 	VkCommandBufferBeginInfo CommandBufferBeginInformation = { 0 };
 	CommandBufferBeginInformation.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-	GC_VULKAN_VALIDATE(vkBeginCommandBuffer(CommandList->CommandBufferHandle, &CommandBufferBeginInformation), "Failed to begin a Vulkan command buffer");
+	GC_VULKAN_VALIDATE(vkBeginCommandBuffer(CommandList->CommandBufferHandles[CommandList->CurrentFrame], &CommandBufferBeginInformation), "Failed to begin a Vulkan command buffer");
 }
 
 void GCRendererCommandList_BeginRenderPass(const GCRendererCommandList* const CommandList, const GCRendererCommandListRecordData* RecordData, const float* const ClearColor)
@@ -85,12 +91,12 @@ void GCRendererCommandList_BeginRenderPass(const GCRendererCommandList* const Co
 	RenderPassBeginInformation.clearValueCount = 1;
 	RenderPassBeginInformation.pClearValues = &ClearValue;
 
-	vkCmdBeginRenderPass(CommandList->CommandBufferHandle, &RenderPassBeginInformation, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBeginRenderPass(CommandList->CommandBufferHandles[CommandList->CurrentFrame], &RenderPassBeginInformation, VK_SUBPASS_CONTENTS_INLINE);
 }
 
 void GCRendererCommandList_BindGraphicsPipeline(const GCRendererCommandList* const CommandList)
 {
-	vkCmdBindPipeline(CommandList->CommandBufferHandle, VK_PIPELINE_BIND_POINT_GRAPHICS, GCRendererGraphicsPipeline_GetPipelineHandle(CommandList->GraphicsPipeline));
+	vkCmdBindPipeline(CommandList->CommandBufferHandles[CommandList->CurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, GCRendererGraphicsPipeline_GetPipelineHandle(CommandList->GraphicsPipeline));
 }
 
 void GCRendererCommandList_SetViewport(const GCRendererCommandList* const CommandList)
@@ -105,41 +111,41 @@ void GCRendererCommandList_SetViewport(const GCRendererCommandList* const Comman
 	Viewport.minDepth = 0.0f;
 	Viewport.maxDepth = 1.0f;
 
-	vkCmdSetViewport(CommandList->CommandBufferHandle, 0, 1, &Viewport);
+	vkCmdSetViewport(CommandList->CommandBufferHandles[CommandList->CurrentFrame], 0, 1, &Viewport);
 
 	VkRect2D Scissor = { 0 };
 	Scissor.offset = (VkOffset2D){ 0, 0 };
 	Scissor.extent = SwapChainExtent;
 
-	vkCmdSetScissor(CommandList->CommandBufferHandle, 0, 1, &Scissor);
+	vkCmdSetScissor(CommandList->CommandBufferHandles[CommandList->CurrentFrame], 0, 1, &Scissor);
 }
 
 void GCRendererCommandList_Draw(const GCRendererCommandList* const CommandList, const uint32_t VertexCount, const uint32_t FirstVertex)
 {
-	vkCmdDraw(CommandList->CommandBufferHandle, VertexCount, 1, FirstVertex, 0);
+	vkCmdDraw(CommandList->CommandBufferHandles[CommandList->CurrentFrame], VertexCount, 1, FirstVertex, 0);
 }
 
 void GCRendererCommandList_EndRenderPass(const GCRendererCommandList* const CommandList)
 {
-	vkCmdEndRenderPass(CommandList->CommandBufferHandle);
+	vkCmdEndRenderPass(CommandList->CommandBufferHandles[CommandList->CurrentFrame]);
 }
 
 void GCRendererCommandList_EndRecord(const GCRendererCommandList* const CommandList)
 {
-	GC_VULKAN_VALIDATE(vkEndCommandBuffer(CommandList->CommandBufferHandle), "Failed to end a Vulkan command buffer");
+	GC_VULKAN_VALIDATE(vkEndCommandBuffer(CommandList->CommandBufferHandles[CommandList->CurrentFrame]), "Failed to end a Vulkan command buffer");
 }
 
-void GCRendererCommandList_SubmitAndPresent(const GCRendererCommandList* const CommandList, const GCRendererCommandListRecordFunction RecordFunction)
+void GCRendererCommandList_SubmitAndPresent(GCRendererCommandList* const CommandList, const GCRendererCommandListRecordFunction RecordFunction)
 {
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(CommandList->Device);
 
-	vkWaitForFences(DeviceHandle, 1, &CommandList->InFlightFenceHandle, VK_TRUE, UINT64_MAX);
-	vkResetFences(DeviceHandle, 1, &CommandList->InFlightFenceHandle);
+	vkWaitForFences(DeviceHandle, 1, &CommandList->InFlightFenceHandles[CommandList->CurrentFrame], VK_TRUE, UINT64_MAX);
+	vkResetFences(DeviceHandle, 1, &CommandList->InFlightFenceHandles[CommandList->CurrentFrame]);
 
 	uint32_t SwapChainImageIndex = 0;
-	vkAcquireNextImageKHR(DeviceHandle, GCRendererSwapChain_GetHandle(CommandList->SwapChain), UINT64_MAX, CommandList->ImageAvailableSemaphoreHandle, VK_NULL_HANDLE, &SwapChainImageIndex);
+	vkAcquireNextImageKHR(DeviceHandle, GCRendererSwapChain_GetHandle(CommandList->SwapChain), UINT64_MAX, CommandList->ImageAvailableSemaphoreHandles[CommandList->CurrentFrame], VK_NULL_HANDLE, &SwapChainImageIndex);
 
-	vkResetCommandBuffer(CommandList->CommandBufferHandle, 0);
+	vkResetCommandBuffer(CommandList->CommandBufferHandles[CommandList->CurrentFrame], 0);
 
 	GCRendererCommandListRecordData RecordData = { 0 };
 	RecordData.SwapChainImageIndex = SwapChainImageIndex;
@@ -152,21 +158,21 @@ void GCRendererCommandList_SubmitAndPresent(const GCRendererCommandList* const C
 	VkSubmitInfo SubmitInformation = { 0 };
 	SubmitInformation.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-	const VkSemaphore WaitSemaphoreHandle[1] = { CommandList->ImageAvailableSemaphoreHandle };
+	const VkSemaphore WaitSemaphoreHandle[1] = { CommandList->ImageAvailableSemaphoreHandles[CommandList->CurrentFrame] };
 	const VkPipelineStageFlags PipelineWaitStage[1] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	
 	SubmitInformation.waitSemaphoreCount = 1;
 	SubmitInformation.pWaitSemaphores = WaitSemaphoreHandle;
 	SubmitInformation.pWaitDstStageMask = PipelineWaitStage;
 	SubmitInformation.commandBufferCount = 1;
-	SubmitInformation.pCommandBuffers = &CommandList->CommandBufferHandle;
+	SubmitInformation.pCommandBuffers = &CommandList->CommandBufferHandles[CommandList->CurrentFrame];
 
-	const VkSemaphore SignalSemaphoreHandle[1] = { CommandList->RenderFinishedSemaphoreHandle };
+	const VkSemaphore SignalSemaphoreHandle[1] = { CommandList->RenderFinishedSemaphoreHandles[CommandList->CurrentFrame] };
 
 	SubmitInformation.signalSemaphoreCount = 1;
 	SubmitInformation.pSignalSemaphores = SignalSemaphoreHandle;
 
-	GC_VULKAN_VALIDATE(vkQueueSubmit(GCRendererDevice_GetGraphicsQueueHandle(CommandList->Device), 1, &SubmitInformation, CommandList->InFlightFenceHandle), "Failed to submit a Vulkan queue");
+	GC_VULKAN_VALIDATE(vkQueueSubmit(GCRendererDevice_GetGraphicsQueueHandle(CommandList->Device), 1, &SubmitInformation, CommandList->InFlightFenceHandles[CommandList->CurrentFrame]), "Failed to submit a Vulkan queue");
 
 	VkPresentInfoKHR PresentInformation = { 0 };
 	PresentInformation.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -180,17 +186,27 @@ void GCRendererCommandList_SubmitAndPresent(const GCRendererCommandList* const C
 	PresentInformation.pImageIndices = &SwapChainImageIndex;
 
 	vkQueuePresentKHR(GCRendererDevice_GetPresentQueueHandle(CommandList->Device), &PresentInformation);
+
+	CommandList->CurrentFrame = (CommandList->CurrentFrame + 1) % CommandList->MaximumFramesInFlight;
 }
 
 void GCRendererCommandList_Destroy(GCRendererCommandList* CommandList)
 {
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(CommandList->Device);
 
-	vkDestroyFence(DeviceHandle, CommandList->InFlightFenceHandle, NULL);
-	vkDestroySemaphore(DeviceHandle, CommandList->RenderFinishedSemaphoreHandle, NULL);
-	vkDestroySemaphore(DeviceHandle, CommandList->ImageAvailableSemaphoreHandle, NULL);
+	for (uint32_t Counter = 0; Counter < CommandList->MaximumFramesInFlight; Counter++)
+	{
+		vkDestroyFence(DeviceHandle, CommandList->InFlightFenceHandles[Counter], NULL);
+		vkDestroySemaphore(DeviceHandle, CommandList->RenderFinishedSemaphoreHandles[Counter], NULL);
+		vkDestroySemaphore(DeviceHandle, CommandList->ImageAvailableSemaphoreHandles[Counter], NULL);
+	}
+	
 	vkDestroyCommandPool(DeviceHandle, CommandList->CommandPoolHandle, NULL);
 
+	GCMemory_Free(CommandList->InFlightFenceHandles);
+	GCMemory_Free(CommandList->RenderFinishedSemaphoreHandles);
+	GCMemory_Free(CommandList->ImageAvailableSemaphoreHandles);
+	GCMemory_Free(CommandList->CommandBufferHandles);
 	GCMemory_Free(CommandList);
 }
 
@@ -206,37 +222,50 @@ void GCRendererCommandList_CreateCommandPool(GCRendererCommandList* const Comman
 	GC_VULKAN_VALIDATE(vkCreateCommandPool(DeviceHandle, &CommandPoolInformation, NULL, &CommandList->CommandPoolHandle), "Failed to create a Vulkan command pool");
 }
 
-void GCRendererCommandList_CreateCommandBuffer(GCRendererCommandList* const CommandList)
+void GCRendererCommandList_CreateCommandBuffers(GCRendererCommandList* const CommandList)
 {
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(CommandList->Device);
+
+	CommandList->CommandBufferHandles = (VkCommandBuffer*)GCMemory_Allocate(CommandList->MaximumFramesInFlight * sizeof(VkCommandBuffer));
 
 	VkCommandBufferAllocateInfo CommandBufferInformation = { 0 };
 	CommandBufferInformation.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	CommandBufferInformation.commandPool = CommandList->CommandPoolHandle;
 	CommandBufferInformation.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	CommandBufferInformation.commandBufferCount = 1;
+	CommandBufferInformation.commandBufferCount = CommandList->MaximumFramesInFlight;
 
-	GC_VULKAN_VALIDATE(vkAllocateCommandBuffers(DeviceHandle, &CommandBufferInformation, &CommandList->CommandBufferHandle), "Failed to allocate a Vulkan command buffer");
+	GC_VULKAN_VALIDATE(vkAllocateCommandBuffers(DeviceHandle, &CommandBufferInformation, CommandList->CommandBufferHandles), "Failed to allocate Vulkan command buffers");
 }
 
 void GCRendererCommandList_CreateSemaphores(GCRendererCommandList* const CommandList)
 {
+	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(CommandList->Device);
+
+	CommandList->ImageAvailableSemaphoreHandles = (VkSemaphore*)GCMemory_Allocate(CommandList->MaximumFramesInFlight * sizeof(VkSemaphore));
+	CommandList->RenderFinishedSemaphoreHandles = (VkSemaphore*)GCMemory_Allocate(CommandList->MaximumFramesInFlight * sizeof(VkSemaphore));
+
 	VkSemaphoreCreateInfo SemaphoreInformation = { 0 };
 	SemaphoreInformation.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(CommandList->Device);
-
-	GC_VULKAN_VALIDATE(vkCreateSemaphore(DeviceHandle, &SemaphoreInformation, NULL, &CommandList->ImageAvailableSemaphoreHandle), "Failed to create a Vulkan semaphore");
-	GC_VULKAN_VALIDATE(vkCreateSemaphore(DeviceHandle, &SemaphoreInformation, NULL, &CommandList->RenderFinishedSemaphoreHandle), "Failed to create a Vulkan semaphore");
+	for (uint32_t Counter = 0; Counter < CommandList->MaximumFramesInFlight; Counter++)
+	{
+		GC_VULKAN_VALIDATE(vkCreateSemaphore(DeviceHandle, &SemaphoreInformation, NULL, &CommandList->ImageAvailableSemaphoreHandles[Counter]), "Failed to create a Vulkan semaphore");
+		GC_VULKAN_VALIDATE(vkCreateSemaphore(DeviceHandle, &SemaphoreInformation, NULL, &CommandList->RenderFinishedSemaphoreHandles[Counter]), "Failed to create a Vulkan semaphore");
+	}
 }
 
-void GCRendererCommandList_CreateFence(GCRendererCommandList* const CommandList)
+void GCRendererCommandList_CreateFences(GCRendererCommandList* const CommandList)
 {
+	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(CommandList->Device);
+
+	CommandList->InFlightFenceHandles = (VkFence*)GCMemory_Allocate(CommandList->MaximumFramesInFlight * sizeof(VkFence));
+
 	VkFenceCreateInfo FenceInformation = { 0 };
 	FenceInformation.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	FenceInformation.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(CommandList->Device);
-
-	GC_VULKAN_VALIDATE(vkCreateFence(DeviceHandle, &FenceInformation, NULL, &CommandList->InFlightFenceHandle), "Failed to create a Vulkan fence");
+	for (uint32_t Counter = 0; Counter < CommandList->MaximumFramesInFlight; Counter++)
+	{
+		GC_VULKAN_VALIDATE(vkCreateFence(DeviceHandle, &FenceInformation, NULL, &CommandList->InFlightFenceHandles[Counter]), "Failed to create a Vulkan fence");
+	}
 }
