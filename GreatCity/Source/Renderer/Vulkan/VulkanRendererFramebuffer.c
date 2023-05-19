@@ -17,6 +17,8 @@ typedef struct GCRendererFramebuffer
 	VkFramebuffer* FramebufferHandles;
 } GCRendererFramebuffer;
 
+VkFramebuffer* GCRendererFramebuffer_GetFramebufferHandles(const GCRendererFramebuffer* const Framebuffer);
+
 extern VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
 extern VkExtent2D GCRendererSwapChain_GetExtent(const GCRendererSwapChain* const SwapChain);
 extern VkImageView* GCRendererSwapChain_GetImageViewHandles(const GCRendererSwapChain* const SwapChain);
@@ -50,6 +52,11 @@ void GCRendererFramebuffer_Destroy(GCRendererFramebuffer* Framebuffer)
 
 	GCMemory_Free(Framebuffer->FramebufferHandles);
 	GCMemory_Free(Framebuffer);
+}
+
+VkFramebuffer* GCRendererFramebuffer_GetFramebufferHandles(const GCRendererFramebuffer* const Framebuffer)
+{
+	return Framebuffer->FramebufferHandles;
 }
 
 void GCRendererFramebuffer_CreateFramebuffers(GCRendererFramebuffer* const Framebuffer)

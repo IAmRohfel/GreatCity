@@ -29,6 +29,7 @@ typedef struct GCRendererSwapChain
 bool GCRendererSwapChain_IsSwapChainSupported(const VkPhysicalDevice PhysicalDeviceHandle, const VkSurfaceKHR SurfaceHandle);
 VkFormat GCRendererSwapChain_GetFormat(const GCRendererSwapChain* const SwapChain);
 VkExtent2D GCRendererSwapChain_GetExtent(const GCRendererSwapChain* const SwapChain);
+VkSwapchainKHR GCRendererSwapChain_GetHandle(const GCRendererSwapChain* const SwapChain);
 VkImageView* GCRendererSwapChain_GetImageViewHandles(const GCRendererSwapChain* const SwapChain);
 uint32_t GCRendererSwapChain_GetImageCount(const GCRendererSwapChain* const SwapChain);
 
@@ -102,6 +103,11 @@ VkFormat GCRendererSwapChain_GetFormat(const GCRendererSwapChain* const SwapChai
 VkExtent2D GCRendererSwapChain_GetExtent(const GCRendererSwapChain* const SwapChain)
 {
 	return SwapChain->Extent;
+}
+
+VkSwapchainKHR GCRendererSwapChain_GetHandle(const GCRendererSwapChain* const SwapChain)
+{
+	return SwapChain->SwapChainHandle;
 }
 
 VkImageView* GCRendererSwapChain_GetImageViewHandles(const GCRendererSwapChain* const SwapChain)

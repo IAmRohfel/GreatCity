@@ -4,6 +4,7 @@
 #include "Renderer/RendererShader.h"
 #include "Renderer/RendererGraphicsPipeline.h"
 #include "Renderer/RendererFramebuffer.h"
+#include "Renderer/RendererCommandList.h"
 #include "Core/Memory/Allocator.h"
 
 typedef struct GCRenderer
@@ -13,7 +14,10 @@ typedef struct GCRenderer
 	GCRendererShader* BasicShader;
 	GCRendererGraphicsPipeline* GraphicsPipeline;
 	GCRendererFramebuffer* Framebuffer;
+	GCRendererCommandList* CommandList;
 } GCRenderer;
+
+static void GCRenderer_RecordCommands(const GCRendererCommandListRecordData* const RecordData);
 
 static GCRenderer* Renderer = NULL;
 
@@ -25,14 +29,19 @@ void GCRenderer_Initialize(void)
 	Renderer->BasicShader = GCRendererShader_Create(Renderer->Device, "Assets/Shader/Basic/Basic.vertex.glsl", "Assets/Shader/Basic/Basic.fragment.glsl");
 	Renderer->GraphicsPipeline = GCRendererGraphicsPipeline_Create(Renderer->Device, Renderer->SwapChain, Renderer->BasicShader);
 	Renderer->Framebuffer = GCRendererFramebuffer_Create(Renderer->Device, Renderer->SwapChain, Renderer->GraphicsPipeline);
+	Renderer->CommandList = GCRendererCommandList_Create(Renderer->Device, Renderer->SwapChain, Renderer->GraphicsPipeline, Renderer->Framebuffer);
 }
 
 void GCRenderer_Present(void)
 {
+	GCRendererCommandList_SubmitAndPresent(Renderer->CommandList, GCRenderer_RecordCommands);
 }
 
 void GCRenderer_Terminate(void)
 {
+	GCRendererDevice_WaitIdle(Renderer->Device);
+
+	GCRendererCommandList_Destroy(Renderer->CommandList);
 	GCRendererFramebuffer_Destroy(Renderer->Framebuffer);
 	GCRendererGraphicsPipeline_Destroy(Renderer->GraphicsPipeline);
 	GCRendererShader_Destroy(Renderer->BasicShader);
@@ -40,4 +49,20 @@ void GCRenderer_Terminate(void)
 	GCRendererDevice_Destroy(Renderer->Device);
 
 	GCMemory_Free(Renderer);
+}
+
+void GCRenderer_RecordCommands(const GCRendererCommandListRecordData* const RecordData)
+{
+	GCRendererCommandList_BeginRecord(Renderer->CommandList);
+
+	const float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	GCRendererCommandList_BeginRenderPass(Renderer->CommandList, RecordData, ClearColor);
+
+	GCRendererCommandList_BindGraphicsPipeline(Renderer->CommandList);
+	GCRendererCommandList_SetViewport(Renderer->CommandList);
+
+	GCRendererCommandList_Draw(Renderer->CommandList, 3, 0);
+
+	GCRendererCommandList_EndRenderPass(Renderer->CommandList);
+	GCRendererCommandList_EndRecord(Renderer->CommandList);
 }

@@ -9,6 +9,7 @@ extern "C"
 	typedef struct GCRendererDevice GCRendererDevice;
 
 	GCRendererDevice* GCRendererDevice_Create(void);
+	void GCRendererDevice_WaitIdle(const GCRendererDevice* const Device);
 	void GCRendererDevice_Destroy(GCRendererDevice* Device);
 
 #ifdef __cplusplus

@@ -40,6 +40,8 @@ VkPhysicalDevice GCRendererDevice_GetPhysicalDeviceHandle(const GCRendererDevice
 VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
 uint32_t GCRendererDevice_GetGraphicsFamilyQueueIndex(const GCRendererDevice* const Device);
 uint32_t GCRendererDevice_GetPresentFamilyQueueIndex(const GCRendererDevice* const Device);
+VkQueue GCRendererDevice_GetGraphicsQueueHandle(const GCRendererDevice* const Device);
+VkQueue GCRendererDevice_GetPresentQueueHandle(const GCRendererDevice* const Device);
 
 static bool GCRendererDevice_IsValidationLayerSupported(void);
 static bool GCRendererDevice_IsDeviceSuitable(const VkPhysicalDevice PhysicalDeviceHandle, const VkSurfaceKHR SurfaceHandle);
@@ -97,6 +99,11 @@ GCRendererDevice* GCRendererDevice_Create(void)
 	return Device;
 }
 
+void GCRendererDevice_WaitIdle(const GCRendererDevice* const Device)
+{
+	vkDeviceWaitIdle(Device->DeviceHandle);
+}
+
 void GCRendererDevice_Destroy(GCRendererDevice* Device)
 {
 	vkDestroyDevice(Device->DeviceHandle, NULL);
@@ -135,6 +142,16 @@ uint32_t GCRendererDevice_GetGraphicsFamilyQueueIndex(const GCRendererDevice* co
 uint32_t GCRendererDevice_GetPresentFamilyQueueIndex(const GCRendererDevice* const Device)
 {
 	return Device->PresentFamilyQueueIndex;
+}
+
+VkQueue GCRendererDevice_GetGraphicsQueueHandle(const GCRendererDevice* const Device)
+{
+	return Device->GraphicsQueueHandle;
+}
+
+VkQueue GCRendererDevice_GetPresentQueueHandle(const GCRendererDevice* const Device)
+{
+	return Device->PresentQueueHandle;
 }
 
 bool GCRendererDevice_IsValidationLayerSupported(void)

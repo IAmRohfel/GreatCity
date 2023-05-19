@@ -20,10 +20,10 @@ typedef struct GCRendererGraphicsPipeline
 } GCRendererGraphicsPipeline;
 
 VkRenderPass GCRendererGraphicsPipeline_GetRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
+VkPipeline GCRendererGraphicsPipeline_GetPipelineHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
 
 extern VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
 extern VkFormat GCRendererSwapChain_GetFormat(const GCRendererSwapChain* const SwapChain);
-extern VkExtent2D GCRendererSwapChain_GetExtent(const GCRendererSwapChain* const SwapChain);
 extern VkShaderModule GCRendererShader_GetVertexShaderModuleHandle(const GCRendererShader* const Shader);
 extern VkShaderModule GCRendererShader_GetFragmentShaderModuleHandle(const GCRendererShader* const Shader);
 
@@ -62,6 +62,11 @@ VkRenderPass GCRendererGraphicsPipeline_GetRenderPassHandle(const GCRendererGrap
 	return GraphicsPipeline->RenderPassHandle;
 }
 
+VkPipeline GCRendererGraphicsPipeline_GetPipelineHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline)
+{
+	return GraphicsPipeline->PipelineHandle;
+}
+
 void GCRendererGraphicsPipeline_CreateRenderPass(GCRendererGraphicsPipeline* const GraphicsPipeline)
 {
 	const VkFormat SwapChainFormat = GCRendererSwapChain_GetFormat(GraphicsPipeline->SwapChain);
@@ -85,12 +90,22 @@ void GCRendererGraphicsPipeline_CreateRenderPass(GCRendererGraphicsPipeline* con
 	SubpassDescription.colorAttachmentCount = 1;
 	SubpassDescription.pColorAttachments = &ColorAttachmentReference;
 
+	VkSubpassDependency SubpassDependency = { 0 };
+	SubpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	SubpassDependency.dstSubpass = 0;
+	SubpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	SubpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	SubpassDependency.srcAccessMask = 0;
+	SubpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
 	VkRenderPassCreateInfo RenderPassInformation = { 0 };
 	RenderPassInformation.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 	RenderPassInformation.attachmentCount = 1;
 	RenderPassInformation.pAttachments = &ColorAttachmentDescription;
 	RenderPassInformation.subpassCount = 1;
 	RenderPassInformation.pSubpasses = &SubpassDescription;
+	RenderPassInformation.dependencyCount = 1;
+	RenderPassInformation.pDependencies = &SubpassDependency;
 
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(GraphicsPipeline->Device);
 
@@ -132,27 +147,10 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
 	PipelineInputAssemblyStateInformation.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	PipelineInputAssemblyStateInformation.primitiveRestartEnable = VK_FALSE;
 
-	VkViewport Viewport = { 0 };
-	Viewport.x = 0.0f;
-	Viewport.y = 0.0f;
-
-	const VkExtent2D SwapChainExtent = GCRendererSwapChain_GetExtent(GraphicsPipeline->SwapChain);
-
-	Viewport.width = (float)SwapChainExtent.width;
-	Viewport.height = (float)SwapChainExtent.height;
-	Viewport.minDepth = 0.0f;
-	Viewport.maxDepth = 1.0f;
-
-	VkRect2D Scissor = { 0 };
-	Scissor.offset = (VkOffset2D){ 0 };
-	Scissor.extent = SwapChainExtent;
-
 	VkPipelineViewportStateCreateInfo PipelineViewportStateInformation = { 0 };
 	PipelineViewportStateInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 	PipelineViewportStateInformation.viewportCount = 1;
-	PipelineViewportStateInformation.pViewports = &Viewport;
 	PipelineViewportStateInformation.scissorCount = 1;
-	PipelineViewportStateInformation.pScissors = &Scissor;
 
 	VkPipelineRasterizationStateCreateInfo PipelineRasterizationStateInformation = { 0 };
 	PipelineRasterizationStateInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -180,8 +178,16 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
 	PipelineColorBlendStateInformation.attachmentCount = 1;
 	PipelineColorBlendStateInformation.pAttachments = &PipelineColorBlendAttachmentState;
 
+	const VkDynamicState DynamicStates[2] =
+	{
+		VK_DYNAMIC_STATE_VIEWPORT,
+		VK_DYNAMIC_STATE_SCISSOR
+	};
+
 	VkPipelineDynamicStateCreateInfo PipelineDynamicStateInformation = { 0 };
 	PipelineDynamicStateInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	PipelineDynamicStateInformation.dynamicStateCount = 2;
+	PipelineDynamicStateInformation.pDynamicStates = DynamicStates;
 
 	VkGraphicsPipelineCreateInfo GraphicsPipelineInformation = { 0 };
 	GraphicsPipelineInformation.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -193,6 +199,7 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
 	GraphicsPipelineInformation.pRasterizationState = &PipelineRasterizationStateInformation;
 	GraphicsPipelineInformation.pMultisampleState = &PipelineMultisampleStateInformation;
 	GraphicsPipelineInformation.pColorBlendState = &PipelineColorBlendStateInformation;
+	GraphicsPipelineInformation.pDynamicState = &PipelineDynamicStateInformation;
 	GraphicsPipelineInformation.layout = GraphicsPipeline->PipelineLayoutHandle;
 	GraphicsPipelineInformation.renderPass = GraphicsPipeline->RenderPassHandle;
 	GraphicsPipelineInformation.subpass = 0;
