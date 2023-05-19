@@ -7,6 +7,7 @@ extern "C"
 #endif
 
 	void GCRenderer_Initialize(void);
+	void GCRenderer_Resize(void);
 	void GCRenderer_Present(void);
 	void GCRenderer_Terminate(void);
 

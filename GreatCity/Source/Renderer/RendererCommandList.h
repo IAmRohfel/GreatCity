@@ -2,6 +2,7 @@
 #define GC_RENDERER_RENDERER_COMMAND_LIST_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -16,8 +17,11 @@ extern "C"
 
 	typedef struct GCRendererCommandListRecordData GCRendererCommandListRecordData;
 	typedef void(*GCRendererCommandListRecordFunction)(const GCRendererCommandListRecordData* const);
+	typedef void(*GCRendererCommandListResizeCallbackFunction)(void);
 
 	GCRendererCommandList* GCRendererCommandList_Create(const GCRendererDevice* const Device, const GCRendererSwapChain* const SwapChain, const GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererFramebuffer* const Framebuffer);
+	void GCRendererCommandList_SetResize(GCRendererCommandList* const CommandList, const bool IsResized);
+	void GCRendererCommandList_SetResizeCallback(GCRendererCommandList* const CommandList, const GCRendererCommandListResizeCallbackFunction ResizeCallbackFunction);
 	void GCRendererCommandList_BeginRecord(const GCRendererCommandList* const CommandList);
 	void GCRendererCommandList_BeginRenderPass(const GCRendererCommandList* const CommandList, const GCRendererCommandListRecordData* RecordData, const float* const ClearColor);
 	void GCRendererCommandList_BindGraphicsPipeline(const GCRendererCommandList* const CommandList);

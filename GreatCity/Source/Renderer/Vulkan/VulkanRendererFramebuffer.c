@@ -26,6 +26,7 @@ extern uint32_t GCRendererSwapChain_GetImageCount(const GCRendererSwapChain* con
 extern VkRenderPass GCRendererGraphicsPipeline_GetRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
 
 static void GCRendererFramebuffer_CreateFramebuffers(GCRendererFramebuffer* const Framebuffer);
+static void GCRendererFramebuffer_DestroyObjects(GCRendererFramebuffer* const Framebuffer);
 
 GCRendererFramebuffer* GCRendererFramebuffer_Create(const GCRendererDevice* const Device, const GCRendererSwapChain* const SwapChain, const GCRendererGraphicsPipeline* const GraphicsPipeline)
 {
@@ -40,17 +41,17 @@ GCRendererFramebuffer* GCRendererFramebuffer_Create(const GCRendererDevice* cons
 	return Framebuffer;
 }
 
+void GCRendererFramebuffer_Recreate(GCRendererFramebuffer* const Framebuffer)
+{
+	GCRendererFramebuffer_DestroyObjects(Framebuffer);
+
+	GCRendererFramebuffer_CreateFramebuffers(Framebuffer);
+}
+
 void GCRendererFramebuffer_Destroy(GCRendererFramebuffer* Framebuffer)
 {
-	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Framebuffer->Device);
-	const uint32_t SwapChainImageCount = GCRendererSwapChain_GetImageCount(Framebuffer->SwapChain);
+	GCRendererFramebuffer_DestroyObjects(Framebuffer);
 
-	for (uint32_t Counter = 0; Counter < SwapChainImageCount; Counter++)
-	{
-		vkDestroyFramebuffer(DeviceHandle, Framebuffer->FramebufferHandles[Counter], NULL);
-	}
-
-	GCMemory_Free(Framebuffer->FramebufferHandles);
 	GCMemory_Free(Framebuffer);
 }
 
@@ -87,4 +88,17 @@ void GCRendererFramebuffer_CreateFramebuffers(GCRendererFramebuffer* const Frame
 
 		GC_VULKAN_VALIDATE(vkCreateFramebuffer(DeviceHandle, &FramebufferInformation, NULL, &Framebuffer->FramebufferHandles[Counter]), "Failed to create a Vulkan swap chain framebuffer");
 	}
+}
+
+void GCRendererFramebuffer_DestroyObjects(GCRendererFramebuffer* const Framebuffer)
+{
+	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Framebuffer->Device);
+	const uint32_t SwapChainImageCount = GCRendererSwapChain_GetImageCount(Framebuffer->SwapChain);
+
+	for (uint32_t Counter = 0; Counter < SwapChainImageCount; Counter++)
+	{
+		vkDestroyFramebuffer(DeviceHandle, Framebuffer->FramebufferHandles[Counter], NULL);
+	}
+
+	GCMemory_Free(Framebuffer->FramebufferHandles);
 }

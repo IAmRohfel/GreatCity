@@ -10,6 +10,7 @@ extern "C"
 	typedef struct GCRendererDevice GCRendererDevice;
 
 	GCRendererSwapChain* GCRendererSwapChain_Create(const GCRendererDevice* const Device);
+	void GCRendererSwapChain_Recreate(GCRendererSwapChain* const SwapChain);
 	void GCRendererSwapChain_Destroy(GCRendererSwapChain* SwapChain);
 
 #ifdef __cplusplus

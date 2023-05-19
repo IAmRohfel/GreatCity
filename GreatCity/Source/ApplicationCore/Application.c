@@ -78,7 +78,11 @@ bool GCApplication_OnWindowResized(GCEvent* const Event, void* CustomData)
 	if (!EventDetail->Width || !EventDetail->Height)
 	{
 		Application->IsMinimized = true;
+
+		return true;
 	}
+
+	GCRenderer_Resize();
 
 	return true;
 }

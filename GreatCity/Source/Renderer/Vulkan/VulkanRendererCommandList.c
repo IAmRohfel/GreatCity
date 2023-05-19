@@ -22,6 +22,8 @@ typedef struct GCRendererCommandList
 	VkSemaphore* RenderFinishedSemaphoreHandles;
 	VkFence* InFlightFenceHandles;
 
+	GCRendererCommandListResizeCallbackFunction ResizeCallbackFunction;
+	bool IsResized;
 	uint32_t MaximumFramesInFlight;
 	uint32_t CurrentFrame;
 } GCRendererCommandList;
@@ -45,6 +47,7 @@ static void GCRendererCommandList_CreateCommandPool(GCRendererCommandList* const
 static void GCRendererCommandList_CreateCommandBuffers(GCRendererCommandList* const CommandList);
 static void GCRendererCommandList_CreateSemaphores(GCRendererCommandList* const CommandList);
 static void GCRendererCommandList_CreateFences(GCRendererCommandList* const CommandList);
+static void GCRendererCommandList_DestroyObjects(GCRendererCommandList* const CommandList);
 
 GCRendererCommandList* GCRendererCommandList_Create(const GCRendererDevice* const Device, const GCRendererSwapChain* const SwapChain, const GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererFramebuffer* const Framebuffer)
 {
@@ -58,8 +61,10 @@ GCRendererCommandList* GCRendererCommandList_Create(const GCRendererDevice* cons
 	CommandList->ImageAvailableSemaphoreHandles = NULL;
 	CommandList->RenderFinishedSemaphoreHandles = NULL;
 	CommandList->InFlightFenceHandles = NULL;
+	CommandList->ResizeCallbackFunction = NULL;
 	CommandList->MaximumFramesInFlight = 2;
 	CommandList->CurrentFrame = 0;
+	CommandList->IsResized = false;
 
 	GCRendererCommandList_CreateCommandPool(CommandList);
 	GCRendererCommandList_CreateCommandBuffers(CommandList);
@@ -67,6 +72,16 @@ GCRendererCommandList* GCRendererCommandList_Create(const GCRendererDevice* cons
 	GCRendererCommandList_CreateFences(CommandList);
 
 	return CommandList;
+}
+
+void GCRendererCommandList_SetResize(GCRendererCommandList* const CommandList, const bool IsResized)
+{
+	CommandList->IsResized = IsResized;
+}
+
+void GCRendererCommandList_SetResizeCallback(GCRendererCommandList* const CommandList, const GCRendererCommandListResizeCallbackFunction ResizeCallbackFunction)
+{
+	CommandList->ResizeCallbackFunction = ResizeCallbackFunction;
 }
 
 void GCRendererCommandList_BeginRecord(const GCRendererCommandList* const CommandList)
@@ -138,13 +153,21 @@ void GCRendererCommandList_EndRecord(const GCRendererCommandList* const CommandL
 void GCRendererCommandList_SubmitAndPresent(GCRendererCommandList* const CommandList, const GCRendererCommandListRecordFunction RecordFunction)
 {
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(CommandList->Device);
+	const VkSwapchainKHR SwapChainHandle[1] = { GCRendererSwapChain_GetHandle(CommandList->SwapChain) };
 
 	vkWaitForFences(DeviceHandle, 1, &CommandList->InFlightFenceHandles[CommandList->CurrentFrame], VK_TRUE, UINT64_MAX);
-	vkResetFences(DeviceHandle, 1, &CommandList->InFlightFenceHandles[CommandList->CurrentFrame]);
 
 	uint32_t SwapChainImageIndex = 0;
-	vkAcquireNextImageKHR(DeviceHandle, GCRendererSwapChain_GetHandle(CommandList->SwapChain), UINT64_MAX, CommandList->ImageAvailableSemaphoreHandles[CommandList->CurrentFrame], VK_NULL_HANDLE, &SwapChainImageIndex);
+	VkResult SwapChainCheckResult = vkAcquireNextImageKHR(DeviceHandle, SwapChainHandle[0], UINT64_MAX, CommandList->ImageAvailableSemaphoreHandles[CommandList->CurrentFrame], VK_NULL_HANDLE, &SwapChainImageIndex);
 
+	if (SwapChainCheckResult == VK_ERROR_OUT_OF_DATE_KHR || SwapChainCheckResult == VK_SUBOPTIMAL_KHR)
+	{
+		CommandList->ResizeCallbackFunction();
+
+		return;
+	}
+
+	vkResetFences(DeviceHandle, 1, &CommandList->InFlightFenceHandles[CommandList->CurrentFrame]);
 	vkResetCommandBuffer(CommandList->CommandBufferHandles[CommandList->CurrentFrame], 0);
 
 	GCRendererCommandListRecordData RecordData = { 0 };
@@ -178,35 +201,27 @@ void GCRendererCommandList_SubmitAndPresent(GCRendererCommandList* const Command
 	PresentInformation.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	PresentInformation.waitSemaphoreCount = 1;
 	PresentInformation.pWaitSemaphores = SignalSemaphoreHandle;
-
-	const VkSwapchainKHR SwapChainHandle[1] = { GCRendererSwapChain_GetHandle(CommandList->SwapChain) };
-
 	PresentInformation.swapchainCount = 1;
 	PresentInformation.pSwapchains = SwapChainHandle;
 	PresentInformation.pImageIndices = &SwapChainImageIndex;
 
-	vkQueuePresentKHR(GCRendererDevice_GetPresentQueueHandle(CommandList->Device), &PresentInformation);
+	SwapChainCheckResult = vkQueuePresentKHR(GCRendererDevice_GetPresentQueueHandle(CommandList->Device), &PresentInformation);
+
+	if (SwapChainCheckResult == VK_ERROR_OUT_OF_DATE_KHR || SwapChainCheckResult == VK_SUBOPTIMAL_KHR || CommandList->IsResized)
+	{
+		CommandList->IsResized = false;
+		CommandList->ResizeCallbackFunction();
+
+		return;
+	}
 
 	CommandList->CurrentFrame = (CommandList->CurrentFrame + 1) % CommandList->MaximumFramesInFlight;
 }
 
 void GCRendererCommandList_Destroy(GCRendererCommandList* CommandList)
 {
-	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(CommandList->Device);
+	GCRendererCommandList_DestroyObjects(CommandList);
 
-	for (uint32_t Counter = 0; Counter < CommandList->MaximumFramesInFlight; Counter++)
-	{
-		vkDestroyFence(DeviceHandle, CommandList->InFlightFenceHandles[Counter], NULL);
-		vkDestroySemaphore(DeviceHandle, CommandList->RenderFinishedSemaphoreHandles[Counter], NULL);
-		vkDestroySemaphore(DeviceHandle, CommandList->ImageAvailableSemaphoreHandles[Counter], NULL);
-	}
-	
-	vkDestroyCommandPool(DeviceHandle, CommandList->CommandPoolHandle, NULL);
-
-	GCMemory_Free(CommandList->InFlightFenceHandles);
-	GCMemory_Free(CommandList->RenderFinishedSemaphoreHandles);
-	GCMemory_Free(CommandList->ImageAvailableSemaphoreHandles);
-	GCMemory_Free(CommandList->CommandBufferHandles);
 	GCMemory_Free(CommandList);
 }
 
@@ -268,4 +283,23 @@ void GCRendererCommandList_CreateFences(GCRendererCommandList* const CommandList
 	{
 		GC_VULKAN_VALIDATE(vkCreateFence(DeviceHandle, &FenceInformation, NULL, &CommandList->InFlightFenceHandles[Counter]), "Failed to create a Vulkan fence");
 	}
+}
+
+void GCRendererCommandList_DestroyObjects(GCRendererCommandList* const CommandList)
+{
+	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(CommandList->Device);
+
+	for (uint32_t Counter = 0; Counter < CommandList->MaximumFramesInFlight; Counter++)
+	{
+		vkDestroyFence(DeviceHandle, CommandList->InFlightFenceHandles[Counter], NULL);
+		vkDestroySemaphore(DeviceHandle, CommandList->RenderFinishedSemaphoreHandles[Counter], NULL);
+		vkDestroySemaphore(DeviceHandle, CommandList->ImageAvailableSemaphoreHandles[Counter], NULL);
+	}
+
+	vkDestroyCommandPool(DeviceHandle, CommandList->CommandPoolHandle, NULL);
+
+	GCMemory_Free(CommandList->InFlightFenceHandles);
+	GCMemory_Free(CommandList->RenderFinishedSemaphoreHandles);
+	GCMemory_Free(CommandList->ImageAvailableSemaphoreHandles);
+	GCMemory_Free(CommandList->CommandBufferHandles);
 }

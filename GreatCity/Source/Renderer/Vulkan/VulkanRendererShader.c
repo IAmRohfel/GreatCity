@@ -25,6 +25,7 @@ typedef struct GCRendererShader
 
 	VkShaderModule VertexShaderModuleHandle, FragmentShaderModuleHandle;
 
+	const char* ShaderCacheDirectory;
 	uint32_t* VertexShaderData;
 	size_t VertexShaderDataSize;
 	uint32_t* FragmentShaderData;
@@ -36,17 +37,16 @@ VkShaderModule GCRendererShader_GetFragmentShaderModuleHandle(const GCRendererSh
 
 extern VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
 
-static void GCRendererShader_CreateCacheDirectoryIfNeeded();
+static void GCRendererShader_CreateCacheDirectoryIfNeeded(const GCRendererShader* const Shader);
 static void GCRendererShader_WriteShaderBinaryFile(const char* const Path, const char* const Data, const size_t Size);
 static char* GCRendererShader_ReadShaderSourceFile(const char* const Path);
 static size_t GCRendererShader_ReadShaderBinaryFile(const char* const Path, char** Data);
 static shaderc_compilation_result_t GCRendererShader_CompileShader(const shaderc_compiler_t Compiler, const shaderc_compile_options_t CompileOptions, const char* const Path, const char* const Source, const GCRendererShaderType Type);
 static char* GCRendererShader_GetShaderName(const char* const Path);
-static char* GCRendererShader_GetShaderCachePath(const char* const Path, const GCRendererShaderType Type);
+static char* GCRendererShader_GetShaderCachePath(const GCRendererShader* const Shader, const char* const Path, const GCRendererShaderType Type);
 static void GCRendererShader_CompileOrGetBinaries(GCRendererShader* const Shader, const char* const VertexShaderPath, const char* const FragmentShaderPath);
 static void GCRendererShader_CreateShaderModule(GCRendererShader* const Shader);
-
-static const char* const ShaderCacheDirectory = "Assets/Cache/Shader/Vulkan/";
+static void GCRendererShader_DestroyObjects(GCRendererShader* const Shader);
 
 GCRendererShader* GCRendererShader_Create(const GCRendererDevice* const Device, const char* const VertexShaderPath, const char* const FragmentShaderPath)
 {
@@ -54,12 +54,13 @@ GCRendererShader* GCRendererShader_Create(const GCRendererDevice* const Device, 
 	Shader->Device = Device;
 	Shader->VertexShaderModuleHandle = VK_NULL_HANDLE;
 	Shader->FragmentShaderModuleHandle = VK_NULL_HANDLE;
+	Shader->ShaderCacheDirectory = "Assets/Cache/Shader/Vulkan/";
 	Shader->VertexShaderData = NULL;
 	Shader->VertexShaderDataSize = 0;
 	Shader->FragmentShaderData = NULL;
 	Shader->FragmentShaderDataSize = 0;
 
-	GCRendererShader_CreateCacheDirectoryIfNeeded();
+	GCRendererShader_CreateCacheDirectoryIfNeeded(Shader);
 	GCRendererShader_CompileOrGetBinaries(Shader, VertexShaderPath, FragmentShaderPath);
 	GCRendererShader_CreateShaderModule(Shader);
 
@@ -68,10 +69,7 @@ GCRendererShader* GCRendererShader_Create(const GCRendererDevice* const Device, 
 
 void GCRendererShader_Destroy(GCRendererShader* Shader)
 {
-	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Shader->Device);
-
-	vkDestroyShaderModule(DeviceHandle, Shader->FragmentShaderModuleHandle, NULL);
-	vkDestroyShaderModule(DeviceHandle, Shader->VertexShaderModuleHandle, NULL);
+	GCRendererShader_DestroyObjects(Shader);
 
 	GCMemory_Free(Shader);
 }
@@ -86,11 +84,11 @@ VkShaderModule GCRendererShader_GetFragmentShaderModuleHandle(const GCRendererSh
 	return Shader->FragmentShaderModuleHandle;
 }
 
-void GCRendererShader_CreateCacheDirectoryIfNeeded()
+void GCRendererShader_CreateCacheDirectoryIfNeeded(const GCRendererShader* const Shader)
 {
-	if (!GCFileSystem_Exists(ShaderCacheDirectory))
+	if (!GCFileSystem_Exists(Shader->ShaderCacheDirectory))
 	{
-		GCFileSystem_CreateDirectories(ShaderCacheDirectory);
+		GCFileSystem_CreateDirectories(Shader->ShaderCacheDirectory);
 	}
 }
 
@@ -165,13 +163,13 @@ char* GCRendererShader_GetShaderName(const char* const Path)
 	return strtok(ShaderFileName, ".");
 }
 
-char* GCRendererShader_GetShaderCachePath(const char* const Path, const GCRendererShaderType Type)
+char* GCRendererShader_GetShaderCachePath(const GCRendererShader* const Shader, const char* const Path, const GCRendererShaderType Type)
 {
 	char* ShaderName = GCRendererShader_GetShaderName(Path);
 	const char* const ShaderFileExtension = Type == GCRendererShaderType_Vertex ? ".cached.vert" : ".cached.frag";
-	char* ShaderCachePath = (char*)GCMemory_Allocate((strlen(ShaderCacheDirectory) + strlen(ShaderName) + strlen(ShaderFileExtension) + 1) * sizeof(char));
+	char* ShaderCachePath = (char*)GCMemory_Allocate((strlen(Shader->ShaderCacheDirectory) + strlen(ShaderName) + strlen(ShaderFileExtension) + 1) * sizeof(char));
 
-	strcpy(ShaderCachePath, ShaderCacheDirectory);
+	strcpy(ShaderCachePath, Shader->ShaderCacheDirectory);
 	strcat(ShaderCachePath, ShaderName);
 	strcat(ShaderCachePath, ShaderFileExtension);
 
@@ -182,8 +180,8 @@ char* GCRendererShader_GetShaderCachePath(const char* const Path, const GCRender
 
 void GCRendererShader_CompileOrGetBinaries(GCRendererShader* const Shader, const char* const VertexShaderPath, const char* const FragmentShaderPath)
 {
-	char* VertexShaderCachePath = GCRendererShader_GetShaderCachePath(VertexShaderPath, GCRendererShaderType_Vertex);
-	char* FragmentShaderCachePath = GCRendererShader_GetShaderCachePath(FragmentShaderPath, GCRendererShaderType_Fragment);
+	char* VertexShaderCachePath = GCRendererShader_GetShaderCachePath(Shader, VertexShaderPath, GCRendererShaderType_Vertex);
+	char* FragmentShaderCachePath = GCRendererShader_GetShaderCachePath(Shader, FragmentShaderPath, GCRendererShaderType_Fragment);
 
 	if (GCFileSystem_Exists(VertexShaderCachePath) && GCFileSystem_Exists(FragmentShaderCachePath))
 	{
@@ -279,4 +277,12 @@ void GCRendererShader_CreateShaderModule(GCRendererShader* const Shader)
 
 	GCMemory_Free(Shader->FragmentShaderData);
 	GCMemory_Free(Shader->VertexShaderData);
+}
+
+void GCRendererShader_DestroyObjects(GCRendererShader* const Shader)
+{
+	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Shader->Device);
+
+	vkDestroyShaderModule(DeviceHandle, Shader->FragmentShaderModuleHandle, NULL);
+	vkDestroyShaderModule(DeviceHandle, Shader->VertexShaderModuleHandle, NULL);
 }

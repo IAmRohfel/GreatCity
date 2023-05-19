@@ -17,6 +17,7 @@ typedef struct GCRenderer
 	GCRendererCommandList* CommandList;
 } GCRenderer;
 
+static void GCRenderer_ResizeSwapChain(void);
 static void GCRenderer_RecordCommands(const GCRendererCommandListRecordData* const RecordData);
 
 static GCRenderer* Renderer = NULL;
@@ -30,6 +31,16 @@ void GCRenderer_Initialize(void)
 	Renderer->GraphicsPipeline = GCRendererGraphicsPipeline_Create(Renderer->Device, Renderer->SwapChain, Renderer->BasicShader);
 	Renderer->Framebuffer = GCRendererFramebuffer_Create(Renderer->Device, Renderer->SwapChain, Renderer->GraphicsPipeline);
 	Renderer->CommandList = GCRendererCommandList_Create(Renderer->Device, Renderer->SwapChain, Renderer->GraphicsPipeline, Renderer->Framebuffer);
+
+	GCRendererCommandList_SetResizeCallback(Renderer->CommandList, GCRenderer_ResizeSwapChain);
+}
+
+void GCRenderer_Resize(void)
+{
+	if (Renderer)
+	{
+		GCRendererCommandList_SetResize(Renderer->CommandList, true);
+	}
 }
 
 void GCRenderer_Present(void)
@@ -49,6 +60,14 @@ void GCRenderer_Terminate(void)
 	GCRendererDevice_Destroy(Renderer->Device);
 
 	GCMemory_Free(Renderer);
+}
+
+void GCRenderer_ResizeSwapChain(void)
+{
+	GCRendererDevice_WaitIdle(Renderer->Device);
+
+	GCRendererSwapChain_Recreate(Renderer->SwapChain);
+	GCRendererFramebuffer_Recreate(Renderer->Framebuffer);
 }
 
 void GCRenderer_RecordCommands(const GCRendererCommandListRecordData* const RecordData)

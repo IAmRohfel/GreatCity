@@ -29,6 +29,7 @@ extern VkShaderModule GCRendererShader_GetFragmentShaderModuleHandle(const GCRen
 
 static void GCRendererGraphicsPipeline_CreateRenderPass(GCRendererGraphicsPipeline* const GraphicsPipeline);
 static void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipeline* const GraphicsPipeline);
+static void GCRendererGraphicsPipeline_DestroyObjects(GCRendererGraphicsPipeline* const GraphicsPipeline);
 
 GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(const GCRendererDevice* const Device, const GCRendererSwapChain* const SwapChain, const GCRendererShader* const Shader)
 {
@@ -48,11 +49,7 @@ GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(const GCRendererDe
 
 void GCRendererGraphicsPipeline_Destroy(GCRendererGraphicsPipeline* GraphicsPipeline)
 {
-	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(GraphicsPipeline->Device);
-
-	vkDestroyPipeline(DeviceHandle, GraphicsPipeline->PipelineHandle, NULL);
-	vkDestroyPipelineLayout(DeviceHandle, GraphicsPipeline->PipelineLayoutHandle, NULL);
-	vkDestroyRenderPass(DeviceHandle, GraphicsPipeline->RenderPassHandle, NULL);
+	GCRendererGraphicsPipeline_DestroyObjects(GraphicsPipeline);
 
 	GCMemory_Free(GraphicsPipeline);
 }
@@ -205,4 +202,13 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
 	GraphicsPipelineInformation.subpass = 0;
 
 	GC_VULKAN_VALIDATE(vkCreateGraphicsPipelines(DeviceHandle, VK_NULL_HANDLE, 1, &GraphicsPipelineInformation, NULL, &GraphicsPipeline->PipelineHandle), "Failed to create a Vulkan graphics pipeline");
+}
+
+void GCRendererGraphicsPipeline_DestroyObjects(GCRendererGraphicsPipeline* const GraphicsPipeline)
+{
+	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(GraphicsPipeline->Device);
+
+	vkDestroyPipeline(DeviceHandle, GraphicsPipeline->PipelineHandle, NULL);
+	vkDestroyPipelineLayout(DeviceHandle, GraphicsPipeline->PipelineLayoutHandle, NULL);
+	vkDestroyRenderPass(DeviceHandle, GraphicsPipeline->RenderPassHandle, NULL);
 }

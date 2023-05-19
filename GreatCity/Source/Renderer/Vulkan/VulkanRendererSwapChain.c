@@ -45,6 +45,7 @@ static void GCRendererSwapChain_SelectSurfaceFormat(GCRendererSwapChain* const S
 static void GCRendererSwapChain_SelectPresentMode(GCRendererSwapChain* const SwapChain, const VkPresentModeKHR* const PresentModes, const uint32_t PresentModeCount);
 static void GCRendererSwapChain_CreateSwapChain(GCRendererSwapChain* const SwapChain);
 static void GCRendererSwapChain_CreateImageViews(GCRendererSwapChain* const SwapChain);
+static void GCRendererSwapChain_DestroyObjects(GCRendererSwapChain* const SwapChain);
 
 static void GCRendererSwapChain_ClampExtent(VkExtent2D* const Extent, const VkSurfaceCapabilitiesKHR* const SurfaceCapabilities);
 
@@ -68,19 +69,19 @@ GCRendererSwapChain* GCRendererSwapChain_Create(const GCRendererDevice* const De
 	return SwapChain;
 }
 
+void GCRendererSwapChain_Recreate(GCRendererSwapChain* const SwapChain)
+{
+	GCRendererSwapChain_DestroyObjects(SwapChain);
+
+	GCRendererSwapChain_QuerySwapChainSupport(SwapChain);
+	GCRendererSwapChain_CreateSwapChain(SwapChain);
+	GCRendererSwapChain_CreateImageViews(SwapChain);
+}
+
 void GCRendererSwapChain_Destroy(GCRendererSwapChain* SwapChain)
 {
-	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(SwapChain->Device);
+	GCRendererSwapChain_DestroyObjects(SwapChain);
 
-	for (uint32_t Counter = 0; Counter < SwapChain->ImageCount; Counter++)
-	{
-		vkDestroyImageView(DeviceHandle, SwapChain->ImageViewHandles[Counter], NULL);
-	}
-
-	vkDestroySwapchainKHR(DeviceHandle, SwapChain->SwapChainHandle, NULL);
-
-	GCMemory_Free(SwapChain->ImageViewHandles);
-	GCMemory_Free(SwapChain->ImageHandles);
 	GCMemory_Free(SwapChain);
 }
 
@@ -275,6 +276,21 @@ void GCRendererSwapChain_CreateImageViews(GCRendererSwapChain* const SwapChain)
 
 		GC_VULKAN_VALIDATE(vkCreateImageView(DeviceHandle, &ImageViewInformation, NULL, &SwapChain->ImageViewHandles[Counter]), "Failed to create a Vulkan swap chain image view");
 	}
+}
+
+void GCRendererSwapChain_DestroyObjects(GCRendererSwapChain* const SwapChain)
+{
+	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(SwapChain->Device);
+
+	for (uint32_t Counter = 0; Counter < SwapChain->ImageCount; Counter++)
+	{
+		vkDestroyImageView(DeviceHandle, SwapChain->ImageViewHandles[Counter], NULL);
+	}
+
+	vkDestroySwapchainKHR(DeviceHandle, SwapChain->SwapChainHandle, NULL);
+
+	GCMemory_Free(SwapChain->ImageViewHandles);
+	GCMemory_Free(SwapChain->ImageHandles);
 }
 
 void GCRendererSwapChain_ClampExtent(VkExtent2D* const Extent, const VkSurfaceCapabilitiesKHR* const SurfaceCapabilities)

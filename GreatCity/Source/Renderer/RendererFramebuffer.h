@@ -12,6 +12,7 @@ extern "C"
 	typedef struct GCRendererGraphicsPipeline GCRendererGraphicsPipeline;
 
 	GCRendererFramebuffer* GCRendererFramebuffer_Create(const GCRendererDevice* const Device, const GCRendererSwapChain* const SwapChain, const GCRendererGraphicsPipeline* const GraphicsPipeline);
+	void GCRendererFramebuffer_Recreate(GCRendererFramebuffer* const Framebuffer);
 	void GCRendererFramebuffer_Destroy(GCRendererFramebuffer* Framebuffer);
 
 #ifdef __cplusplus
