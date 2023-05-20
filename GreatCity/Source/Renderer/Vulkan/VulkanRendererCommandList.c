@@ -4,6 +4,7 @@
 #include "Core/Log.h"
 #include "Core/Assert.h"
 
+#include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -101,7 +102,8 @@ void GCRendererCommandList_BeginRenderPass(const GCRendererCommandList* const Co
 	RenderPassBeginInformation.renderArea.offset = (VkOffset2D){ 0, 0 };
 	RenderPassBeginInformation.renderArea.extent = GCRendererSwapChain_GetExtent(CommandList->SwapChain);
 
-	VkClearValue ClearValue = *(VkClearValue*)&ClearColor;
+	VkClearValue ClearValue = { 0 };
+	memcpy(ClearValue.color.float32, ClearColor, sizeof(ClearValue.color.float32));
 
 	RenderPassBeginInformation.clearValueCount = 1;
 	RenderPassBeginInformation.pClearValues = &ClearValue;
