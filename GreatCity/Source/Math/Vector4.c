@@ -60,6 +60,17 @@ GCVector4 GCVector4_Multiply(const GCVector4 Vector1, const GCVector4 Vector2)
 	return Result;
 }
 
+GCVector4 GCVector4_MultiplyByScalar(const GCVector4 Vector, const float Scalar)
+{
+	GCVector4 Result;
+	Result.X = Vector.X * Scalar;
+	Result.Y = Vector.Y * Scalar;
+	Result.Z = Vector.Z * Scalar;
+	Result.W = Vector.W * Scalar;
+
+	return Result;
+}
+
 GCVector4 GCVector4_Divide(const GCVector4 Vector1, const GCVector4 Vector2)
 {
 	GCVector4 Result;

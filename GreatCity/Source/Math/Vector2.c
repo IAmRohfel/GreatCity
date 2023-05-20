@@ -50,6 +50,15 @@ GCVector2 GCVector2_Multiply(const GCVector2 Vector1, const GCVector2 Vector2)
 	return Result;
 }
 
+GCVector2 GCVector2_MultiplyByScalar(const GCVector2 Vector, const float Scalar)
+{
+	GCVector2 Result;
+	Result.X = Vector.X * Scalar;
+	Result.Y = Vector.Y * Scalar;
+
+	return Result;
+}
+
 GCVector2 GCVector2_Divide(const GCVector2 Vector1, const GCVector2 Vector2)
 {
 	GCVector2 Result;

@@ -17,6 +17,7 @@ extern "C"
 	GCVector4 GCVector4_Add(const GCVector4 Vector1, const GCVector4 Vector2);
 	GCVector4 GCVector4_Subtract(const GCVector4 Vector1, const GCVector4 Vector2);
 	GCVector4 GCVector4_Multiply(const GCVector4 Vector1, const GCVector4 Vector2);
+	GCVector4 GCVector4_MultiplyByScalar(const GCVector4 Vector, const float Scalar);
 	GCVector4 GCVector4_Divide(const GCVector4 Vector1, const GCVector4 Vector2);
 
 	float GCVector4_Dot(const GCVector4 Vector1, const GCVector4 Vector2);
