@@ -1,6 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
-#include "Renderer/Vulkan/VulkanUtilities.h"
 #include "Renderer/RendererShader.h"
+#include "Renderer/Vulkan/VulkanUtilities.h"
 #include "Core/Memory/Allocator.h"
 #include "Core/FileSystem.h"
 #include "Core/Log.h"

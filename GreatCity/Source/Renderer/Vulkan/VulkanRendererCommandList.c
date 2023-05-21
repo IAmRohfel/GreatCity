@@ -1,5 +1,5 @@
-#include "Renderer/Vulkan/VulkanUtilities.h"
 #include "Renderer/RendererCommandList.h"
+#include "Renderer/Vulkan/VulkanUtilities.h"
 #include "Core/Memory/Allocator.h"
 #include "Core/Log.h"
 #include "Core/Assert.h"
@@ -40,6 +40,7 @@ extern VkQueue GCRendererDevice_GetPresentQueueHandle(const GCRendererDevice* co
 extern VkExtent2D GCRendererSwapChain_GetExtent(const GCRendererSwapChain* const SwapChain);
 extern VkSwapchainKHR GCRendererSwapChain_GetHandle(const GCRendererSwapChain* const SwapChain);
 extern VkBuffer GCRendererVertexBuffer_GetHandle(const GCRendererVertexBuffer* const VertexBuffer);
+extern VkBuffer GCRendererIndexBuffer_GetHandle(const GCRendererIndexBuffer* const IndexBuffer);
 extern VkRenderPass GCRendererGraphicsPipeline_GetRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
 extern VkPipeline GCRendererGraphicsPipeline_GetPipelineHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
 extern VkFramebuffer* GCRendererFramebuffer_GetFramebufferHandles(const GCRendererFramebuffer* const Framebuffer);
@@ -117,6 +118,11 @@ void GCRendererCommandList_BindVertexBuffer(const GCRendererCommandList* const C
 	vkCmdBindVertexBuffers(CommandList->CommandBufferHandles[CommandList->CurrentFrame], 0, 1, VertexBufferHandle, Offsets);
 }
 
+void GCRendererCommandList_BindIndexBuffer(const GCRendererCommandList* const CommandList, const GCRendererIndexBuffer* const IndexBuffer)
+{
+	vkCmdBindIndexBuffer(CommandList->CommandBufferHandles[CommandList->CurrentFrame], GCRendererIndexBuffer_GetHandle(IndexBuffer), 0, VK_INDEX_TYPE_UINT32);
+}
+
 void GCRendererCommandList_BindGraphicsPipeline(const GCRendererCommandList* const CommandList, const GCRendererGraphicsPipeline* const GraphicsPipeline)
 {
 	vkCmdBindPipeline(CommandList->CommandBufferHandles[CommandList->CurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, GCRendererGraphicsPipeline_GetPipelineHandle(GraphicsPipeline));
@@ -146,6 +152,11 @@ void GCRendererCommandList_SetViewport(const GCRendererCommandList* const Comman
 void GCRendererCommandList_Draw(const GCRendererCommandList* const CommandList, const uint32_t VertexCount, const uint32_t FirstVertex)
 {
 	vkCmdDraw(CommandList->CommandBufferHandles[CommandList->CurrentFrame], VertexCount, 1, FirstVertex, 0);
+}
+
+void GCRendererCommandList_DrawIndexed(const GCRendererCommandList* const CommandList, const uint32_t IndexCount, const uint32_t FirstIndex)
+{
+	vkCmdDrawIndexed(CommandList->CommandBufferHandles[CommandList->CurrentFrame], IndexCount, 1, FirstIndex, 0, 0);
 }
 
 void GCRendererCommandList_EndRenderPass(const GCRendererCommandList* const CommandList)

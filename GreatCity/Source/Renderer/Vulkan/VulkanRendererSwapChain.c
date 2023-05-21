@@ -1,5 +1,5 @@
-#include "Renderer/Vulkan/VulkanUtilities.h"
 #include "Renderer/RendererSwapChain.h"
+#include "Renderer/Vulkan/VulkanUtilities.h"
 #include "Core/Memory/Allocator.h"
 #include "ApplicationCore/GenericPlatform/Window.h"
 #include "ApplicationCore/Application.h"

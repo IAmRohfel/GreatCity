@@ -3,6 +3,7 @@
 #include "Renderer/RendererSwapChain.h"
 #include "Renderer/RendererCommandList.h"
 #include "Renderer/RendererVertexBuffer.h"
+#include "Renderer/RendererIndexBuffer.h"
 #include "Renderer/RendererShader.h"
 #include "Renderer/RendererGraphicsPipeline.h"
 #include "Renderer/RendererFramebuffer.h"
@@ -16,6 +17,7 @@ typedef struct GCRenderer
 	GCRendererSwapChain* SwapChain;
 	GCRendererCommandList* CommandList;
 	GCRendererVertexBuffer* VertexBuffer;
+	GCRendererIndexBuffer* IndexBuffer;
 	GCRendererShader* BasicShader;
 	GCRendererGraphicsPipeline* GraphicsPipeline;
 	GCRendererFramebuffer* Framebuffer;
@@ -39,15 +41,21 @@ void GCRenderer_Initialize(void)
 	Renderer->SwapChain = GCRendererSwapChain_Create(Renderer->Device);
 	Renderer->CommandList = GCRendererCommandList_Create(Renderer->Device);
 
-	GCRendererVertex Vertices[3];
-	Vertices[0].Position = GCVector3_Create(0.0f, -0.5f, 0.0f);
-	Vertices[0].Color = GCVector4_Create(1.0f, 1.0f, 1.0f, 1.0f);
-	Vertices[1].Position = GCVector3_Create(0.5f, 0.5f, 0.0f);
-	Vertices[1].Color = GCVector4_Create(0.0f, 1.0f, 0.0f, 1.0f);
-	Vertices[2].Position = GCVector3_Create(-0.5f, 0.5f, 0.0f);
-	Vertices[2].Color = GCVector4_Create(0.0f, 0.0f, 1.0f, 1.0f);
+	GCRendererVertex Vertices[4];
+	Vertices[0].Position = GCVector3_Create(-0.5f, -0.5f, 0.0f);
+	Vertices[0].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
+	Vertices[1].Position = GCVector3_Create(0.5f, -0.5f, 0.0f);
+	Vertices[1].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
+	Vertices[2].Position = GCVector3_Create(0.5f, 0.5f, 0.0f);
+	Vertices[2].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
+	Vertices[3].Position = GCVector3_Create(-0.5f, 0.5f, 0.0f);
+	Vertices[3].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
 
 	Renderer->VertexBuffer = GCRendererVertexBuffer_Create(Renderer->Device, Renderer->CommandList, Vertices, sizeof(Vertices));
+
+	const uint32_t Indices[6] = { 0, 1, 2, 2, 3, 0 };
+
+	Renderer->IndexBuffer = GCRendererIndexBuffer_Create(Renderer->Device, Renderer->CommandList, Indices, sizeof(Indices));
 
 	Renderer->BasicShader = GCRendererShader_Create(Renderer->Device, "Assets/Shader/Basic/Basic.vertex.glsl", "Assets/Shader/Basic/Basic.fragment.glsl");
 
@@ -92,6 +100,7 @@ void GCRenderer_Terminate(void)
 	GCRendererFramebuffer_Destroy(Renderer->Framebuffer);
 	GCRendererGraphicsPipeline_Destroy(Renderer->GraphicsPipeline);
 	GCRendererShader_Destroy(Renderer->BasicShader);
+	GCRendererIndexBuffer_Destroy(Renderer->IndexBuffer);
 	GCRendererVertexBuffer_Destroy(Renderer->VertexBuffer);
 	GCRendererCommandList_Destroy(Renderer->CommandList);
 	GCRendererSwapChain_Destroy(Renderer->SwapChain);
@@ -116,10 +125,11 @@ void GCRenderer_RecordCommands(const GCRendererCommandListRecordData* const Reco
 	GCRendererCommandList_BeginRenderPass(Renderer->CommandList, Renderer->SwapChain, Renderer->GraphicsPipeline, Renderer->Framebuffer, RecordData, ClearColor);
 
 	GCRendererCommandList_BindVertexBuffer(Renderer->CommandList, Renderer->VertexBuffer);
+	GCRendererCommandList_BindIndexBuffer(Renderer->CommandList, Renderer->IndexBuffer);
 	GCRendererCommandList_BindGraphicsPipeline(Renderer->CommandList, Renderer->GraphicsPipeline);
 	GCRendererCommandList_SetViewport(Renderer->CommandList, Renderer->SwapChain);
 
-	GCRendererCommandList_Draw(Renderer->CommandList, 3, 0);
+	GCRendererCommandList_DrawIndexed(Renderer->CommandList, 6, 0);
 
 	GCRendererCommandList_EndRenderPass(Renderer->CommandList);
 	GCRendererCommandList_EndRecord(Renderer->CommandList);

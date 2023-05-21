@@ -13,6 +13,7 @@ extern "C"
 	typedef struct GCRendererDevice GCRendererDevice;
 	typedef struct GCRendererSwapChain GCRendererSwapChain;
 	typedef struct GCRendererVertexBuffer GCRendererVertexBuffer;
+	typedef struct GCRendererIndexBuffer GCRendererIndexBuffer;
 	typedef struct GCRendererGraphicsPipeline GCRendererGraphicsPipeline;
 	typedef struct GCRendererFramebuffer GCRendererFramebuffer;
 
@@ -26,9 +27,11 @@ extern "C"
 	void GCRendererCommandList_BeginRecord(const GCRendererCommandList* const CommandList);
 	void GCRendererCommandList_BeginRenderPass(const GCRendererCommandList* const CommandList, const GCRendererSwapChain* const SwapChain, const GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererFramebuffer* const Framebuffer, const GCRendererCommandListRecordData* RecordData, const float* const ClearColor);
 	void GCRendererCommandList_BindVertexBuffer(const GCRendererCommandList* const CommandList, const GCRendererVertexBuffer* const VertexBuffer);
+	void GCRendererCommandList_BindIndexBuffer(const GCRendererCommandList* const CommandList, const GCRendererIndexBuffer* const IndexBuffer);
 	void GCRendererCommandList_BindGraphicsPipeline(const GCRendererCommandList* const CommandList, const GCRendererGraphicsPipeline* const GraphicsPipeline);
 	void GCRendererCommandList_SetViewport(const GCRendererCommandList* const CommandList, const GCRendererSwapChain* const SwapChain);
 	void GCRendererCommandList_Draw(const GCRendererCommandList* const CommandList, const uint32_t VertexCount, const uint32_t FirstVertex);
+	void GCRendererCommandList_DrawIndexed(const GCRendererCommandList* const CommandList, const uint32_t IndexCount, const uint32_t FirstIndex);
 	void GCRendererCommandList_EndRenderPass(const GCRendererCommandList* const CommandList);
 	void GCRendererCommandList_EndRecord(const GCRendererCommandList* const CommandList);
 	void GCRendererCommandList_SubmitAndPresent(GCRendererCommandList* const CommandList, const GCRendererSwapChain* const SwapChain, const GCRendererCommandListRecordFunction RecordFunction);
