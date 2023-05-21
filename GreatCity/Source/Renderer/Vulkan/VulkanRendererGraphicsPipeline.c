@@ -28,10 +28,12 @@ extern VkShaderModule GCRendererShader_GetVertexShaderModuleHandle(const GCRende
 extern VkShaderModule GCRendererShader_GetFragmentShaderModuleHandle(const GCRendererShader* const Shader);
 
 static void GCRendererGraphicsPipeline_CreateRenderPass(GCRendererGraphicsPipeline* const GraphicsPipeline);
-static void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipeline* const GraphicsPipeline);
+static void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererGraphicsPipelineVertexInput* const VertexInput);
 static void GCRendererGraphicsPipeline_DestroyObjects(GCRendererGraphicsPipeline* const GraphicsPipeline);
 
-GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(const GCRendererDevice* const Device, const GCRendererSwapChain* const SwapChain, const GCRendererShader* const Shader)
+static VkFormat GCRendererGraphicsPipeline_ToVkFormat(const GCRendererGraphicsPipelineVertexInputAttributeFormat Format);
+
+GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(const GCRendererDevice* const Device, const GCRendererSwapChain* const SwapChain, const GCRendererGraphicsPipelineVertexInput* const VertexInput, const GCRendererShader* const Shader)
 {
 	GCRendererGraphicsPipeline* GraphicsPipeline = (GCRendererGraphicsPipeline*)GCMemory_Allocate(sizeof(GCRendererGraphicsPipeline));
 	GraphicsPipeline->Device = Device;
@@ -42,7 +44,7 @@ GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(const GCRendererDe
 	GraphicsPipeline->PipelineHandle = VK_NULL_HANDLE;
 
 	GCRendererGraphicsPipeline_CreateRenderPass(GraphicsPipeline);
-	GCRendererGraphicsPipeline_CreateGraphicsPipeline(GraphicsPipeline);
+	GCRendererGraphicsPipeline_CreateGraphicsPipeline(GraphicsPipeline, VertexInput);
 
 	return GraphicsPipeline;
 }
@@ -109,7 +111,7 @@ void GCRendererGraphicsPipeline_CreateRenderPass(GCRendererGraphicsPipeline* con
 	GC_VULKAN_VALIDATE(vkCreateRenderPass(DeviceHandle, &RenderPassInformation, NULL, &GraphicsPipeline->RenderPassHandle), "Failed to create a Vulkan render pass");
 }
 
-void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipeline* const GraphicsPipeline)
+void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererGraphicsPipelineVertexInput* const VertexInput)
 {
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(GraphicsPipeline->Device);
 
@@ -136,8 +138,27 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
 		PipelineFragmentShaderStageInformation
 	};
 
+	VkVertexInputBindingDescription VertexInputBindingDescription = { 0 };
+	VertexInputBindingDescription.binding = 0;
+	VertexInputBindingDescription.stride = VertexInput->Stride;
+	VertexInputBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+	VkVertexInputAttributeDescription* VertexInputAttributeDescriptions = (VkVertexInputAttributeDescription*)GCMemory_Allocate(VertexInput->AttributeCount * sizeof(VkVertexInputAttributeDescription));
+
+	for (uint32_t Counter = 0; Counter < VertexInput->AttributeCount; Counter++)
+	{
+		VertexInputAttributeDescriptions[Counter].location = VertexInput->Attributes[Counter].Location;
+		VertexInputAttributeDescriptions[Counter].binding = 0;
+		VertexInputAttributeDescriptions[Counter].format = GCRendererGraphicsPipeline_ToVkFormat(VertexInput->Attributes[Counter].Format);
+		VertexInputAttributeDescriptions[Counter].offset = VertexInput->Attributes[Counter].Offset;
+	}
+
 	VkPipelineVertexInputStateCreateInfo PipelineVertexInputStateInformation = { 0 };
 	PipelineVertexInputStateInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	PipelineVertexInputStateInformation.vertexBindingDescriptionCount = 1;
+	PipelineVertexInputStateInformation.pVertexBindingDescriptions = &VertexInputBindingDescription;
+	PipelineVertexInputStateInformation.vertexAttributeDescriptionCount = VertexInput->AttributeCount;
+	PipelineVertexInputStateInformation.pVertexAttributeDescriptions = VertexInputAttributeDescriptions;
 
 	VkPipelineInputAssemblyStateCreateInfo PipelineInputAssemblyStateInformation = { 0 };
 	PipelineInputAssemblyStateInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -202,6 +223,8 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
 	GraphicsPipelineInformation.subpass = 0;
 
 	GC_VULKAN_VALIDATE(vkCreateGraphicsPipelines(DeviceHandle, VK_NULL_HANDLE, 1, &GraphicsPipelineInformation, NULL, &GraphicsPipeline->PipelineHandle), "Failed to create a Vulkan graphics pipeline");
+
+	GCMemory_Free(VertexInputAttributeDescriptions);
 }
 
 void GCRendererGraphicsPipeline_DestroyObjects(GCRendererGraphicsPipeline* const GraphicsPipeline)
@@ -211,4 +234,38 @@ void GCRendererGraphicsPipeline_DestroyObjects(GCRendererGraphicsPipeline* const
 	vkDestroyPipeline(DeviceHandle, GraphicsPipeline->PipelineHandle, NULL);
 	vkDestroyPipelineLayout(DeviceHandle, GraphicsPipeline->PipelineLayoutHandle, NULL);
 	vkDestroyRenderPass(DeviceHandle, GraphicsPipeline->RenderPassHandle, NULL);
+}
+
+VkFormat GCRendererGraphicsPipeline_ToVkFormat(const GCRendererGraphicsPipelineVertexInputAttributeFormat Format)
+{
+	switch (Format)
+	{
+		case GCRendererGraphicsPipelineVertexInputAttributeFormat_Float:
+		{
+			return VK_FORMAT_R32_SFLOAT;
+
+			break;
+		}
+		case GCRendererGraphicsPipelineVertexInputAttributeFormat_Vector2:
+		{
+			return VK_FORMAT_R32G32_SFLOAT;
+
+			break;
+		}
+		case GCRendererGraphicsPipelineVertexInputAttributeFormat_Vector3:
+		{
+			return VK_FORMAT_R32G32B32_SFLOAT;
+
+			break;
+		}
+		case GCRendererGraphicsPipelineVertexInputAttributeFormat_Vector4:
+		{
+			return VK_FORMAT_R32G32B32A32_SFLOAT;
+
+			break;
+		}
+	}
+
+	GC_ASSERT_WITH_MESSAGE(false, "'%d': Invalid GCRendererGraphicsPipelineVertexInputAttributeFormat", Format);
+	return VK_FORMAT_UNDEFINED;
 }

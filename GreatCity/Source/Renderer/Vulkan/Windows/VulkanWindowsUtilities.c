@@ -1,3 +1,4 @@
+#define VK_USE_PLATFORM_WIN32_KHR
 #include "Renderer/Vulkan/VulkanUtilities.h"
 #include "ApplicationCore/Application.h"
 #include "Core/Log.h"
@@ -5,7 +6,8 @@
 
 #include <stdbool.h>
 
-#define VK_USE_PLATFORM_WIN32_KHR
+#include <Windows.h>
+
 #include <vulkan/vulkan.h>
 
 typedef struct GCPlatformWindow GCWindowsWindow;

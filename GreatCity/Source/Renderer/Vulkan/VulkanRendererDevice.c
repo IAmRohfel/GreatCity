@@ -5,6 +5,7 @@
 #include "Core/Assert.h"
 
 #include <string.h>
+#include <stdint.h>
 #include <stdbool.h>
 
 #include <vulkan/vulkan.h>
@@ -42,12 +43,14 @@ uint32_t GCRendererDevice_GetGraphicsFamilyQueueIndex(const GCRendererDevice* co
 uint32_t GCRendererDevice_GetPresentFamilyQueueIndex(const GCRendererDevice* const Device);
 VkQueue GCRendererDevice_GetGraphicsQueueHandle(const GCRendererDevice* const Device);
 VkQueue GCRendererDevice_GetPresentQueueHandle(const GCRendererDevice* const Device);
+uint32_t GCRendererDevice_GetMemoryTypeIndex(const GCRendererDevice* const Device, const uint32_t TypeFilter, const VkMemoryPropertyFlags PropertyFlags);
+
+extern bool GCRendererSwapChain_IsSwapChainSupported(const VkPhysicalDevice PhysicalDeviceHandle, const VkSurfaceKHR SurfaceHandle);
 
 static bool GCRendererDevice_IsValidationLayerSupported(void);
 static bool GCRendererDevice_IsDeviceSuitable(const VkPhysicalDevice PhysicalDeviceHandle, const VkSurfaceKHR SurfaceHandle);
 static GCRendererDeviceQueueFamilyIndices GCRendererDevice_FindQueueFamilies(const VkPhysicalDevice PhysicalDeviceHandle, const VkSurfaceKHR SurfaceHandle);
 static bool GCRendererDevice_CheckDeviceExtensionSupport(const VkPhysicalDevice PhysicalDeviceHandle);
-extern bool GCRendererSwapChain_IsSwapChainSupported(const VkPhysicalDevice PhysicalDeviceHandle, const VkSurfaceKHR SurfaceHandle);
 
 static VkDebugUtilsMessengerCreateInfoEXT GCRendererDevice_InitializeDebugMessengerInformation(void);
 static void GCRendererDevice_CreateInstance(GCRendererDevice* const Device);
@@ -145,6 +148,23 @@ VkQueue GCRendererDevice_GetGraphicsQueueHandle(const GCRendererDevice* const De
 VkQueue GCRendererDevice_GetPresentQueueHandle(const GCRendererDevice* const Device)
 {
 	return Device->PresentQueueHandle;
+}
+
+uint32_t GCRendererDevice_GetMemoryTypeIndex(const GCRendererDevice* const Device, const uint32_t TypeFilter, const VkMemoryPropertyFlags PropertyFlags)
+{
+	VkPhysicalDeviceMemoryProperties MemoryProperties = { 0 };
+	vkGetPhysicalDeviceMemoryProperties(Device->PhysicalDeviceHandle, &MemoryProperties);
+
+	for (uint32_t Counter = 0; Counter < MemoryProperties.memoryTypeCount; Counter++)
+	{
+		if ((TypeFilter & (1 << Counter)) && (MemoryProperties.memoryTypes[Counter].propertyFlags & PropertyFlags) == PropertyFlags)
+		{
+			return Counter;
+		}
+	}
+
+	GC_ASSERT_WITH_MESSAGE(false, "Failed to find a suitable Vulkan memory type");
+	return 0;
 }
 
 bool GCRendererDevice_IsValidationLayerSupported(void)

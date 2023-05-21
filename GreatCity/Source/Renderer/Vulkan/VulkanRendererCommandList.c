@@ -13,11 +13,8 @@
 typedef struct GCRendererCommandList
 {
 	const GCRendererDevice* Device;
-	const GCRendererSwapChain* SwapChain;
-	const GCRendererGraphicsPipeline* GraphicsPipeline;
-	const GCRendererFramebuffer* Framebuffer;
 
-	VkCommandPool CommandPoolHandle;
+	VkCommandPool CommandPoolHandle, TransientCommandPoolHandle;
 	VkCommandBuffer* CommandBufferHandles;
 	VkSemaphore* ImageAvailableSemaphoreHandles;
 	VkSemaphore* RenderFinishedSemaphoreHandles;
@@ -34,12 +31,15 @@ typedef struct GCRendererCommandListRecordData
 	uint32_t SwapChainImageIndex;
 } GCRendererCommandListRecordData;
 
+VkCommandPool GCRendererCommandList_GetTransientCommandPoolHandle(const GCRendererCommandList* const CommandList);
+
 extern VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
 extern uint32_t GCRendererDevice_GetGraphicsFamilyQueueIndex(const GCRendererDevice* const Device);
 extern VkQueue GCRendererDevice_GetGraphicsQueueHandle(const GCRendererDevice* const Device);
 extern VkQueue GCRendererDevice_GetPresentQueueHandle(const GCRendererDevice* const Device);
 extern VkExtent2D GCRendererSwapChain_GetExtent(const GCRendererSwapChain* const SwapChain);
 extern VkSwapchainKHR GCRendererSwapChain_GetHandle(const GCRendererSwapChain* const SwapChain);
+extern VkBuffer GCRendererVertexBuffer_GetHandle(const GCRendererVertexBuffer* const VertexBuffer);
 extern VkRenderPass GCRendererGraphicsPipeline_GetRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
 extern VkPipeline GCRendererGraphicsPipeline_GetPipelineHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
 extern VkFramebuffer* GCRendererFramebuffer_GetFramebufferHandles(const GCRendererFramebuffer* const Framebuffer);
@@ -50,14 +50,12 @@ static void GCRendererCommandList_CreateSemaphores(GCRendererCommandList* const 
 static void GCRendererCommandList_CreateFences(GCRendererCommandList* const CommandList);
 static void GCRendererCommandList_DestroyObjects(GCRendererCommandList* const CommandList);
 
-GCRendererCommandList* GCRendererCommandList_Create(const GCRendererDevice* const Device, const GCRendererSwapChain* const SwapChain, const GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererFramebuffer* const Framebuffer)
+GCRendererCommandList* GCRendererCommandList_Create(const GCRendererDevice* const Device)
 {
 	GCRendererCommandList* CommandList = (GCRendererCommandList*)GCMemory_Allocate(sizeof(GCRendererCommandList));
 	CommandList->Device = Device;
-	CommandList->SwapChain = SwapChain;
-	CommandList->GraphicsPipeline = GraphicsPipeline;
-	CommandList->Framebuffer = Framebuffer;
 	CommandList->CommandPoolHandle = VK_NULL_HANDLE;
+	CommandList->TransientCommandPoolHandle = VK_NULL_HANDLE;
 	CommandList->CommandBufferHandles = NULL;
 	CommandList->ImageAvailableSemaphoreHandles = NULL;
 	CommandList->RenderFinishedSemaphoreHandles = NULL;
@@ -93,14 +91,14 @@ void GCRendererCommandList_BeginRecord(const GCRendererCommandList* const Comman
 	GC_VULKAN_VALIDATE(vkBeginCommandBuffer(CommandList->CommandBufferHandles[CommandList->CurrentFrame], &CommandBufferBeginInformation), "Failed to begin a Vulkan command buffer");
 }
 
-void GCRendererCommandList_BeginRenderPass(const GCRendererCommandList* const CommandList, const GCRendererCommandListRecordData* RecordData, const float* const ClearColor)
+void GCRendererCommandList_BeginRenderPass(const GCRendererCommandList* const CommandList, const GCRendererSwapChain* const SwapChain, const GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererFramebuffer* const Framebuffer, const GCRendererCommandListRecordData* RecordData, const float* const ClearColor)
 {
 	VkRenderPassBeginInfo RenderPassBeginInformation = { 0 };
 	RenderPassBeginInformation.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	RenderPassBeginInformation.renderPass = GCRendererGraphicsPipeline_GetRenderPassHandle(CommandList->GraphicsPipeline);
-	RenderPassBeginInformation.framebuffer = GCRendererFramebuffer_GetFramebufferHandles(CommandList->Framebuffer)[RecordData->SwapChainImageIndex];
+	RenderPassBeginInformation.renderPass = GCRendererGraphicsPipeline_GetRenderPassHandle(GraphicsPipeline);
+	RenderPassBeginInformation.framebuffer = GCRendererFramebuffer_GetFramebufferHandles(Framebuffer)[RecordData->SwapChainImageIndex];
 	RenderPassBeginInformation.renderArea.offset = (VkOffset2D){ 0, 0 };
-	RenderPassBeginInformation.renderArea.extent = GCRendererSwapChain_GetExtent(CommandList->SwapChain);
+	RenderPassBeginInformation.renderArea.extent = GCRendererSwapChain_GetExtent(SwapChain);
 
 	VkClearValue ClearValue = { 0 };
 	memcpy(ClearValue.color.float32, ClearColor, sizeof(ClearValue.color.float32));
@@ -111,14 +109,22 @@ void GCRendererCommandList_BeginRenderPass(const GCRendererCommandList* const Co
 	vkCmdBeginRenderPass(CommandList->CommandBufferHandles[CommandList->CurrentFrame], &RenderPassBeginInformation, VK_SUBPASS_CONTENTS_INLINE);
 }
 
-void GCRendererCommandList_BindGraphicsPipeline(const GCRendererCommandList* const CommandList)
+void GCRendererCommandList_BindVertexBuffer(const GCRendererCommandList* const CommandList, const GCRendererVertexBuffer* const VertexBuffer)
 {
-	vkCmdBindPipeline(CommandList->CommandBufferHandles[CommandList->CurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, GCRendererGraphicsPipeline_GetPipelineHandle(CommandList->GraphicsPipeline));
+	const VkBuffer VertexBufferHandle[1] = { GCRendererVertexBuffer_GetHandle(VertexBuffer) };
+	const VkDeviceSize Offsets[1] = { 0 };
+
+	vkCmdBindVertexBuffers(CommandList->CommandBufferHandles[CommandList->CurrentFrame], 0, 1, VertexBufferHandle, Offsets);
 }
 
-void GCRendererCommandList_SetViewport(const GCRendererCommandList* const CommandList)
+void GCRendererCommandList_BindGraphicsPipeline(const GCRendererCommandList* const CommandList, const GCRendererGraphicsPipeline* const GraphicsPipeline)
 {
-	const VkExtent2D SwapChainExtent = GCRendererSwapChain_GetExtent(CommandList->SwapChain);
+	vkCmdBindPipeline(CommandList->CommandBufferHandles[CommandList->CurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, GCRendererGraphicsPipeline_GetPipelineHandle(GraphicsPipeline));
+}
+
+void GCRendererCommandList_SetViewport(const GCRendererCommandList* const CommandList, const GCRendererSwapChain* const SwapChain)
+{
+	const VkExtent2D SwapChainExtent = GCRendererSwapChain_GetExtent(SwapChain);
 
 	VkViewport Viewport = { 0 };
 	Viewport.x = 0.0f;
@@ -152,10 +158,10 @@ void GCRendererCommandList_EndRecord(const GCRendererCommandList* const CommandL
 	GC_VULKAN_VALIDATE(vkEndCommandBuffer(CommandList->CommandBufferHandles[CommandList->CurrentFrame]), "Failed to end a Vulkan command buffer");
 }
 
-void GCRendererCommandList_SubmitAndPresent(GCRendererCommandList* const CommandList, const GCRendererCommandListRecordFunction RecordFunction)
+void GCRendererCommandList_SubmitAndPresent(GCRendererCommandList* const CommandList, const GCRendererSwapChain* const SwapChain, const GCRendererCommandListRecordFunction RecordFunction)
 {
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(CommandList->Device);
-	const VkSwapchainKHR SwapChainHandle[1] = { GCRendererSwapChain_GetHandle(CommandList->SwapChain) };
+	const VkSwapchainKHR SwapChainHandle[1] = { GCRendererSwapChain_GetHandle(SwapChain) };
 
 	vkWaitForFences(DeviceHandle, 1, &CommandList->InFlightFenceHandles[CommandList->CurrentFrame], VK_TRUE, UINT64_MAX);
 
@@ -227,6 +233,11 @@ void GCRendererCommandList_Destroy(GCRendererCommandList* CommandList)
 	GCMemory_Free(CommandList);
 }
 
+VkCommandPool GCRendererCommandList_GetTransientCommandPoolHandle(const GCRendererCommandList* const CommandList)
+{
+	return CommandList->TransientCommandPoolHandle;
+}
+
 void GCRendererCommandList_CreateCommandPool(GCRendererCommandList* const CommandList)
 {
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(CommandList->Device);
@@ -237,6 +248,13 @@ void GCRendererCommandList_CreateCommandPool(GCRendererCommandList* const Comman
 	CommandPoolInformation.queueFamilyIndex = GCRendererDevice_GetGraphicsFamilyQueueIndex(CommandList->Device);
 
 	GC_VULKAN_VALIDATE(vkCreateCommandPool(DeviceHandle, &CommandPoolInformation, NULL, &CommandList->CommandPoolHandle), "Failed to create a Vulkan command pool");
+
+	VkCommandPoolCreateInfo TransientCommandPoolInformation = { 0 };
+	TransientCommandPoolInformation.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	TransientCommandPoolInformation.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+	TransientCommandPoolInformation.queueFamilyIndex = GCRendererDevice_GetGraphicsFamilyQueueIndex(CommandList->Device);
+
+	GC_VULKAN_VALIDATE(vkCreateCommandPool(DeviceHandle, &TransientCommandPoolInformation, NULL, &CommandList->TransientCommandPoolHandle), "Failed to create a Vulkan transient command pool");
 }
 
 void GCRendererCommandList_CreateCommandBuffers(GCRendererCommandList* const CommandList)
@@ -245,13 +263,13 @@ void GCRendererCommandList_CreateCommandBuffers(GCRendererCommandList* const Com
 
 	CommandList->CommandBufferHandles = (VkCommandBuffer*)GCMemory_Allocate(CommandList->MaximumFramesInFlight * sizeof(VkCommandBuffer));
 
-	VkCommandBufferAllocateInfo CommandBufferInformation = { 0 };
-	CommandBufferInformation.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	CommandBufferInformation.commandPool = CommandList->CommandPoolHandle;
-	CommandBufferInformation.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	CommandBufferInformation.commandBufferCount = CommandList->MaximumFramesInFlight;
+	VkCommandBufferAllocateInfo CommandBufferAllocateInformation = { 0 };
+	CommandBufferAllocateInformation.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	CommandBufferAllocateInformation.commandPool = CommandList->CommandPoolHandle;
+	CommandBufferAllocateInformation.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	CommandBufferAllocateInformation.commandBufferCount = CommandList->MaximumFramesInFlight;
 
-	GC_VULKAN_VALIDATE(vkAllocateCommandBuffers(DeviceHandle, &CommandBufferInformation, CommandList->CommandBufferHandles), "Failed to allocate Vulkan command buffers");
+	GC_VULKAN_VALIDATE(vkAllocateCommandBuffers(DeviceHandle, &CommandBufferAllocateInformation, CommandList->CommandBufferHandles), "Failed to allocate Vulkan command buffers");
 }
 
 void GCRendererCommandList_CreateSemaphores(GCRendererCommandList* const CommandList)
@@ -298,6 +316,7 @@ void GCRendererCommandList_DestroyObjects(GCRendererCommandList* const CommandLi
 		vkDestroySemaphore(DeviceHandle, CommandList->ImageAvailableSemaphoreHandles[Counter], NULL);
 	}
 
+	vkDestroyCommandPool(DeviceHandle, CommandList->TransientCommandPoolHandle, NULL);
 	vkDestroyCommandPool(DeviceHandle, CommandList->CommandPoolHandle, NULL);
 
 	GCMemory_Free(CommandList->InFlightFenceHandles);
