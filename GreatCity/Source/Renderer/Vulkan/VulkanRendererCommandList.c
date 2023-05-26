@@ -31,6 +31,7 @@ typedef struct GCRendererCommandListRecordData
 	uint32_t SwapChainImageIndex;
 } GCRendererCommandListRecordData;
 
+uint32_t GCRendererCommandList_GetMaximumFramesInFlight(const GCRendererCommandList* const CommandList);
 VkCommandPool GCRendererCommandList_GetTransientCommandPoolHandle(const GCRendererCommandList* const CommandList);
 
 extern VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
@@ -41,7 +42,10 @@ extern VkExtent2D GCRendererSwapChain_GetExtent(const GCRendererSwapChain* const
 extern VkSwapchainKHR GCRendererSwapChain_GetHandle(const GCRendererSwapChain* const SwapChain);
 extern VkBuffer GCRendererVertexBuffer_GetHandle(const GCRendererVertexBuffer* const VertexBuffer);
 extern VkBuffer GCRendererIndexBuffer_GetHandle(const GCRendererIndexBuffer* const IndexBuffer);
+extern VkDescriptorSet* GCRendererUniformBuffer_GetDescriptorSetHandles(const GCRendererUniformBuffer* const UniformBuffer);
+extern void** GCRendererUniformBuffer_GetData(const GCRendererUniformBuffer* const UniformBuffer);
 extern VkRenderPass GCRendererGraphicsPipeline_GetRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
+extern VkPipelineLayout GCRendererGraphicsPipeline_GetPipelineLayoutHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
 extern VkPipeline GCRendererGraphicsPipeline_GetPipelineHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
 extern VkFramebuffer* GCRendererFramebuffer_GetFramebufferHandles(const GCRendererFramebuffer* const Framebuffer);
 
@@ -121,6 +125,22 @@ void GCRendererCommandList_BindVertexBuffer(const GCRendererCommandList* const C
 void GCRendererCommandList_BindIndexBuffer(const GCRendererCommandList* const CommandList, const GCRendererIndexBuffer* const IndexBuffer)
 {
 	vkCmdBindIndexBuffer(CommandList->CommandBufferHandles[CommandList->CurrentFrame], GCRendererIndexBuffer_GetHandle(IndexBuffer), 0, VK_INDEX_TYPE_UINT32);
+}
+
+void GCRendererCommandList_BindUniformBuffer(const GCRendererCommandList* const CommandList, const GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererUniformBuffer* const UniformBuffer)
+{
+	const VkDescriptorSet UniformBufferDescriptorSetHandle = GCRendererUniformBuffer_GetDescriptorSetHandles(UniformBuffer)[CommandList->CurrentFrame];
+
+	vkCmdBindDescriptorSets(CommandList->CommandBufferHandles[CommandList->CurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, GCRendererGraphicsPipeline_GetPipelineLayoutHandle(GraphicsPipeline), 0, 1, &UniformBufferDescriptorSetHandle, 0, NULL);
+}
+
+void GCRendererCommandList_UpdateUniformBuffer(const GCRendererCommandList* const CommandList, const GCRendererUniformBuffer* const UniformBuffer, const GCRendererCommandListRecordData* RecordData, const void* const Data, const size_t DataSize)
+{
+	(void)CommandList;
+
+	void** UniformBufferData = GCRendererUniformBuffer_GetData(UniformBuffer);
+
+	memcpy(UniformBufferData[RecordData->SwapChainImageIndex], Data, DataSize);
 }
 
 void GCRendererCommandList_BindGraphicsPipeline(const GCRendererCommandList* const CommandList, const GCRendererGraphicsPipeline* const GraphicsPipeline)
@@ -242,6 +262,11 @@ void GCRendererCommandList_Destroy(GCRendererCommandList* CommandList)
 	GCRendererCommandList_DestroyObjects(CommandList);
 
 	GCMemory_Free(CommandList);
+}
+
+uint32_t GCRendererCommandList_GetMaximumFramesInFlight(const GCRendererCommandList* const CommandList)
+{
+	return CommandList->MaximumFramesInFlight;
 }
 
 VkCommandPool GCRendererCommandList_GetTransientCommandPoolHandle(const GCRendererCommandList* const CommandList)

@@ -12,6 +12,7 @@ typedef struct GCRendererGraphicsPipeline
 {
 	const GCRendererDevice* Device;
 	const GCRendererSwapChain* SwapChain;
+	const GCRendererUniformBuffer* UniformBuffer;
 	const GCRendererShader* Shader;
 
 	VkRenderPass RenderPassHandle;
@@ -20,10 +21,12 @@ typedef struct GCRendererGraphicsPipeline
 } GCRendererGraphicsPipeline;
 
 VkRenderPass GCRendererGraphicsPipeline_GetRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
+VkPipelineLayout GCRendererGraphicsPipeline_GetPipelineLayoutHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
 VkPipeline GCRendererGraphicsPipeline_GetPipelineHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
 
 extern VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
 extern VkFormat GCRendererSwapChain_GetFormat(const GCRendererSwapChain* const SwapChain);
+extern VkDescriptorSetLayout GCRendererUniformBuffer_GetDescriptorSetLayoutHandle(const GCRendererUniformBuffer* const UniformBuffer);
 extern VkShaderModule GCRendererShader_GetVertexShaderModuleHandle(const GCRendererShader* const Shader);
 extern VkShaderModule GCRendererShader_GetFragmentShaderModuleHandle(const GCRendererShader* const Shader);
 
@@ -33,11 +36,12 @@ static void GCRendererGraphicsPipeline_DestroyObjects(GCRendererGraphicsPipeline
 
 static VkFormat GCRendererGraphicsPipeline_ToVkFormat(const GCRendererGraphicsPipelineVertexInputAttributeFormat Format);
 
-GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(const GCRendererDevice* const Device, const GCRendererSwapChain* const SwapChain, const GCRendererGraphicsPipelineVertexInput* const VertexInput, const GCRendererShader* const Shader)
+GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(const GCRendererDevice* const Device, const GCRendererSwapChain* const SwapChain, const GCRendererGraphicsPipelineVertexInput* const VertexInput, const GCRendererUniformBuffer* const UniformBuffer, const GCRendererShader* const Shader)
 {
 	GCRendererGraphicsPipeline* GraphicsPipeline = (GCRendererGraphicsPipeline*)GCMemory_Allocate(sizeof(GCRendererGraphicsPipeline));
 	GraphicsPipeline->Device = Device;
 	GraphicsPipeline->SwapChain = SwapChain;
+	GraphicsPipeline->UniformBuffer = UniformBuffer;
 	GraphicsPipeline->Shader = Shader;
 	GraphicsPipeline->RenderPassHandle = VK_NULL_HANDLE;
 	GraphicsPipeline->PipelineLayoutHandle = VK_NULL_HANDLE;
@@ -59,6 +63,11 @@ void GCRendererGraphicsPipeline_Destroy(GCRendererGraphicsPipeline* GraphicsPipe
 VkRenderPass GCRendererGraphicsPipeline_GetRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline)
 {
 	return GraphicsPipeline->RenderPassHandle;
+}
+
+VkPipelineLayout GCRendererGraphicsPipeline_GetPipelineLayoutHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline)
+{
+	return GraphicsPipeline->PipelineLayoutHandle;
 }
 
 VkPipeline GCRendererGraphicsPipeline_GetPipelineHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline)
@@ -117,6 +126,11 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
 
 	VkPipelineLayoutCreateInfo PipelineLayoutInformation = { 0 };
 	PipelineLayoutInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+
+	const VkDescriptorSetLayout UniformBufferDescriptorSetLayoutHandle = GCRendererUniformBuffer_GetDescriptorSetLayoutHandle(GraphicsPipeline->UniformBuffer);
+
+	PipelineLayoutInformation.setLayoutCount = 1;
+	PipelineLayoutInformation.pSetLayouts = &UniformBufferDescriptorSetLayoutHandle;
 
 	GC_VULKAN_VALIDATE(vkCreatePipelineLayout(DeviceHandle, &PipelineLayoutInformation, NULL, &GraphicsPipeline->PipelineLayoutHandle), "Failed to create a Vulkan pipeline layout");
 

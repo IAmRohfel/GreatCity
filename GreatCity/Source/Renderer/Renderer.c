@@ -4,12 +4,14 @@
 #include "Renderer/RendererCommandList.h"
 #include "Renderer/RendererVertexBuffer.h"
 #include "Renderer/RendererIndexBuffer.h"
+#include "Renderer/RendererUniformBuffer.h"
 #include "Renderer/RendererShader.h"
 #include "Renderer/RendererGraphicsPipeline.h"
 #include "Renderer/RendererFramebuffer.h"
 #include "Core/Memory/Allocator.h"
 #include "Math/Vector3.h"
 #include "Math/Vector4.h"
+#include "Math/Matrix4x4.h"
 
 typedef struct GCRenderer
 {
@@ -18,6 +20,7 @@ typedef struct GCRenderer
 	GCRendererCommandList* CommandList;
 	GCRendererVertexBuffer* VertexBuffer;
 	GCRendererIndexBuffer* IndexBuffer;
+	GCRendererUniformBuffer* UniformBuffer;
 	GCRendererShader* BasicShader;
 	GCRendererGraphicsPipeline* GraphicsPipeline;
 	GCRendererFramebuffer* Framebuffer;
@@ -28,6 +31,11 @@ typedef struct GCRendererVertex
 	GCVector3 Position;
 	GCVector4 Color;
 } GCRendererVertex;
+
+typedef struct GCRendererUniformBufferData
+{
+	GCMatrix4x4 Transform;
+} GCRendererUniformBufferData;
 
 static void GCRenderer_ResizeSwapChain(void);
 static void GCRenderer_RecordCommands(const GCRendererCommandListRecordData* const RecordData);
@@ -56,6 +64,7 @@ void GCRenderer_Initialize(void)
 	const uint32_t Indices[6] = { 0, 1, 2, 2, 3, 0 };
 
 	Renderer->IndexBuffer = GCRendererIndexBuffer_Create(Renderer->Device, Renderer->CommandList, Indices, sizeof(Indices));
+	Renderer->UniformBuffer = GCRendererUniformBuffer_Create(Renderer->Device, Renderer->CommandList, sizeof(GCRendererUniformBufferData));
 
 	Renderer->BasicShader = GCRendererShader_Create(Renderer->Device, "Assets/Shader/Basic/Basic.vertex.glsl", "Assets/Shader/Basic/Basic.fragment.glsl");
 
@@ -74,7 +83,7 @@ void GCRenderer_Initialize(void)
 	GraphicsPipelineVertexInput.Attributes = GraphicsPipelineVertexInputAttributes;
 	GraphicsPipelineVertexInput.AttributeCount = 2;
 
-	Renderer->GraphicsPipeline = GCRendererGraphicsPipeline_Create(Renderer->Device, Renderer->SwapChain, &GraphicsPipelineVertexInput, Renderer->BasicShader);
+	Renderer->GraphicsPipeline = GCRendererGraphicsPipeline_Create(Renderer->Device, Renderer->SwapChain, &GraphicsPipelineVertexInput, Renderer->UniformBuffer, Renderer->BasicShader);
 	Renderer->Framebuffer = GCRendererFramebuffer_Create(Renderer->Device, Renderer->SwapChain, Renderer->GraphicsPipeline);
 
 	GCRendererCommandList_SetResizeCallback(Renderer->CommandList, GCRenderer_ResizeSwapChain);
@@ -100,6 +109,7 @@ void GCRenderer_Terminate(void)
 	GCRendererFramebuffer_Destroy(Renderer->Framebuffer);
 	GCRendererGraphicsPipeline_Destroy(Renderer->GraphicsPipeline);
 	GCRendererShader_Destroy(Renderer->BasicShader);
+	GCRendererUniformBuffer_Destroy(Renderer->UniformBuffer);
 	GCRendererIndexBuffer_Destroy(Renderer->IndexBuffer);
 	GCRendererVertexBuffer_Destroy(Renderer->VertexBuffer);
 	GCRendererCommandList_Destroy(Renderer->CommandList);
@@ -124,8 +134,14 @@ void GCRenderer_RecordCommands(const GCRendererCommandListRecordData* const Reco
 	const float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	GCRendererCommandList_BeginRenderPass(Renderer->CommandList, Renderer->SwapChain, Renderer->GraphicsPipeline, Renderer->Framebuffer, RecordData, ClearColor);
 
+	GCRendererUniformBufferData UniformBufferData = { 0 };
+	UniformBufferData.Transform = GCMatrix4x4_CreateIdentity();
+
+	GCRendererCommandList_UpdateUniformBuffer(Renderer->CommandList, Renderer->UniformBuffer, RecordData, &UniformBufferData, sizeof(GCRendererUniformBufferData));
+
 	GCRendererCommandList_BindVertexBuffer(Renderer->CommandList, Renderer->VertexBuffer);
 	GCRendererCommandList_BindIndexBuffer(Renderer->CommandList, Renderer->IndexBuffer);
+	GCRendererCommandList_BindUniformBuffer(Renderer->CommandList, Renderer->GraphicsPipeline, Renderer->UniformBuffer);
 	GCRendererCommandList_BindGraphicsPipeline(Renderer->CommandList, Renderer->GraphicsPipeline);
 	GCRendererCommandList_SetViewport(Renderer->CommandList, Renderer->SwapChain);
 

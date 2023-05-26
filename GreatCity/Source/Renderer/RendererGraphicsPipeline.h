@@ -11,6 +11,7 @@ extern "C"
 	typedef struct GCRendererGraphicsPipeline GCRendererGraphicsPipeline;
 	typedef struct GCRendererDevice GCRendererDevice;
 	typedef struct GCRendererSwapChain GCRendererSwapChain;
+	typedef struct GCRendererUniformBuffer GCRendererUniformBuffer;
 	typedef struct GCRendererShader GCRendererShader;
 
 	typedef enum GCRendererGraphicsPipelineVertexInputAttributeFormat
@@ -35,7 +36,7 @@ extern "C"
 		uint32_t AttributeCount;
 	} GCRendererGraphicsPipelineVertexInput;
 
-	GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(const GCRendererDevice* const Device, const GCRendererSwapChain* const SwapChain, const GCRendererGraphicsPipelineVertexInput* const VertexInput, const GCRendererShader* const Shader);
+	GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(const GCRendererDevice* const Device, const GCRendererSwapChain* const SwapChain, const GCRendererGraphicsPipelineVertexInput* const VertexInput, const GCRendererUniformBuffer* const UniformBuffer, const GCRendererShader* const Shader);
 	void GCRendererGraphicsPipeline_Destroy(GCRendererGraphicsPipeline* GraphicsPipeline);
 
 #ifdef __cplusplus
