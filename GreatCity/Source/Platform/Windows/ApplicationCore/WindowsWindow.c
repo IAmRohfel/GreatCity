@@ -19,15 +19,15 @@ typedef struct GCPlatformWindow
 	HWND WindowHandle;
 } GCWindow, GCWindowsWindow;
 
+HWND GCWindowsWindow_GetWindowHandle(const GCWindowsWindow* const Window);
+HINSTANCE GCWindowsWindow_GetInstanceHandle(const GCWindowsWindow* const Window);
+
 static GCWindowsWindow* GCWindowsWindow_Create(const GCWindowProperties* const Properties);
 static LRESULT CALLBACK GCWindowsWindow_SetupMessageHandler(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam);
 static LRESULT CALLBACK GCWindowsWindow_MessageHandler(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam);
 static void GCWindowsWindow_ProcessEvents(GCWindowsWindow* const Window);
 static void GCWindowsWindow_GetWindowSize(const GCWindowsWindow* const Window, uint32_t* const Width, uint32_t* const Height);
 static void GCWindowsWindow_Destroy(GCWindowsWindow* Window);
-
-HWND GCWindowsWindow_GetWindowHandle(const GCWindowsWindow* const Window);
-HINSTANCE GCWindowsWindow_GetInstanceHandle(const GCWindowsWindow* const Window);
 
 GCWindow* GCWindow_Create(const GCWindowProperties* const Properties)
 {

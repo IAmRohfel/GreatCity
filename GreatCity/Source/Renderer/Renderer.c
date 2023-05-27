@@ -12,6 +12,8 @@
 #include "Math/Vector3.h"
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
+#include "Scene/Camera/WorldCamera.h"
+#include "Core/Log.h"
 
 typedef struct GCRenderer
 {
@@ -24,6 +26,8 @@ typedef struct GCRenderer
 	GCRendererShader* BasicShader;
 	GCRendererGraphicsPipeline* GraphicsPipeline;
 	GCRendererFramebuffer* Framebuffer;
+
+	const GCWorldCamera* WorldCamera;
 } GCRenderer;
 
 typedef struct GCRendererVertex
@@ -34,7 +38,7 @@ typedef struct GCRendererVertex
 
 typedef struct GCRendererUniformBufferData
 {
-	GCMatrix4x4 Transform;
+	GCMatrix4x4 ViewProjectionMatrix;
 } GCRendererUniformBufferData;
 
 static void GCRenderer_ResizeSwapChain(void);
@@ -42,7 +46,7 @@ static void GCRenderer_RecordCommands(const GCRendererCommandListRecordData* con
 
 static GCRenderer* Renderer = NULL;
 
-void GCRenderer_Initialize(void)
+void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera)
 {
 	Renderer = (GCRenderer*)GCMemory_Allocate(sizeof(GCRenderer));
 	Renderer->Device = GCRendererDevice_Create();
@@ -87,6 +91,21 @@ void GCRenderer_Initialize(void)
 	Renderer->Framebuffer = GCRendererFramebuffer_Create(Renderer->Device, Renderer->SwapChain, Renderer->GraphicsPipeline);
 
 	GCRendererCommandList_SetResizeCallback(Renderer->CommandList, GCRenderer_ResizeSwapChain);
+
+	Renderer->WorldCamera = WorldCamera;
+}
+
+void GCRenderer_Begin(void)
+{
+}
+
+void GCRenderer_Present(void)
+{
+	GCRendererCommandList_SubmitAndPresent(Renderer->CommandList, Renderer->SwapChain, GCRenderer_RecordCommands);
+}
+
+void GCRenderer_End(void)
+{
 }
 
 void GCRenderer_Resize(void)
@@ -95,11 +114,6 @@ void GCRenderer_Resize(void)
 	{
 		GCRendererCommandList_SetResize(Renderer->CommandList, true);
 	}
-}
-
-void GCRenderer_Present(void)
-{
-	GCRendererCommandList_SubmitAndPresent(Renderer->CommandList, Renderer->SwapChain, GCRenderer_RecordCommands);
 }
 
 void GCRenderer_Terminate(void)
@@ -135,7 +149,7 @@ void GCRenderer_RecordCommands(const GCRendererCommandListRecordData* const Reco
 	GCRendererCommandList_BeginRenderPass(Renderer->CommandList, Renderer->SwapChain, Renderer->GraphicsPipeline, Renderer->Framebuffer, RecordData, ClearColor);
 
 	GCRendererUniformBufferData UniformBufferData = { 0 };
-	UniformBufferData.Transform = GCMatrix4x4_CreateIdentity();
+	UniformBufferData.ViewProjectionMatrix = GCWorldCamera_GetViewProjectionMatrix(Renderer->WorldCamera);
 
 	GCRendererCommandList_UpdateUniformBuffer(Renderer->CommandList, Renderer->UniformBuffer, RecordData, &UniformBufferData, sizeof(GCRendererUniformBufferData));
 

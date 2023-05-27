@@ -5,13 +5,13 @@ layout(location = 1) in vec3 Color;
 
 layout(binding = 0) uniform UniformBuffer
 {
-	mat4 Transform;
+	mat4 ViewProjectionMatrix;
 } UniformBufferData;
 
 layout(location = 0) out vec3 FragmentColor;
 
 void main()
 {
-	gl_Position = UniformBufferData.Transform * vec4(Position, 1.0);
+	gl_Position = UniformBufferData.ViewProjectionMatrix * vec4(Position, 1.0);
 	FragmentColor = Color;
 }
