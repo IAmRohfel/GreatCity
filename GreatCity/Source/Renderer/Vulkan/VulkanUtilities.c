@@ -150,7 +150,7 @@ void GCVulkanUtilities_CopyBufferToImage(const GCRendererDevice* const Device, c
 	GCVulkanUtilities_EndSingleTimeCommands(Device, CommandList, CommandBufferHandle);
 }
 
-void GCVulkanUtilities_CreateImageView(const GCRendererDevice* const Device, const VkImage ImageHandle, const VkFormat Format, VkImageView* ImageViewHandle)
+void GCVulkanUtilities_CreateImageView(const GCRendererDevice* const Device, const VkImage ImageHandle, const VkFormat Format, const VkImageAspectFlags ImageAspect, VkImageView* ImageViewHandle)
 {
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Device);
 
@@ -163,7 +163,7 @@ void GCVulkanUtilities_CreateImageView(const GCRendererDevice* const Device, con
 	ImageViewInformation.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
 	ImageViewInformation.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
 	ImageViewInformation.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-	ImageViewInformation.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	ImageViewInformation.subresourceRange.aspectMask = ImageAspect;
 	ImageViewInformation.subresourceRange.baseMipLevel = 0;
 	ImageViewInformation.subresourceRange.levelCount = 1;
 	ImageViewInformation.subresourceRange.baseArrayLayer = 0;

@@ -105,11 +105,14 @@ void GCRendererCommandList_BeginRenderPass(const GCRendererCommandList* const Co
 	RenderPassBeginInformation.renderArea.offset = (VkOffset2D){ 0, 0 };
 	RenderPassBeginInformation.renderArea.extent = GCRendererSwapChain_GetExtent(SwapChain);
 
-	VkClearValue ClearValue = { 0 };
-	memcpy(ClearValue.color.float32, ClearColor, sizeof(ClearValue.color.float32));
+	VkClearValue ClearValues[2] = { 0 };
+	memcpy(ClearValues[0].color.float32, ClearColor, sizeof(ClearValues[0].color.float32));
 
-	RenderPassBeginInformation.clearValueCount = 1;
-	RenderPassBeginInformation.pClearValues = &ClearValue;
+	ClearValues[1].depthStencil.depth = 1.0f;
+	ClearValues[1].depthStencil.stencil = 0;
+
+	RenderPassBeginInformation.clearValueCount = 2;
+	RenderPassBeginInformation.pClearValues = ClearValues;
 
 	vkCmdBeginRenderPass(CommandList->CommandBufferHandles[CommandList->CurrentFrame], &RenderPassBeginInformation, VK_SUBPASS_CONTENTS_INLINE);
 }

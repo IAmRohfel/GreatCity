@@ -59,26 +59,51 @@ void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera)
 	Renderer->SwapChain = GCRendererSwapChain_Create(Renderer->Device);
 	Renderer->CommandList = GCRendererCommandList_Create(Renderer->Device);
 
-	GCRendererVertex Vertices[4];
-	Vertices[0].Position = GCVector3_Create(-0.5f, -0.5f, 0.0f);
-	Vertices[0].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
-	Vertices[0].TextureCoordinate = GCVector2_Create(1.0f, 0.0f);
+	GCRendererVertex Vertices[8] = { 0 };
 
-	Vertices[1].Position = GCVector3_Create(0.5f, -0.5f, 0.0f);
-	Vertices[1].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
-	Vertices[1].TextureCoordinate = GCVector2_Create(0.0f, 0.0f);
-	
-	Vertices[2].Position = GCVector3_Create(0.5f, 0.5f, 0.0f);
-	Vertices[2].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
-	Vertices[2].TextureCoordinate = GCVector2_Create(0.0f, 1.0f);
-	
-	Vertices[3].Position = GCVector3_Create(-0.5f, 0.5f, 0.0f);
-	Vertices[3].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
-	Vertices[3].TextureCoordinate = GCVector2_Create(1.0f, 1.0f);
+	{
+		Vertices[0].Position = GCVector3_Create(-0.5f, -0.5f, 0.0f);
+		Vertices[0].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
+		Vertices[0].TextureCoordinate = GCVector2_Create(1.0f, 0.0f);
+
+		Vertices[1].Position = GCVector3_Create(0.5f, -0.5f, 0.0f);
+		Vertices[1].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
+		Vertices[1].TextureCoordinate = GCVector2_Create(0.0f, 0.0f);
+
+		Vertices[2].Position = GCVector3_Create(0.5f, 0.5f, 0.0f);
+		Vertices[2].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
+		Vertices[2].TextureCoordinate = GCVector2_Create(0.0f, 1.0f);
+
+		Vertices[3].Position = GCVector3_Create(-0.5f, 0.5f, 0.0f);
+		Vertices[3].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
+		Vertices[3].TextureCoordinate = GCVector2_Create(1.0f, 1.0f);
+	}
+
+	{
+		Vertices[4].Position = GCVector3_Create(-0.5f, -0.5f, -0.5f);
+		Vertices[4].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
+		Vertices[4].TextureCoordinate = GCVector2_Create(1.0f, 0.0f);
+
+		Vertices[5].Position = GCVector3_Create(0.5f, -0.5f, -0.5f);
+		Vertices[5].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
+		Vertices[5].TextureCoordinate = GCVector2_Create(0.0f, 0.0f);
+
+		Vertices[6].Position = GCVector3_Create(0.5f, 0.5f, -0.5f);
+		Vertices[6].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
+		Vertices[6].TextureCoordinate = GCVector2_Create(0.0f, 1.0f);
+
+		Vertices[7].Position = GCVector3_Create(-0.5f, 0.5f, -0.5f);
+		Vertices[7].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
+		Vertices[7].TextureCoordinate = GCVector2_Create(1.0f, 1.0f);
+	}
 
 	Renderer->VertexBuffer = GCRendererVertexBuffer_Create(Renderer->Device, Renderer->CommandList, Vertices, sizeof(Vertices));
 
-	const uint32_t Indices[6] = { 0, 1, 2, 2, 3, 0 };
+	const uint32_t Indices[12] =
+	{
+		0, 1, 2, 2, 3, 0,
+		4, 5, 6, 6, 7, 4
+	};
 
 	Renderer->IndexBuffer = GCRendererIndexBuffer_Create(Renderer->Device, Renderer->CommandList, Indices, sizeof(Indices));
 	Renderer->UniformBuffer = GCRendererUniformBuffer_Create(Renderer->Device, Renderer->CommandList, sizeof(GCRendererUniformBufferData));
@@ -178,7 +203,7 @@ void GCRenderer_RecordCommands(const GCRendererCommandListRecordData* const Reco
 	GCRendererCommandList_BindGraphicsPipeline(Renderer->CommandList, Renderer->GraphicsPipeline);
 	GCRendererCommandList_SetViewport(Renderer->CommandList, Renderer->SwapChain);
 
-	GCRendererCommandList_DrawIndexed(Renderer->CommandList, 6, 0);
+	GCRendererCommandList_DrawIndexed(Renderer->CommandList, 12, 0);
 
 	GCRendererCommandList_EndRenderPass(Renderer->CommandList);
 	GCRendererCommandList_EndRecord(Renderer->CommandList);

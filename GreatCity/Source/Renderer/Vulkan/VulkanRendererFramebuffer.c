@@ -22,6 +22,7 @@ VkFramebuffer* GCRendererFramebuffer_GetFramebufferHandles(const GCRendererFrame
 extern VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
 extern VkExtent2D GCRendererSwapChain_GetExtent(const GCRendererSwapChain* const SwapChain);
 extern VkImageView* GCRendererSwapChain_GetImageViewHandles(const GCRendererSwapChain* const SwapChain);
+extern VkImageView GCRendererSwapChain_GetDepthImageViewHandle(const GCRendererSwapChain* const SwapChain);
 extern uint32_t GCRendererSwapChain_GetImageCount(const GCRendererSwapChain* const SwapChain);
 extern VkRenderPass GCRendererGraphicsPipeline_GetRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
 
@@ -68,20 +69,22 @@ void GCRendererFramebuffer_CreateFramebuffers(GCRendererFramebuffer* const Frame
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Framebuffer->Device);
 	const VkExtent2D SwapChainExtent = GCRendererSwapChain_GetExtent(Framebuffer->SwapChain);
 	const VkImageView* const SwapChainImageViewHandles = GCRendererSwapChain_GetImageViewHandles(Framebuffer->SwapChain);
+	const VkImageView SwapChainDepthImageViewHandle = GCRendererSwapChain_GetDepthImageViewHandle(Framebuffer->SwapChain);
 	const VkRenderPass RenderPassHandle = GCRendererGraphicsPipeline_GetRenderPassHandle(Framebuffer->GraphicsPipeline);
 
 	for (uint32_t Counter = 0; Counter < SwapChainImageCount; Counter++)
 	{
-		const VkImageView AttachmentHandle[1] =
+		const VkImageView AttachmentHandles[2] =
 		{
-			SwapChainImageViewHandles[Counter]
+			SwapChainImageViewHandles[Counter],
+			SwapChainDepthImageViewHandle
 		};
 
 		VkFramebufferCreateInfo FramebufferInformation = { 0 };
 		FramebufferInformation.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		FramebufferInformation.renderPass = RenderPassHandle;
-		FramebufferInformation.attachmentCount = 1;
-		FramebufferInformation.pAttachments = AttachmentHandle;
+		FramebufferInformation.attachmentCount = 2;
+		FramebufferInformation.pAttachments = AttachmentHandles;
 		FramebufferInformation.width = SwapChainExtent.width;
 		FramebufferInformation.height = SwapChainExtent.height;
 		FramebufferInformation.layers = 1;

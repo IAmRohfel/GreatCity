@@ -112,7 +112,7 @@ void GCRendererTexture2D_CreateTextureImage(GCRendererTexture2D* const Texture2D
 	vkFreeMemory(DeviceHandle, StagingImageBufferMemoryHandle, NULL);
 	vkDestroyBuffer(DeviceHandle, StagingImageBufferHandle, NULL);
 
-	GCVulkanUtilities_CreateImageView(Texture2D->Device, Texture2D->ImageHandle, VK_FORMAT_R8G8B8A8_SRGB, &Texture2D->ImageViewHandle);
+	GCVulkanUtilities_CreateImageView(Texture2D->Device, Texture2D->ImageHandle, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, &Texture2D->ImageViewHandle);
 }
 
 void GCRendererTexture2D_CreateTextureSampler(GCRendererTexture2D* const Texture2D)

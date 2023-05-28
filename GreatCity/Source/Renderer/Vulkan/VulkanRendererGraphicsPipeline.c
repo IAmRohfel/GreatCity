@@ -35,6 +35,7 @@ VkDescriptorSet* GCRendererGraphicsPipeline_GetDescriptorSetHandles(const GCRend
 
 extern VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
 extern VkFormat GCRendererSwapChain_GetFormat(const GCRendererSwapChain* const SwapChain);
+extern VkFormat GCRendererSwapChain_GetDepthFormat(const GCRendererSwapChain* const SwapChain);
 extern uint32_t GCRendererCommandList_GetMaximumFramesInFlight(const GCRendererCommandList* const CommandList);
 extern VkBuffer* GCRendererUniformBuffer_GetBufferHandles(const GCRendererUniformBuffer* const UniformBuffer);
 extern size_t GCRendererUniformBuffer_GetDataSize(const GCRendererUniformBuffer* const UniformBuffer);
@@ -121,27 +122,44 @@ void GCRendererGraphicsPipeline_CreateRenderPass(GCRendererGraphicsPipeline* con
 	ColorAttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	ColorAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
+	VkAttachmentDescription DepthAttachmentDescription = { 0 };
+	DepthAttachmentDescription.format = GCRendererSwapChain_GetDepthFormat(GraphicsPipeline->SwapChain);
+	DepthAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+	DepthAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	DepthAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	DepthAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	DepthAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	DepthAttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	DepthAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
 	VkAttachmentReference ColorAttachmentReference = { 0 };
 	ColorAttachmentReference.attachment = 0;
 	ColorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentReference DepthAttachmentReference = { 0 };
+	DepthAttachmentReference.attachment = 1;
+	DepthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 	VkSubpassDescription SubpassDescription = { 0 };
 	SubpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	SubpassDescription.colorAttachmentCount = 1;
 	SubpassDescription.pColorAttachments = &ColorAttachmentReference;
+	SubpassDescription.pDepthStencilAttachment = &DepthAttachmentReference;
 
 	VkSubpassDependency SubpassDependency = { 0 };
 	SubpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 	SubpassDependency.dstSubpass = 0;
-	SubpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	SubpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	SubpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+	SubpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 	SubpassDependency.srcAccessMask = 0;
-	SubpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	SubpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+	const VkAttachmentDescription AttachmentDescriptions[2] = { ColorAttachmentDescription, DepthAttachmentDescription };
 
 	VkRenderPassCreateInfo RenderPassInformation = { 0 };
 	RenderPassInformation.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	RenderPassInformation.attachmentCount = 1;
-	RenderPassInformation.pAttachments = &ColorAttachmentDescription;
+	RenderPassInformation.attachmentCount = 2;
+	RenderPassInformation.pAttachments = AttachmentDescriptions;
 	RenderPassInformation.subpassCount = 1;
 	RenderPassInformation.pSubpasses = &SubpassDescription;
 	RenderPassInformation.dependencyCount = 1;
@@ -257,8 +275,22 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
 	PipelineMultisampleStateInformation.sampleShadingEnable = VK_FALSE;
 	PipelineMultisampleStateInformation.minSampleShading = 1.0f;
 
+	VkPipelineDepthStencilStateCreateInfo PipelineDepthStencilStateInformation = { 0 };
+	PipelineDepthStencilStateInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	PipelineDepthStencilStateInformation.depthTestEnable = VK_TRUE;
+	PipelineDepthStencilStateInformation.depthWriteEnable = VK_TRUE;
+	PipelineDepthStencilStateInformation.depthCompareOp = VK_COMPARE_OP_LESS;
+	PipelineDepthStencilStateInformation.depthBoundsTestEnable = VK_FALSE;
+	PipelineDepthStencilStateInformation.stencilTestEnable = VK_FALSE;
+
 	VkPipelineColorBlendAttachmentState PipelineColorBlendAttachmentState = { 0 };
-	PipelineColorBlendAttachmentState.blendEnable = VK_FALSE;
+	PipelineColorBlendAttachmentState.blendEnable = VK_TRUE;
+	PipelineColorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+	PipelineColorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	PipelineColorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+	PipelineColorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+	PipelineColorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	PipelineColorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
 	PipelineColorBlendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 
 	VkPipelineColorBlendStateCreateInfo PipelineColorBlendStateInformation = { 0 };
@@ -287,6 +319,7 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
 	GraphicsPipelineInformation.pViewportState = &PipelineViewportStateInformation;
 	GraphicsPipelineInformation.pRasterizationState = &PipelineRasterizationStateInformation;
 	GraphicsPipelineInformation.pMultisampleState = &PipelineMultisampleStateInformation;
+	GraphicsPipelineInformation.pDepthStencilState = &PipelineDepthStencilStateInformation;
 	GraphicsPipelineInformation.pColorBlendState = &PipelineColorBlendStateInformation;
 	GraphicsPipelineInformation.pDynamicState = &PipelineDynamicStateInformation;
 	GraphicsPipelineInformation.layout = GraphicsPipeline->PipelineLayoutHandle;

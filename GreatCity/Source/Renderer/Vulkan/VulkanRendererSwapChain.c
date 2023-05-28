@@ -24,6 +24,10 @@ typedef struct GCRendererSwapChain
 	VkSwapchainKHR SwapChainHandle;
 	VkImage* ImageHandles;
 	VkImageView* ImageViewHandles;
+
+	VkImage DepthImageHandle;
+	VkDeviceMemory DepthImageMemoryHandle;
+	VkImageView DepthImageViewHandle;
 } GCRendererSwapChain;
 
 bool GCRendererSwapChain_IsSwapChainSupported(const VkPhysicalDevice PhysicalDeviceHandle, const VkSurfaceKHR SurfaceHandle);
@@ -31,7 +35,9 @@ VkFormat GCRendererSwapChain_GetFormat(const GCRendererSwapChain* const SwapChai
 VkExtent2D GCRendererSwapChain_GetExtent(const GCRendererSwapChain* const SwapChain);
 VkSwapchainKHR GCRendererSwapChain_GetHandle(const GCRendererSwapChain* const SwapChain);
 VkImageView* GCRendererSwapChain_GetImageViewHandles(const GCRendererSwapChain* const SwapChain);
+VkImageView GCRendererSwapChain_GetDepthImageViewHandle(const GCRendererSwapChain* const SwapChain);
 uint32_t GCRendererSwapChain_GetImageCount(const GCRendererSwapChain* const SwapChain);
+VkFormat GCRendererSwapChain_GetDepthFormat(const GCRendererSwapChain* const SwapChain);
 
 extern VkSurfaceKHR GCRendererDevice_GetSurfaceHandle(const GCRendererDevice* const Device);
 extern VkPhysicalDevice GCRendererDevice_GetPhysicalDeviceHandle(const GCRendererDevice* const Device);
@@ -45,9 +51,11 @@ static void GCRendererSwapChain_SelectSurfaceFormat(GCRendererSwapChain* const S
 static void GCRendererSwapChain_SelectPresentMode(GCRendererSwapChain* const SwapChain, const VkPresentModeKHR* const PresentModes, const uint32_t PresentModeCount);
 static void GCRendererSwapChain_CreateSwapChain(GCRendererSwapChain* const SwapChain);
 static void GCRendererSwapChain_CreateImageViews(GCRendererSwapChain* const SwapChain);
+static void GCRendererSwapChain_CreateDepthBuffer(GCRendererSwapChain* const SwapChain);
 static void GCRendererSwapChain_DestroyObjects(GCRendererSwapChain* const SwapChain);
 
 static void GCRendererSwapChain_ClampExtent(VkExtent2D* const Extent, const VkSurfaceCapabilitiesKHR* const SurfaceCapabilities);
+static VkFormat GCRendererSwapChain_GetSupportedFormat(const GCRendererSwapChain* const SwapChain, const VkFormat* const Formats, const uint32_t FormatCount, const VkImageTiling Tiling, const VkFormatFeatureFlags FormatFeature);
 
 GCRendererSwapChain* GCRendererSwapChain_Create(const GCRendererDevice* const Device)
 {
@@ -61,10 +69,14 @@ GCRendererSwapChain* GCRendererSwapChain_Create(const GCRendererDevice* const De
 	SwapChain->SwapChainHandle = VK_NULL_HANDLE;
 	SwapChain->ImageHandles = NULL;
 	SwapChain->ImageViewHandles = NULL;
+	SwapChain->DepthImageHandle = VK_NULL_HANDLE;
+	SwapChain->DepthImageMemoryHandle = VK_NULL_HANDLE;
+	SwapChain->DepthImageViewHandle = VK_NULL_HANDLE;
 
 	GCRendererSwapChain_QuerySwapChainSupport(SwapChain);
 	GCRendererSwapChain_CreateSwapChain(SwapChain);
 	GCRendererSwapChain_CreateImageViews(SwapChain);
+	GCRendererSwapChain_CreateDepthBuffer(SwapChain);
 
 	return SwapChain;
 }
@@ -76,6 +88,7 @@ void GCRendererSwapChain_Recreate(GCRendererSwapChain* const SwapChain)
 	GCRendererSwapChain_QuerySwapChainSupport(SwapChain);
 	GCRendererSwapChain_CreateSwapChain(SwapChain);
 	GCRendererSwapChain_CreateImageViews(SwapChain);
+	GCRendererSwapChain_CreateDepthBuffer(SwapChain);
 }
 
 void GCRendererSwapChain_Destroy(GCRendererSwapChain* SwapChain)
@@ -116,9 +129,20 @@ VkImageView* GCRendererSwapChain_GetImageViewHandles(const GCRendererSwapChain* 
 	return SwapChain->ImageViewHandles;
 }
 
+VkImageView GCRendererSwapChain_GetDepthImageViewHandle(const GCRendererSwapChain* const SwapChain)
+{
+	return SwapChain->DepthImageViewHandle;
+}
+
 uint32_t GCRendererSwapChain_GetImageCount(const GCRendererSwapChain* const SwapChain)
 {
 	return SwapChain->ImageCount;
+}
+
+VkFormat GCRendererSwapChain_GetDepthFormat(const GCRendererSwapChain* const SwapChain)
+{
+	const VkFormat Formats[3] = { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT };
+	return GCRendererSwapChain_GetSupportedFormat(SwapChain, Formats, sizeof(Formats) / sizeof(VkFormat), VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
 void GCRendererSwapChain_QuerySwapChainSupport(GCRendererSwapChain* const SwapChain)
@@ -257,13 +281,25 @@ void GCRendererSwapChain_CreateImageViews(GCRendererSwapChain* const SwapChain)
 
 	for (uint32_t Counter = 0; Counter < SwapChain->ImageCount; Counter++)
 	{
-		GCVulkanUtilities_CreateImageView(SwapChain->Device, SwapChain->ImageHandles[Counter], SwapChain->SurfaceFormat.format, &SwapChain->ImageViewHandles[Counter]);
+		GCVulkanUtilities_CreateImageView(SwapChain->Device, SwapChain->ImageHandles[Counter], SwapChain->SurfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, &SwapChain->ImageViewHandles[Counter]);
 	}
+}
+
+void GCRendererSwapChain_CreateDepthBuffer(GCRendererSwapChain* const SwapChain)
+{
+	const VkFormat DepthFormat = GCRendererSwapChain_GetDepthFormat(SwapChain);
+
+	GCVulkanUtilities_CreateImage(SwapChain->Device, SwapChain->Extent.width, SwapChain->Extent.height, DepthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &SwapChain->DepthImageHandle, &SwapChain->DepthImageMemoryHandle);
+	GCVulkanUtilities_CreateImageView(SwapChain->Device, SwapChain->DepthImageHandle, DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, &SwapChain->DepthImageViewHandle);
 }
 
 void GCRendererSwapChain_DestroyObjects(GCRendererSwapChain* const SwapChain)
 {
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(SwapChain->Device);
+
+	vkDestroyImageView(DeviceHandle, SwapChain->DepthImageViewHandle, NULL);
+	vkFreeMemory(DeviceHandle, SwapChain->DepthImageMemoryHandle, NULL);
+	vkDestroyImage(DeviceHandle, SwapChain->DepthImageHandle, NULL);
 
 	for (uint32_t Counter = 0; Counter < SwapChain->ImageCount; Counter++)
 	{
@@ -298,4 +334,27 @@ void GCRendererSwapChain_ClampExtent(VkExtent2D* const Extent, const VkSurfaceCa
 	{
 		*Height = SurfaceCapabilities->maxImageExtent.height;
 	}
+}
+
+VkFormat GCRendererSwapChain_GetSupportedFormat(const GCRendererSwapChain* const SwapChain, const VkFormat* const Formats, const uint32_t FormatCount, const VkImageTiling Tiling, const VkFormatFeatureFlags FormatFeature)
+{
+	const VkPhysicalDevice PhysicalDeviceHandle = GCRendererDevice_GetPhysicalDeviceHandle(SwapChain->Device);
+
+	for (uint32_t Counter = 0; Counter < FormatCount; Counter++)
+	{
+		VkFormatProperties FormatProperties = { 0 };
+		vkGetPhysicalDeviceFormatProperties(PhysicalDeviceHandle, Formats[Counter], &FormatProperties);
+
+		if (Tiling == VK_IMAGE_TILING_LINEAR && (FormatProperties.linearTilingFeatures & FormatFeature) == FormatFeature)
+		{
+			return Formats[Counter];
+		}
+		else if (Tiling == VK_IMAGE_TILING_OPTIMAL && (FormatProperties.optimalTilingFeatures & FormatFeature) == FormatFeature)
+		{
+			return Formats[Counter];
+		}
+	}
+
+	GC_ASSERT_WITH_MESSAGE(false, "Failed to find a supported Vulkan format");
+	return VK_FORMAT_UNDEFINED;
 }
