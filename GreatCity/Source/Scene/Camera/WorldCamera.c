@@ -57,7 +57,6 @@ GCWorldCamera* GCWorldCamera_Create(const float FoV, const float AspectRatio, co
 
 	WorldCamera->ViewMatrix = GCMatrix4x4_CreateIdentity();
 	WorldCamera->ProjectionMatrix = GCMatrix4x4_CreatePerspective(GCMathUtilities_DegreesToRadians(FoV), AspectRatio, Near, Far);
-	WorldCamera->ProjectionMatrix.Data[1][1] *= -1.0f;
 	WorldCamera->InitialMousePosition = GCVector2_CreateZero();
 	WorldCamera->Position = GCVector3_CreateZero();
 	WorldCamera->FocalPoint = GCVector3_CreateZero();
@@ -131,7 +130,6 @@ void GCWorldCamera_UpdateProjection(GCWorldCamera* const WorldCamera)
 {
 	WorldCamera->AspectRatio = WorldCamera->Width / WorldCamera->Height;
 	WorldCamera->ProjectionMatrix = GCMatrix4x4_CreatePerspective(GCMathUtilities_DegreesToRadians(WorldCamera->FoV), WorldCamera->AspectRatio, WorldCamera->Near, WorldCamera->Far);
-	WorldCamera->ProjectionMatrix.Data[1][1] *= -1.0f;
 }
 
 bool GCWorldCamera_OnMouseScrolled(GCEvent* const Event, void* CustomData)
@@ -215,7 +213,7 @@ GCQuaternion GCWorldCamera_GetOrientation(GCWorldCamera* const WorldCamera)
 
 GCVector3 GCWorldCamera_GetUpDirection(GCWorldCamera* const WorldCamera)
 {
-	return GCQuaternion_RotateVector(GCWorldCamera_GetOrientation(WorldCamera), GCVector3_Create(0.0f, 1.0f, 0.0f));
+	return GCQuaternion_RotateVector(GCWorldCamera_GetOrientation(WorldCamera), GCVector3_Create(0.0f, -1.0f, 0.0f));
 }
 
 GCVector3 GCWorldCamera_GetRightDirection(GCWorldCamera* const WorldCamera)

@@ -253,28 +253,11 @@ void GCRendererSwapChain_CreateSwapChain(GCRendererSwapChain* const SwapChain)
 
 void GCRendererSwapChain_CreateImageViews(GCRendererSwapChain* const SwapChain)
 {
-	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(SwapChain->Device);
-
 	SwapChain->ImageViewHandles = (VkImageView*)GCMemory_Allocate(SwapChain->ImageCount * sizeof(VkImageView));
 
 	for (uint32_t Counter = 0; Counter < SwapChain->ImageCount; Counter++)
 	{
-		VkImageViewCreateInfo ImageViewInformation = { 0 };
-		ImageViewInformation.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		ImageViewInformation.image = SwapChain->ImageHandles[Counter];
-		ImageViewInformation.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		ImageViewInformation.format = SwapChain->SurfaceFormat.format;
-		ImageViewInformation.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-		ImageViewInformation.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-		ImageViewInformation.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-		ImageViewInformation.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-		ImageViewInformation.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		ImageViewInformation.subresourceRange.baseMipLevel = 0;
-		ImageViewInformation.subresourceRange.levelCount = 1;
-		ImageViewInformation.subresourceRange.baseArrayLayer = 0;
-		ImageViewInformation.subresourceRange.layerCount = 1;
-
-		GC_VULKAN_VALIDATE(vkCreateImageView(DeviceHandle, &ImageViewInformation, NULL, &SwapChain->ImageViewHandles[Counter]), "Failed to create a Vulkan swap chain image view");
+		GCVulkanUtilities_CreateImageView(SwapChain->Device, SwapChain->ImageHandles[Counter], SwapChain->SurfaceFormat.format, &SwapChain->ImageViewHandles[Counter]);
 	}
 }
 

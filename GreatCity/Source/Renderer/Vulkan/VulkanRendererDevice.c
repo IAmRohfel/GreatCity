@@ -26,6 +26,7 @@ typedef struct GCRendererDevice
 
 	bool IsValidationLayerEnabled;
 	uint32_t GraphicsFamilyQueueIndex, PresentFamilyQueueIndex;
+	GCRendererDeviceCapabilities Capabilities;
 } GCRendererDevice;
 
 typedef struct GCRendererDeviceQueueFamilyIndices
@@ -58,6 +59,7 @@ static void GCRendererDevice_CreateDebugMessenger(GCRendererDevice* const Device
 extern void GCRendererDevice_CreateSurface(const VkInstance InstanceHandle, VkSurfaceKHR* SurfaceHandle);
 static void GCRendererDevice_SelectPhysicalDevice(GCRendererDevice* const Device);
 static void GCRendererDevice_CreateDevice(GCRendererDevice* const Device);
+static void GCRendererDevice_QueryDeviceCapabilities(GCRendererDevice* const Device);
 static VKAPI_ATTR VkBool32 VKAPI_CALL GCRendererDevice_DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT Severity, VkDebugUtilsMessageTypeFlagsEXT Type, const VkDebugUtilsMessengerCallbackDataEXT* CallbackData, void* UserData);
 static void GCRendererDevice_DestroyObjects(GCRendererDevice* const Device);
 
@@ -83,6 +85,7 @@ GCRendererDevice* GCRendererDevice_Create(void)
 
 	Device->GraphicsFamilyQueueIndex = 0;
 	Device->PresentFamilyQueueIndex = 0;
+	Device->Capabilities = (GCRendererDeviceCapabilities){ 0 };
 
 	if (Device->IsValidationLayerEnabled && !GCRendererDevice_IsValidationLayerSupported())
 	{
@@ -99,6 +102,7 @@ GCRendererDevice* GCRendererDevice_Create(void)
 	GCRendererDevice_CreateSurface(Device->InstanceHandle, &Device->SurfaceHandle);
 	GCRendererDevice_SelectPhysicalDevice(Device);
 	GCRendererDevice_CreateDevice(Device);
+	GCRendererDevice_QueryDeviceCapabilities(Device);
 
 	return Device;
 }
@@ -106,6 +110,11 @@ GCRendererDevice* GCRendererDevice_Create(void)
 void GCRendererDevice_WaitIdle(const GCRendererDevice* const Device)
 {
 	vkDeviceWaitIdle(Device->DeviceHandle);
+}
+
+GCRendererDeviceCapabilities GCRendererDevice_GetDeviceCapabilities(const GCRendererDevice* const Device)
+{
+	return Device->Capabilities;
 }
 
 void GCRendererDevice_Destroy(GCRendererDevice* Device)
@@ -395,6 +404,7 @@ void GCRendererDevice_CreateDevice(GCRendererDevice* const Device)
 	}
 
 	VkPhysicalDeviceFeatures DeviceFeatures = { 0 };
+	DeviceFeatures.samplerAnisotropy = VK_TRUE;
 
 	VkDeviceCreateInfo DeviceInformation = { 0 };
 	DeviceInformation.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -420,6 +430,18 @@ void GCRendererDevice_CreateDevice(GCRendererDevice* const Device)
 
 	vkGetDeviceQueue(Device->DeviceHandle, QueueFamilyIndices.GraphicsFamily, 0, &Device->GraphicsQueueHandle);
 	vkGetDeviceQueue(Device->DeviceHandle, QueueFamilyIndices.PresentFamily, 0, &Device->PresentQueueHandle);
+}
+
+void GCRendererDevice_QueryDeviceCapabilities(GCRendererDevice* const Device)
+{
+	VkPhysicalDeviceProperties PhysicalDeviceProperties = { 0 };
+	vkGetPhysicalDeviceProperties(Device->PhysicalDeviceHandle, &PhysicalDeviceProperties);
+
+	VkPhysicalDeviceFeatures PhysicalDeviceFeatures = { 0 };
+	vkGetPhysicalDeviceFeatures(Device->PhysicalDeviceHandle, &PhysicalDeviceFeatures);
+
+	Device->Capabilities.IsAnisotropySupported = PhysicalDeviceFeatures.samplerAnisotropy;
+	Device->Capabilities.MaximumAnisotropy = PhysicalDeviceProperties.limits.maxSamplerAnisotropy;
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL GCRendererDevice_DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT Severity, VkDebugUtilsMessageTypeFlagsEXT Type, const VkDebugUtilsMessengerCallbackDataEXT* CallbackData, void* UserData)

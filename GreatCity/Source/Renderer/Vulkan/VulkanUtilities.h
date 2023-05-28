@@ -21,8 +21,15 @@ extern "C"
 	typedef struct GCRendererDevice GCRendererDevice;
 	typedef struct GCRendererCommandList GCRendererCommandList;
 
-	void GCVulkanUtilities_CreateBuffer(const GCRendererDevice* const Device, const size_t Size, const VkBufferUsageFlags Usage, const VkMemoryPropertyFlags MemoryProperty, VkBuffer* BufferHandle, VkDeviceMemory* DeviceMemoryHandle);
+	void GCVulkanUtilities_CreateBuffer(const GCRendererDevice* const Device, const size_t Size, const VkBufferUsageFlags Usage, const VkMemoryPropertyFlags MemoryProperty, VkBuffer* BufferHandle, VkDeviceMemory* BufferMemoryHandle);
 	void GCVulkanUtilities_CopyBuffer(const GCRendererDevice* const Device, const GCRendererCommandList* const CommandList, const VkBuffer SourceBuffer, const VkBuffer DestinationBuffer, const VkDeviceSize Size);
+	void GCVulkanUtilities_CreateImage(const GCRendererDevice* const Device, const uint32_t Width, const uint32_t Height, const VkFormat Format, const VkImageTiling Tiling, const VkImageUsageFlags Usage, const VkMemoryPropertyFlags MemoryProperty, VkImage* ImageHandle, VkDeviceMemory* ImageMemoryHandle);
+	void GCVulkanUtilities_TransitionImageLayout(const GCRendererDevice* const Device, const GCRendererCommandList* const CommandList, const VkImage ImageHandle, const VkFormat Format, const VkImageLayout OldLayout, const VkImageLayout NewLayout);
+	void GCVulkanUtilities_CopyBufferToImage(const GCRendererDevice* const Device, const GCRendererCommandList* const CommandList, const VkBuffer BufferHandle, const VkImage ImageHandle, const uint32_t Width, const uint32_t Height);
+	void GCVulkanUtilities_CreateImageView(const GCRendererDevice* const Device, const VkImage ImageHandle, const VkFormat Format, VkImageView* ImageViewHandle);
+
+	VkCommandBuffer GCVulkanUtilities_BeginSingleTimeCommands(const GCRendererDevice* const Device, const GCRendererCommandList* const CommandList);
+	void GCVulkanUtilities_EndSingleTimeCommands(const GCRendererDevice* const Device, const GCRendererCommandList* const CommandList, const VkCommandBuffer CommandBufferHandle);
 
 #ifdef __cplusplus
 }

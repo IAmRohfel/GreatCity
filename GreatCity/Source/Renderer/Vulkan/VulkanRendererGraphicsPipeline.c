@@ -12,43 +12,69 @@ typedef struct GCRendererGraphicsPipeline
 {
 	const GCRendererDevice* Device;
 	const GCRendererSwapChain* SwapChain;
+	const GCRendererCommandList* CommandList;
 	const GCRendererUniformBuffer* UniformBuffer;
+	const GCRendererTexture2D* const* Texture2Ds;
 	const GCRendererShader* Shader;
 
 	VkRenderPass RenderPassHandle;
+	VkDescriptorSetLayout DescriptorSetLayoutHandle;
+	VkDescriptorPool DescriptorPoolHandle;
+	VkDescriptorSet* DescriptorSetHandles;
 	VkPipelineLayout PipelineLayoutHandle;
 	VkPipeline PipelineHandle;
+
+	uint32_t Texture2DCount;
+	uint32_t DescriptorCount;
 } GCRendererGraphicsPipeline;
 
 VkRenderPass GCRendererGraphicsPipeline_GetRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
 VkPipelineLayout GCRendererGraphicsPipeline_GetPipelineLayoutHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
 VkPipeline GCRendererGraphicsPipeline_GetPipelineHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
+VkDescriptorSet* GCRendererGraphicsPipeline_GetDescriptorSetHandles(const GCRendererGraphicsPipeline* const GraphicsPipeline);
 
 extern VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
 extern VkFormat GCRendererSwapChain_GetFormat(const GCRendererSwapChain* const SwapChain);
-extern VkDescriptorSetLayout GCRendererUniformBuffer_GetDescriptorSetLayoutHandle(const GCRendererUniformBuffer* const UniformBuffer);
+extern uint32_t GCRendererCommandList_GetMaximumFramesInFlight(const GCRendererCommandList* const CommandList);
+extern VkBuffer* GCRendererUniformBuffer_GetBufferHandles(const GCRendererUniformBuffer* const UniformBuffer);
+extern size_t GCRendererUniformBuffer_GetDataSize(const GCRendererUniformBuffer* const UniformBuffer);
+extern VkImageView GCRendererTexture2D_GetImageViewHandle(const GCRendererTexture2D* const Texture2D);
+extern VkSampler GCRendererTexture2D_GetSamplerHandle(const GCRendererTexture2D* const Texture2D);
 extern VkShaderModule GCRendererShader_GetVertexShaderModuleHandle(const GCRendererShader* const Shader);
 extern VkShaderModule GCRendererShader_GetFragmentShaderModuleHandle(const GCRendererShader* const Shader);
 
 static void GCRendererGraphicsPipeline_CreateRenderPass(GCRendererGraphicsPipeline* const GraphicsPipeline);
+static void GCRendererGraphicsPipeline_CreateDescriptorSetLayout(GCRendererGraphicsPipeline* const GraphicsPipeline);
 static void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererGraphicsPipelineVertexInput* const VertexInput);
+static void GCRendererGraphicsPipeline_CreateDescriptorPool(GCRendererGraphicsPipeline* const GraphicsPipeline);
+static void GCRendererGraphicsPipeline_CreateDescriptorSets(GCRendererGraphicsPipeline* const GraphicsPipeline);
 static void GCRendererGraphicsPipeline_DestroyObjects(GCRendererGraphicsPipeline* const GraphicsPipeline);
 
 static VkFormat GCRendererGraphicsPipeline_ToVkFormat(const GCRendererGraphicsPipelineVertexInputAttributeFormat Format);
 
-GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(const GCRendererDevice* const Device, const GCRendererSwapChain* const SwapChain, const GCRendererGraphicsPipelineVertexInput* const VertexInput, const GCRendererUniformBuffer* const UniformBuffer, const GCRendererShader* const Shader)
+GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(const GCRendererDevice* const Device, const GCRendererSwapChain* const SwapChain, const GCRendererCommandList* const CommandList, const GCRendererGraphicsPipelineVertexInput* const VertexInput, const GCRendererUniformBuffer* const UniformBuffer, const GCRendererTexture2D* const* const Texture2Ds, const uint32_t Texture2DCount, const GCRendererShader* const Shader)
 {
 	GCRendererGraphicsPipeline* GraphicsPipeline = (GCRendererGraphicsPipeline*)GCMemory_Allocate(sizeof(GCRendererGraphicsPipeline));
 	GraphicsPipeline->Device = Device;
 	GraphicsPipeline->SwapChain = SwapChain;
+	GraphicsPipeline->CommandList = CommandList;
 	GraphicsPipeline->UniformBuffer = UniformBuffer;
+	GraphicsPipeline->Texture2Ds = Texture2Ds;
 	GraphicsPipeline->Shader = Shader;
 	GraphicsPipeline->RenderPassHandle = VK_NULL_HANDLE;
+	GraphicsPipeline->DescriptorSetLayoutHandle = VK_NULL_HANDLE;
+	GraphicsPipeline->DescriptorPoolHandle = VK_NULL_HANDLE;
+	GraphicsPipeline->DescriptorSetHandles = NULL;
 	GraphicsPipeline->PipelineLayoutHandle = VK_NULL_HANDLE;
 	GraphicsPipeline->PipelineHandle = VK_NULL_HANDLE;
+	GraphicsPipeline->Texture2DCount = Texture2DCount;
+	GraphicsPipeline->DescriptorCount = 1 + GraphicsPipeline->Texture2DCount;
 
 	GCRendererGraphicsPipeline_CreateRenderPass(GraphicsPipeline);
+	GCRendererGraphicsPipeline_CreateDescriptorSetLayout(GraphicsPipeline);
 	GCRendererGraphicsPipeline_CreateGraphicsPipeline(GraphicsPipeline, VertexInput);
+	GCRendererGraphicsPipeline_CreateDescriptorPool(GraphicsPipeline);
+	GCRendererGraphicsPipeline_CreateDescriptorSets(GraphicsPipeline);
 
 	return GraphicsPipeline;
 }
@@ -57,6 +83,7 @@ void GCRendererGraphicsPipeline_Destroy(GCRendererGraphicsPipeline* GraphicsPipe
 {
 	GCRendererGraphicsPipeline_DestroyObjects(GraphicsPipeline);
 
+	GCMemory_Free(GraphicsPipeline->DescriptorSetHandles);
 	GCMemory_Free(GraphicsPipeline);
 }
 
@@ -73,6 +100,11 @@ VkPipelineLayout GCRendererGraphicsPipeline_GetPipelineLayoutHandle(const GCRend
 VkPipeline GCRendererGraphicsPipeline_GetPipelineHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline)
 {
 	return GraphicsPipeline->PipelineHandle;
+}
+
+VkDescriptorSet* GCRendererGraphicsPipeline_GetDescriptorSetHandles(const GCRendererGraphicsPipeline* const GraphicsPipeline)
+{
+	return GraphicsPipeline->DescriptorSetHandles;
 }
 
 void GCRendererGraphicsPipeline_CreateRenderPass(GCRendererGraphicsPipeline* const GraphicsPipeline)
@@ -120,17 +152,42 @@ void GCRendererGraphicsPipeline_CreateRenderPass(GCRendererGraphicsPipeline* con
 	GC_VULKAN_VALIDATE(vkCreateRenderPass(DeviceHandle, &RenderPassInformation, NULL, &GraphicsPipeline->RenderPassHandle), "Failed to create a Vulkan render pass");
 }
 
+void GCRendererGraphicsPipeline_CreateDescriptorSetLayout(GCRendererGraphicsPipeline* const GraphicsPipeline)
+{
+	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(GraphicsPipeline->Device);
+
+	VkDescriptorSetLayoutBinding* DescriptorSetLayoutBindings = (VkDescriptorSetLayoutBinding*)GCMemory_AllocateZero(GraphicsPipeline->DescriptorCount * sizeof(VkDescriptorSetLayoutBinding));
+	DescriptorSetLayoutBindings[0].binding = 0;
+	DescriptorSetLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	DescriptorSetLayoutBindings[0].descriptorCount = 1;
+	DescriptorSetLayoutBindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+	for (uint32_t Counter = 0; Counter < GraphicsPipeline->Texture2DCount; Counter++)
+	{
+		DescriptorSetLayoutBindings[Counter + 1].binding = Counter + 1;
+		DescriptorSetLayoutBindings[Counter + 1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		DescriptorSetLayoutBindings[Counter + 1].descriptorCount = 1;
+		DescriptorSetLayoutBindings[Counter + 1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	}
+
+	VkDescriptorSetLayoutCreateInfo DescriptorSetLayoutInformation = { 0 };
+	DescriptorSetLayoutInformation.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	DescriptorSetLayoutInformation.bindingCount = GraphicsPipeline->DescriptorCount;
+	DescriptorSetLayoutInformation.pBindings = DescriptorSetLayoutBindings;
+
+	GC_VULKAN_VALIDATE(vkCreateDescriptorSetLayout(DeviceHandle, &DescriptorSetLayoutInformation, NULL, &GraphicsPipeline->DescriptorSetLayoutHandle), "Failed to create a Vulkan descriptor set layout");
+
+	GCMemory_Free(DescriptorSetLayoutBindings);
+}
+
 void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererGraphicsPipelineVertexInput* const VertexInput)
 {
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(GraphicsPipeline->Device);
 
 	VkPipelineLayoutCreateInfo PipelineLayoutInformation = { 0 };
 	PipelineLayoutInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-
-	const VkDescriptorSetLayout UniformBufferDescriptorSetLayoutHandle = GCRendererUniformBuffer_GetDescriptorSetLayoutHandle(GraphicsPipeline->UniformBuffer);
-
 	PipelineLayoutInformation.setLayoutCount = 1;
-	PipelineLayoutInformation.pSetLayouts = &UniformBufferDescriptorSetLayoutHandle;
+	PipelineLayoutInformation.pSetLayouts = &GraphicsPipeline->DescriptorSetLayoutHandle;
 
 	GC_VULKAN_VALIDATE(vkCreatePipelineLayout(DeviceHandle, &PipelineLayoutInformation, NULL, &GraphicsPipeline->PipelineLayoutHandle), "Failed to create a Vulkan pipeline layout");
 
@@ -190,7 +247,7 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
 	PipelineRasterizationStateInformation.rasterizerDiscardEnable = VK_FALSE;
 	PipelineRasterizationStateInformation.polygonMode = VK_POLYGON_MODE_FILL;
 	PipelineRasterizationStateInformation.cullMode = VK_CULL_MODE_BACK_BIT;
-	PipelineRasterizationStateInformation.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+	PipelineRasterizationStateInformation.frontFace = VK_FRONT_FACE_CLOCKWISE;
 	PipelineRasterizationStateInformation.depthBiasEnable = VK_FALSE;
 	PipelineRasterizationStateInformation.lineWidth = 1.0f;
 
@@ -241,12 +298,104 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
 	GCMemory_Free(VertexInputAttributeDescriptions);
 }
 
+void GCRendererGraphicsPipeline_CreateDescriptorPool(GCRendererGraphicsPipeline* const GraphicsPipeline)
+{
+	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(GraphicsPipeline->Device);
+	const uint32_t MaximumFramesInFlight = GCRendererCommandList_GetMaximumFramesInFlight(GraphicsPipeline->CommandList);
+
+	VkDescriptorPoolSize* DescriptorPoolSizes = (VkDescriptorPoolSize*)GCMemory_AllocateZero(GraphicsPipeline->DescriptorCount * sizeof(VkDescriptorPoolSize));
+	DescriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	DescriptorPoolSizes[0].descriptorCount = MaximumFramesInFlight;
+
+	for (uint32_t Counter = 0; Counter < GraphicsPipeline->Texture2DCount; Counter++)
+	{
+		DescriptorPoolSizes[Counter + 1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		DescriptorPoolSizes[Counter + 1].descriptorCount = MaximumFramesInFlight;
+	}
+
+	VkDescriptorPoolCreateInfo DescriptorPoolInformation = { 0 };
+	DescriptorPoolInformation.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	DescriptorPoolInformation.maxSets = MaximumFramesInFlight;
+	DescriptorPoolInformation.poolSizeCount = GraphicsPipeline->DescriptorCount;
+	DescriptorPoolInformation.pPoolSizes = DescriptorPoolSizes;
+
+	GC_VULKAN_VALIDATE(vkCreateDescriptorPool(DeviceHandle, &DescriptorPoolInformation, NULL, &GraphicsPipeline->DescriptorPoolHandle), "Failed to create a Vulkan descriptor pool");
+
+	GCMemory_Free(DescriptorPoolSizes);
+}
+
+void GCRendererGraphicsPipeline_CreateDescriptorSets(GCRendererGraphicsPipeline* const GraphicsPipeline)
+{
+	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(GraphicsPipeline->Device);
+	const uint32_t MaximumFramesInFlight = GCRendererCommandList_GetMaximumFramesInFlight(GraphicsPipeline->CommandList);
+
+	VkDescriptorSetLayout* const DescriptorSetLayoutHandles = (VkDescriptorSetLayout* const)GCMemory_Allocate(MaximumFramesInFlight * sizeof(VkDescriptorSetLayout));
+
+	for (uint32_t Counter = 0; Counter < MaximumFramesInFlight; Counter++)
+	{
+		DescriptorSetLayoutHandles[Counter] = GraphicsPipeline->DescriptorSetLayoutHandle;
+	}
+
+	GraphicsPipeline->DescriptorSetHandles = (VkDescriptorSet*)GCMemory_Allocate(MaximumFramesInFlight * sizeof(VkDescriptorSet));
+
+	VkDescriptorSetAllocateInfo DescriptorSetAllocateInformation = { 0 };
+	DescriptorSetAllocateInformation.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	DescriptorSetAllocateInformation.descriptorPool = GraphicsPipeline->DescriptorPoolHandle;
+	DescriptorSetAllocateInformation.descriptorSetCount = MaximumFramesInFlight;
+	DescriptorSetAllocateInformation.pSetLayouts = DescriptorSetLayoutHandles;
+
+	GC_VULKAN_VALIDATE(vkAllocateDescriptorSets(DeviceHandle, &DescriptorSetAllocateInformation, GraphicsPipeline->DescriptorSetHandles), "Failed to allocate Vulkan descriptor sets");
+
+	for (uint32_t CounterFrame = 0; CounterFrame < MaximumFramesInFlight; CounterFrame++)
+	{
+		VkWriteDescriptorSet* WriteDescriptorSets = (VkWriteDescriptorSet*)GCMemory_AllocateZero(GraphicsPipeline->DescriptorCount * sizeof(VkWriteDescriptorSet));
+
+		VkDescriptorBufferInfo DescriptorBufferInformation = { 0 };
+		DescriptorBufferInformation.buffer = GCRendererUniformBuffer_GetBufferHandles(GraphicsPipeline->UniformBuffer)[CounterFrame];
+		DescriptorBufferInformation.offset = 0;
+		DescriptorBufferInformation.range = GCRendererUniformBuffer_GetDataSize(GraphicsPipeline->UniformBuffer);
+
+		for (uint32_t Counter = 0; Counter < GraphicsPipeline->Texture2DCount; Counter++)
+		{
+			VkDescriptorImageInfo DescriptorImageInformation = { 0 };
+			DescriptorImageInformation.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			DescriptorImageInformation.imageView = GCRendererTexture2D_GetImageViewHandle(GraphicsPipeline->Texture2Ds[Counter]);
+			DescriptorImageInformation.sampler = GCRendererTexture2D_GetSamplerHandle(GraphicsPipeline->Texture2Ds[Counter]);
+
+			WriteDescriptorSets[Counter + 1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			WriteDescriptorSets[Counter + 1].dstSet = GraphicsPipeline->DescriptorSetHandles[CounterFrame];
+			WriteDescriptorSets[Counter + 1].dstBinding = Counter + 1;
+			WriteDescriptorSets[Counter + 1].dstArrayElement = 0;
+			WriteDescriptorSets[Counter + 1].descriptorCount = 1;
+			WriteDescriptorSets[Counter + 1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			WriteDescriptorSets[Counter + 1].pImageInfo = &DescriptorImageInformation;
+		}
+
+		WriteDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		WriteDescriptorSets[0].dstSet = GraphicsPipeline->DescriptorSetHandles[CounterFrame];
+		WriteDescriptorSets[0].dstBinding = 0;
+		WriteDescriptorSets[0].dstArrayElement = 0;
+		WriteDescriptorSets[0].descriptorCount = 1;
+		WriteDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		WriteDescriptorSets[0].pBufferInfo = &DescriptorBufferInformation;
+
+		vkUpdateDescriptorSets(DeviceHandle, GraphicsPipeline->DescriptorCount, WriteDescriptorSets, 0, NULL);
+
+		GCMemory_Free(WriteDescriptorSets);
+	}
+
+	GCMemory_Free(DescriptorSetLayoutHandles);
+}
+
 void GCRendererGraphicsPipeline_DestroyObjects(GCRendererGraphicsPipeline* const GraphicsPipeline)
 {
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(GraphicsPipeline->Device);
 
+	vkDestroyDescriptorPool(DeviceHandle, GraphicsPipeline->DescriptorPoolHandle, NULL);
+
 	vkDestroyPipeline(DeviceHandle, GraphicsPipeline->PipelineHandle, NULL);
 	vkDestroyPipelineLayout(DeviceHandle, GraphicsPipeline->PipelineLayoutHandle, NULL);
+	vkDestroyDescriptorSetLayout(DeviceHandle, GraphicsPipeline->DescriptorSetLayoutHandle, NULL);
 	vkDestroyRenderPass(DeviceHandle, GraphicsPipeline->RenderPassHandle, NULL);
 }
 

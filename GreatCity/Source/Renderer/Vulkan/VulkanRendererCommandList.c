@@ -42,7 +42,7 @@ extern VkExtent2D GCRendererSwapChain_GetExtent(const GCRendererSwapChain* const
 extern VkSwapchainKHR GCRendererSwapChain_GetHandle(const GCRendererSwapChain* const SwapChain);
 extern VkBuffer GCRendererVertexBuffer_GetHandle(const GCRendererVertexBuffer* const VertexBuffer);
 extern VkBuffer GCRendererIndexBuffer_GetHandle(const GCRendererIndexBuffer* const IndexBuffer);
-extern VkDescriptorSet* GCRendererUniformBuffer_GetDescriptorSetHandles(const GCRendererUniformBuffer* const UniformBuffer);
+extern VkDescriptorSet* GCRendererGraphicsPipeline_GetDescriptorSetHandles(const GCRendererGraphicsPipeline* const GraphicsPipeline);
 extern void** GCRendererUniformBuffer_GetData(const GCRendererUniformBuffer* const UniformBuffer);
 extern VkRenderPass GCRendererGraphicsPipeline_GetRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
 extern VkPipelineLayout GCRendererGraphicsPipeline_GetPipelineLayoutHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
@@ -127,13 +127,6 @@ void GCRendererCommandList_BindIndexBuffer(const GCRendererCommandList* const Co
 	vkCmdBindIndexBuffer(CommandList->CommandBufferHandles[CommandList->CurrentFrame], GCRendererIndexBuffer_GetHandle(IndexBuffer), 0, VK_INDEX_TYPE_UINT32);
 }
 
-void GCRendererCommandList_BindUniformBuffer(const GCRendererCommandList* const CommandList, const GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererUniformBuffer* const UniformBuffer)
-{
-	const VkDescriptorSet UniformBufferDescriptorSetHandle = GCRendererUniformBuffer_GetDescriptorSetHandles(UniformBuffer)[CommandList->CurrentFrame];
-
-	vkCmdBindDescriptorSets(CommandList->CommandBufferHandles[CommandList->CurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, GCRendererGraphicsPipeline_GetPipelineLayoutHandle(GraphicsPipeline), 0, 1, &UniformBufferDescriptorSetHandle, 0, NULL);
-}
-
 void GCRendererCommandList_UpdateUniformBuffer(const GCRendererCommandList* const CommandList, const GCRendererUniformBuffer* const UniformBuffer, const GCRendererCommandListRecordData* RecordData, const void* const Data, const size_t DataSize)
 {
 	(void)CommandList;
@@ -146,6 +139,9 @@ void GCRendererCommandList_UpdateUniformBuffer(const GCRendererCommandList* cons
 void GCRendererCommandList_BindGraphicsPipeline(const GCRendererCommandList* const CommandList, const GCRendererGraphicsPipeline* const GraphicsPipeline)
 {
 	vkCmdBindPipeline(CommandList->CommandBufferHandles[CommandList->CurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, GCRendererGraphicsPipeline_GetPipelineHandle(GraphicsPipeline));
+
+	const VkDescriptorSet DescriptorSetHandle = GCRendererGraphicsPipeline_GetDescriptorSetHandles(GraphicsPipeline)[CommandList->CurrentFrame];
+	vkCmdBindDescriptorSets(CommandList->CommandBufferHandles[CommandList->CurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, GCRendererGraphicsPipeline_GetPipelineLayoutHandle(GraphicsPipeline), 0, 1, &DescriptorSetHandle, 0, NULL);
 }
 
 void GCRendererCommandList_SetViewport(const GCRendererCommandList* const CommandList, const GCRendererSwapChain* const SwapChain)

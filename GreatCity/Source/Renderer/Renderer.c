@@ -5,15 +5,19 @@
 #include "Renderer/RendererVertexBuffer.h"
 #include "Renderer/RendererIndexBuffer.h"
 #include "Renderer/RendererUniformBuffer.h"
+#include "Renderer/RendererTexture2D.h"
 #include "Renderer/RendererShader.h"
 #include "Renderer/RendererGraphicsPipeline.h"
 #include "Renderer/RendererFramebuffer.h"
 #include "Core/Memory/Allocator.h"
+#include "Math/Vector2.h"
 #include "Math/Vector3.h"
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 #include "Scene/Camera/WorldCamera.h"
 #include "Core/Log.h"
+
+#include <stddef.h>
 
 typedef struct GCRenderer
 {
@@ -23,6 +27,7 @@ typedef struct GCRenderer
 	GCRendererVertexBuffer* VertexBuffer;
 	GCRendererIndexBuffer* IndexBuffer;
 	GCRendererUniformBuffer* UniformBuffer;
+	GCRendererTexture2D* TerrainTexture;
 	GCRendererShader* BasicShader;
 	GCRendererGraphicsPipeline* GraphicsPipeline;
 	GCRendererFramebuffer* Framebuffer;
@@ -34,6 +39,7 @@ typedef struct GCRendererVertex
 {
 	GCVector3 Position;
 	GCVector4 Color;
+	GCVector2 TextureCoordinate;
 } GCRendererVertex;
 
 typedef struct GCRendererUniformBufferData
@@ -56,12 +62,19 @@ void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera)
 	GCRendererVertex Vertices[4];
 	Vertices[0].Position = GCVector3_Create(-0.5f, -0.5f, 0.0f);
 	Vertices[0].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
+	Vertices[0].TextureCoordinate = GCVector2_Create(1.0f, 0.0f);
+
 	Vertices[1].Position = GCVector3_Create(0.5f, -0.5f, 0.0f);
 	Vertices[1].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
+	Vertices[1].TextureCoordinate = GCVector2_Create(0.0f, 0.0f);
+	
 	Vertices[2].Position = GCVector3_Create(0.5f, 0.5f, 0.0f);
 	Vertices[2].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
+	Vertices[2].TextureCoordinate = GCVector2_Create(0.0f, 1.0f);
+	
 	Vertices[3].Position = GCVector3_Create(-0.5f, 0.5f, 0.0f);
 	Vertices[3].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
+	Vertices[3].TextureCoordinate = GCVector2_Create(1.0f, 1.0f);
 
 	Renderer->VertexBuffer = GCRendererVertexBuffer_Create(Renderer->Device, Renderer->CommandList, Vertices, sizeof(Vertices));
 
@@ -69,25 +82,31 @@ void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera)
 
 	Renderer->IndexBuffer = GCRendererIndexBuffer_Create(Renderer->Device, Renderer->CommandList, Indices, sizeof(Indices));
 	Renderer->UniformBuffer = GCRendererUniformBuffer_Create(Renderer->Device, Renderer->CommandList, sizeof(GCRendererUniformBufferData));
+	Renderer->TerrainTexture = GCRendererTexture2D_Create(Renderer->Device, Renderer->CommandList, "Assets/Textures/Terrains/BasicTerrain.png");
 
 	Renderer->BasicShader = GCRendererShader_Create(Renderer->Device, "Assets/Shader/Basic/Basic.vertex.glsl", "Assets/Shader/Basic/Basic.fragment.glsl");
 
 	GCRendererGraphicsPipelineVertexInput GraphicsPipelineVertexInput = { 0 };
 	GraphicsPipelineVertexInput.Stride = sizeof(GCRendererVertex);
 
-	GCRendererGraphicsPipelineVertexInputAttribute GraphicsPipelineVertexInputAttributes[2] = { 0 };
+	GCRendererGraphicsPipelineVertexInputAttribute GraphicsPipelineVertexInputAttributes[3] = { 0 };
 	GraphicsPipelineVertexInputAttributes[0].Location = 0;
 	GraphicsPipelineVertexInputAttributes[0].Format = GCRendererGraphicsPipelineVertexInputAttributeFormat_Vector3;
-	GraphicsPipelineVertexInputAttributes[0].Offset = 0;
+	GraphicsPipelineVertexInputAttributes[0].Offset = offsetof(GCRendererVertex, Position);
 
 	GraphicsPipelineVertexInputAttributes[1].Location = 1;
 	GraphicsPipelineVertexInputAttributes[1].Format = GCRendererGraphicsPipelineVertexInputAttributeFormat_Vector4;
-	GraphicsPipelineVertexInputAttributes[1].Offset = 12;
+	GraphicsPipelineVertexInputAttributes[1].Offset = offsetof(GCRendererVertex, Color);
+
+	GraphicsPipelineVertexInputAttributes[2].Location = 2;
+	GraphicsPipelineVertexInputAttributes[2].Format = GCRendererGraphicsPipelineVertexInputAttributeFormat_Vector2;
+	GraphicsPipelineVertexInputAttributes[2].Offset = offsetof(GCRendererVertex, TextureCoordinate);
 
 	GraphicsPipelineVertexInput.Attributes = GraphicsPipelineVertexInputAttributes;
-	GraphicsPipelineVertexInput.AttributeCount = 2;
+	GraphicsPipelineVertexInput.AttributeCount = sizeof(GraphicsPipelineVertexInputAttributes) / sizeof(GCRendererGraphicsPipelineVertexInputAttribute);
 
-	Renderer->GraphicsPipeline = GCRendererGraphicsPipeline_Create(Renderer->Device, Renderer->SwapChain, &GraphicsPipelineVertexInput, Renderer->UniformBuffer, Renderer->BasicShader);
+	const GCRendererTexture2D* Texture2Ds[1] = { Renderer->TerrainTexture };
+	Renderer->GraphicsPipeline = GCRendererGraphicsPipeline_Create(Renderer->Device, Renderer->SwapChain, Renderer->CommandList, &GraphicsPipelineVertexInput, Renderer->UniformBuffer, Texture2Ds, 1, Renderer->BasicShader);
 	Renderer->Framebuffer = GCRendererFramebuffer_Create(Renderer->Device, Renderer->SwapChain, Renderer->GraphicsPipeline);
 
 	GCRendererCommandList_SetResizeCallback(Renderer->CommandList, GCRenderer_ResizeSwapChain);
@@ -123,6 +142,7 @@ void GCRenderer_Terminate(void)
 	GCRendererFramebuffer_Destroy(Renderer->Framebuffer);
 	GCRendererGraphicsPipeline_Destroy(Renderer->GraphicsPipeline);
 	GCRendererShader_Destroy(Renderer->BasicShader);
+	GCRendererTexture2D_Destroy(Renderer->TerrainTexture);
 	GCRendererUniformBuffer_Destroy(Renderer->UniformBuffer);
 	GCRendererIndexBuffer_Destroy(Renderer->IndexBuffer);
 	GCRendererVertexBuffer_Destroy(Renderer->VertexBuffer);
@@ -155,7 +175,6 @@ void GCRenderer_RecordCommands(const GCRendererCommandListRecordData* const Reco
 
 	GCRendererCommandList_BindVertexBuffer(Renderer->CommandList, Renderer->VertexBuffer);
 	GCRendererCommandList_BindIndexBuffer(Renderer->CommandList, Renderer->IndexBuffer);
-	GCRendererCommandList_BindUniformBuffer(Renderer->CommandList, Renderer->GraphicsPipeline, Renderer->UniformBuffer);
 	GCRendererCommandList_BindGraphicsPipeline(Renderer->CommandList, Renderer->GraphicsPipeline);
 	GCRendererCommandList_SetViewport(Renderer->CommandList, Renderer->SwapChain);
 
