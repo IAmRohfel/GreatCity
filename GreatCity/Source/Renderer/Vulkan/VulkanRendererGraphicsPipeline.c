@@ -264,7 +264,7 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
 	PipelineRasterizationStateInformation.depthClampEnable = VK_FALSE;
 	PipelineRasterizationStateInformation.rasterizerDiscardEnable = VK_FALSE;
 	PipelineRasterizationStateInformation.polygonMode = VK_POLYGON_MODE_FILL;
-	PipelineRasterizationStateInformation.cullMode = VK_CULL_MODE_BACK_BIT;
+	PipelineRasterizationStateInformation.cullMode = VK_CULL_MODE_NONE;
 	PipelineRasterizationStateInformation.frontFace = VK_FRONT_FACE_CLOCKWISE;
 	PipelineRasterizationStateInformation.depthBiasEnable = VK_FALSE;
 	PipelineRasterizationStateInformation.lineWidth = 1.0f;

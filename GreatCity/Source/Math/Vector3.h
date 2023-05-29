@@ -1,6 +1,8 @@
 #ifndef GC_MATH_VECTOR_3_H
 #define GC_MATH_VECTOR_3_H
 
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -27,6 +29,7 @@ extern "C"
 	GCVector3 GCVector3_Normalize(const GCVector3 Vector);
 
 	char* GCVector3_ToString(const GCVector3 Vector);
+	bool GCVector3_IsEqual(const GCVector3 Vector1, const GCVector3 Vector2);
 
 #ifdef __cplusplus
 }

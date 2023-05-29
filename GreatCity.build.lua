@@ -30,7 +30,8 @@ project "GreatCity"
         "%{wks.location}/GreatCity/Source",
 
         "$(VULKAN_SDK)/Include",
-        "%{wks.location}/GreatCity/Source/ThirdParty/stb/Include"
+        "%{wks.location}/GreatCity/Source/ThirdParty/stb/Include",
+        "%{wks.location}/GreatCity/Source/ThirdParty/TinyObjLoader/Include"
     }
 
     libdirs

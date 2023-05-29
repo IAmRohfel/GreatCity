@@ -54,7 +54,7 @@ GCRendererShader* GCRendererShader_Create(const GCRendererDevice* const Device, 
 	Shader->Device = Device;
 	Shader->VertexShaderModuleHandle = VK_NULL_HANDLE;
 	Shader->FragmentShaderModuleHandle = VK_NULL_HANDLE;
-	Shader->ShaderCacheDirectory = "Assets/Cache/Shader/Vulkan/";
+	Shader->ShaderCacheDirectory = "Assets/Cache/Shaders/Vulkan/";
 	Shader->VertexShaderData = NULL;
 	Shader->VertexShaderDataSize = 0;
 	Shader->FragmentShaderData = NULL;

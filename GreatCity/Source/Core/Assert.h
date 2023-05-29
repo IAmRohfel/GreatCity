@@ -19,6 +19,14 @@
 	#ifndef GC_ASSERT_WITH_MESSAGE
 		#define GC_ASSERT_WITH_MESSAGE(Check, ...) if(!(Check)) { GC_LOG_FATAL("Assertion '%s' failed at %s:%d:", #Check, __FILE__, __LINE__); GC_LOG_FATAL(__VA_ARGS__); GC_DEBUG_BREAK(); }
 	#endif
+#else
+	#ifndef GC_ASSERT
+		#define GC_ASSERT(Check)
+	#endif
+
+	#ifndef GC_ASSERT_WITH_MESSAGE
+		#define GC_ASSERT_WITH_MESSAGE(Check, ...)
+	#endif
 #endif
 
 #endif

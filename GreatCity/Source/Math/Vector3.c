@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 GCVector3 GCVector3_Create(const float X, const float Y, const float Z)
 {
@@ -115,4 +116,9 @@ char* GCVector3_ToString(const GCVector3 Vector)
 	snprintf(Buffer, Length, "(%f, %f, %f)", Vector.X, Vector.Y, Vector.Z);
 
 	return Buffer;
+}
+
+bool GCVector3_IsEqual(const GCVector3 Vector1, const GCVector3 Vector2)
+{
+	return Vector1.X == Vector2.X && Vector1.Y == Vector2.Y && Vector1.Z == Vector2.Z;
 }

@@ -14,8 +14,14 @@ extern "C"
 {
 #endif
 
-	#ifndef GC_VULKAN_VALIDATE
-		#define GC_VULKAN_VALIDATE(Function, ...) if((Function) != VK_SUCCESS) { GC_LOG_FATAL(__VA_ARGS__); GC_ASSERT(false); }
+	#ifdef GC_ASSERT_ENABLED
+		#ifndef GC_VULKAN_VALIDATE
+			#define GC_VULKAN_VALIDATE(Function, ...) if((Function) != VK_SUCCESS) { GC_LOG_FATAL(__VA_ARGS__); GC_ASSERT(false); }
+		#endif
+	#else
+		#ifndef GC_VULKAN_VALIDATE
+			#define GC_VULKAN_VALIDATE(Function, ...) (Function)
+		#endif
 	#endif
 
 	typedef struct GCRendererDevice GCRendererDevice;

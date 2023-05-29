@@ -1,6 +1,8 @@
 #ifndef GC_MATH_VECTOR_4_H
 #define GC_MATH_VECTOR_4_H
 
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -26,6 +28,7 @@ extern "C"
 	GCVector4 GCVector4_Normalize(const GCVector4 Vector);
 
 	char* GCVector4_ToString(const GCVector4 Vector);
+	bool GCVector4_IsEqual(const GCVector4 Vector1, const GCVector4 Vector2);
 
 #ifdef __cplusplus
 }

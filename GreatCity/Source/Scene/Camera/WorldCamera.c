@@ -157,9 +157,9 @@ void GCWorldCamera_Pan(GCWorldCamera* const WorldCamera, const GCVector2 MouseDe
 
 void GCWorldCamera_Rotate(GCWorldCamera* const WorldCamera, const GCVector2 MouseDelta)
 {
-	const float YawSign = GCWorldCamera_GetUpDirection(WorldCamera).Y < 0.0f ? -1.0f : 1.0f;
+	const float YawSign = GCWorldCamera_GetUpDirection(WorldCamera).Y < 0.0f ? 1.0f : -1.0f;
 
-	WorldCamera->Pitch += MouseDelta.Y * GCWorldCamera_GetRotationSpeed(WorldCamera);
+	WorldCamera->Pitch += -MouseDelta.Y * GCWorldCamera_GetRotationSpeed(WorldCamera);
 	WorldCamera->Yaw += YawSign * MouseDelta.X * GCWorldCamera_GetRotationSpeed(WorldCamera);
 }
 

@@ -1,4 +1,5 @@
 #include "Renderer/Renderer.h"
+#include "Renderer/RendererModel.h"
 #include "Renderer/RendererDevice.h"
 #include "Renderer/RendererSwapChain.h"
 #include "Renderer/RendererCommandList.h"
@@ -21,6 +22,8 @@
 
 typedef struct GCRenderer
 {
+	GCRendererModel* BasicTerrainModel;
+
 	GCRendererDevice* Device;
 	GCRendererSwapChain* SwapChain;
 	GCRendererCommandList* CommandList;
@@ -35,13 +38,6 @@ typedef struct GCRenderer
 	const GCWorldCamera* WorldCamera;
 } GCRenderer;
 
-typedef struct GCRendererVertex
-{
-	GCVector3 Position;
-	GCVector4 Color;
-	GCVector2 TextureCoordinate;
-} GCRendererVertex;
-
 typedef struct GCRendererUniformBufferData
 {
 	GCMatrix4x4 ViewProjectionMatrix;
@@ -55,61 +51,28 @@ static GCRenderer* Renderer = NULL;
 void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera)
 {
 	Renderer = (GCRenderer*)GCMemory_Allocate(sizeof(GCRenderer));
+
+	const char* ModelPaths[1] =
+	{
+		"Assets/Models/Terrains/BasicTerrain.obj"
+	};
+
+	const char* MaterialPaths[1] =
+	{
+		"Assets/Models/Terrains"
+	};
+
+	Renderer->BasicTerrainModel = GCRendererModel_CreateFromFile(ModelPaths, MaterialPaths, 1);
+
 	Renderer->Device = GCRendererDevice_Create();
 	Renderer->SwapChain = GCRendererSwapChain_Create(Renderer->Device);
 	Renderer->CommandList = GCRendererCommandList_Create(Renderer->Device);
-
-	GCRendererVertex Vertices[8] = { 0 };
-
-	{
-		Vertices[0].Position = GCVector3_Create(-0.5f, -0.5f, 0.0f);
-		Vertices[0].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
-		Vertices[0].TextureCoordinate = GCVector2_Create(1.0f, 0.0f);
-
-		Vertices[1].Position = GCVector3_Create(0.5f, -0.5f, 0.0f);
-		Vertices[1].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
-		Vertices[1].TextureCoordinate = GCVector2_Create(0.0f, 0.0f);
-
-		Vertices[2].Position = GCVector3_Create(0.5f, 0.5f, 0.0f);
-		Vertices[2].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
-		Vertices[2].TextureCoordinate = GCVector2_Create(0.0f, 1.0f);
-
-		Vertices[3].Position = GCVector3_Create(-0.5f, 0.5f, 0.0f);
-		Vertices[3].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
-		Vertices[3].TextureCoordinate = GCVector2_Create(1.0f, 1.0f);
-	}
-
-	{
-		Vertices[4].Position = GCVector3_Create(-0.5f, -0.5f, -0.5f);
-		Vertices[4].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
-		Vertices[4].TextureCoordinate = GCVector2_Create(1.0f, 0.0f);
-
-		Vertices[5].Position = GCVector3_Create(0.5f, -0.5f, -0.5f);
-		Vertices[5].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
-		Vertices[5].TextureCoordinate = GCVector2_Create(0.0f, 0.0f);
-
-		Vertices[6].Position = GCVector3_Create(0.5f, 0.5f, -0.5f);
-		Vertices[6].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
-		Vertices[6].TextureCoordinate = GCVector2_Create(0.0f, 1.0f);
-
-		Vertices[7].Position = GCVector3_Create(-0.5f, 0.5f, -0.5f);
-		Vertices[7].Color = GCVector4_Create(1.0f, 0.0f, 0.0f, 1.0f);
-		Vertices[7].TextureCoordinate = GCVector2_Create(1.0f, 1.0f);
-	}
-
-	Renderer->VertexBuffer = GCRendererVertexBuffer_Create(Renderer->Device, Renderer->CommandList, Vertices, sizeof(Vertices));
-
-	const uint32_t Indices[12] =
-	{
-		0, 1, 2, 2, 3, 0,
-		4, 5, 6, 6, 7, 4
-	};
-
-	Renderer->IndexBuffer = GCRendererIndexBuffer_Create(Renderer->Device, Renderer->CommandList, Indices, sizeof(Indices));
+	Renderer->VertexBuffer = GCRendererVertexBuffer_Create(Renderer->Device, Renderer->CommandList, Renderer->BasicTerrainModel->Vertices, Renderer->BasicTerrainModel->VertexCount * sizeof(GCRendererVertex));
+	Renderer->IndexBuffer = GCRendererIndexBuffer_Create(Renderer->Device, Renderer->CommandList, Renderer->BasicTerrainModel->Indices, Renderer->BasicTerrainModel->IndexCount * sizeof(uint32_t));
 	Renderer->UniformBuffer = GCRendererUniformBuffer_Create(Renderer->Device, Renderer->CommandList, sizeof(GCRendererUniformBufferData));
 	Renderer->TerrainTexture = GCRendererTexture2D_Create(Renderer->Device, Renderer->CommandList, "Assets/Textures/Terrains/BasicTerrain.png");
 
-	Renderer->BasicShader = GCRendererShader_Create(Renderer->Device, "Assets/Shader/Basic/Basic.vertex.glsl", "Assets/Shader/Basic/Basic.fragment.glsl");
+	Renderer->BasicShader = GCRendererShader_Create(Renderer->Device, "Assets/Shaders/Basic/Basic.vertex.glsl", "Assets/Shaders/Basic/Basic.fragment.glsl");
 
 	GCRendererGraphicsPipelineVertexInput GraphicsPipelineVertexInput = { 0 };
 	GraphicsPipelineVertexInput.Stride = sizeof(GCRendererVertex);
@@ -175,6 +138,8 @@ void GCRenderer_Terminate(void)
 	GCRendererSwapChain_Destroy(Renderer->SwapChain);
 	GCRendererDevice_Destroy(Renderer->Device);
 
+	GCRendererModel_Destroy(Renderer->BasicTerrainModel);
+
 	GCMemory_Free(Renderer);
 }
 
@@ -203,7 +168,7 @@ void GCRenderer_RecordCommands(const GCRendererCommandListRecordData* const Reco
 	GCRendererCommandList_BindGraphicsPipeline(Renderer->CommandList, Renderer->GraphicsPipeline);
 	GCRendererCommandList_SetViewport(Renderer->CommandList, Renderer->SwapChain);
 
-	GCRendererCommandList_DrawIndexed(Renderer->CommandList, 12, 0);
+	GCRendererCommandList_DrawIndexed(Renderer->CommandList, Renderer->BasicTerrainModel->IndexCount, 0);
 
 	GCRendererCommandList_EndRenderPass(Renderer->CommandList);
 	GCRendererCommandList_EndRecord(Renderer->CommandList);
