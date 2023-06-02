@@ -18,6 +18,7 @@
 #ifndef GC_RENDERER_RENDERER_H
 #define GC_RENDERER_RENDERER_H
 
+#include "Scene/Entity.h"
 #include "Math/Vector2.h"
 #include "Math/Vector3.h"
 #include "Math/Vector4.h"
@@ -48,7 +49,7 @@ extern "C"
 
 	void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera);
 	void GCRenderer_Begin(void);
-	void GCRenderer_RenderModel(const GCRendererModel* const Model);
+	void GCRenderer_RenderEntity(const GCEntity Entity);
 	void GCRenderer_End(void);
 	void GCRenderer_Present(void);
 	void GCRenderer_Resize(void);

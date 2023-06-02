@@ -28,12 +28,12 @@
 #include "Renderer/RendererGraphicsPipeline.h"
 #include "Renderer/RendererFramebuffer.h"
 #include "Core/Memory/Allocator.h"
+#include "Scene/Entity.h"
+#include "Scene/Camera/WorldCamera.h"
 #include "Math/Vector2.h"
 #include "Math/Vector3.h"
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
-#include "Scene/Camera/WorldCamera.h"
-#include "Core/Log.h"
 
 #include <stddef.h>
 
@@ -118,8 +118,11 @@ void GCRenderer_Begin(void)
 	Renderer->DrawDataCount = 0;
 }
 
-void GCRenderer_RenderModel(const GCRendererModel* const Model)
+void GCRenderer_RenderEntity(const GCEntity Entity)
 {
+	const GCMeshComponent* const MeshComponent = GCEntity_GetMeshComponent(Entity);
+	const GCRendererModel* const Model = MeshComponent->Model;
+
 	Renderer->DrawData[Renderer->DrawDataCount].VertexBuffer = Model->VertexBuffer;
 	Renderer->DrawData[Renderer->DrawDataCount].VertexCount = Model->VertexCount;
 	Renderer->DrawData[Renderer->DrawDataCount].IndexBuffer = Model->IndexBuffer;

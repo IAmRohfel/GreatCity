@@ -22,7 +22,14 @@ project "GreatCity"
     files
     {
         "%{wks.location}/GreatCity/Source/**.c",
-        "%{wks.location}/GreatCity/Source/**.h"
+        "%{wks.location}/GreatCity/Source/**.cpp",
+        "%{wks.location}/GreatCity/Source/**.h",
+    }
+
+    removefiles
+    {
+        "%{wks.location}/GreatCity/Source/ThirdParty/**.c",
+        "%{wks.location}/GreatCity/Source/ThirdParty/**.h"
     }
 
     includedirs
@@ -31,7 +38,8 @@ project "GreatCity"
 
         "$(VULKAN_SDK)/Include",
         "%{wks.location}/GreatCity/Source/ThirdParty/stb/Include",
-        "%{wks.location}/GreatCity/Source/ThirdParty/TinyObjLoader/Include"
+        "%{wks.location}/GreatCity/Source/ThirdParty/TinyObjLoader/Include",
+        "%{wks.location}/GreatCity/Source/ThirdParty/Flecs/Include"
     }
 
     libdirs
@@ -41,7 +49,9 @@ project "GreatCity"
 
     links
     {
-        "vulkan-1"
+        "vulkan-1",
+
+        "Flecs"
     }
 
     flags "FatalWarnings"
@@ -96,3 +106,6 @@ project "GreatCity"
 
         runtime "Release"
         optimize "On"
+
+group "Dependencies"
+    include "Dependencies.build.lua"

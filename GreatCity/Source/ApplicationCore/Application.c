@@ -22,6 +22,7 @@
 #include "Core/Memory/Allocator.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/RendererModel.h"
+#include "Scene/Scene.h"
 #include "Scene/Camera/WorldCamera.h"
 #include "Math/Matrix4x4.h"
 #include "Math/Utilities.h"
@@ -31,16 +32,15 @@
 typedef struct GCApplication
 {
 	GCWindow* Window;
+	GCScene* Scene;
 	GCWorldCamera* WorldCamera;
-
-	GCRendererModel* BasicTerrainModel;
-	GCRendererModel* SmallOfficeModel;
 
 	bool IsRunning;
 	bool IsMinimized;
 } GCApplication;
 
 static GCApplication* Application = NULL;
+static GCEntity BasicTerrainEntity = 0, SmallOfficeEntity = 0;
 
 static void GCApplication_OnEvent(GCWindow* const Window, GCEvent* const Event);
 static bool GCApplication_OnWindowResized(GCEvent* const Event, void* CustomData);
@@ -50,9 +50,8 @@ void GCApplication_Create(void)
 {
 	Application = (GCApplication*)GCMemory_Allocate(sizeof(GCApplication));
 	Application->Window = NULL;
+	Application->Scene = NULL;
 	Application->WorldCamera = NULL;
-	Application->BasicTerrainModel = NULL;
-	Application->SmallOfficeModel = NULL;
 	Application->IsRunning = true;
 	Application->IsMinimized = false;
 
@@ -63,16 +62,21 @@ void GCApplication_Create(void)
 	WindowProperties.EventCallback = GCApplication_OnEvent;
 
 	Application->Window = GCWindow_Create(&WindowProperties);
+	Application->Scene = GCScene_Create();
 	Application->WorldCamera = GCWorldCamera_Create(30.0f, 1280.0f / 720.0f, 0.1f, 1000.0f);
 
 	GCRenderer_Initialize(Application->WorldCamera);
 
-	Application->BasicTerrainModel = GCRendererModel_CreateFromFile("Assets/Models/Terrains/BasicTerrain.obj", "Assets/Models/Terrains");
+	BasicTerrainEntity = GCScene_CreateEntity(Application->Scene, "Basic Terrain");
+	GCMeshComponent* BasicTerrainEntityMeshComponent = GCEntity_AddMeshComponent(BasicTerrainEntity);
+	BasicTerrainEntityMeshComponent->Model = GCRendererModel_CreateFromFile("Assets/Models/Terrains/BasicTerrain.obj", "Assets/Models/Terrains");
+
+	SmallOfficeEntity = GCScene_CreateEntity(Application->Scene, "Small Office");
+	GCMeshComponent* SmallOfficeEntityMeshComponent = GCEntity_AddMeshComponent(SmallOfficeEntity);
+	SmallOfficeEntityMeshComponent->Model = GCRendererModel_CreateFromFile("Assets/Models/Buildings/Offices/SmallOffice.obj", "Assets/Models/Buildings/Offices");
 
 	GCMatrix4x4 Transform = GCMatrix4x4_CreateTranslation(GCVector3_Create(0.0f, 0.5f, 0.0f));
-	GCRendererModel_SetTransform(Application->BasicTerrainModel, &Transform);
-
-	Application->SmallOfficeModel = GCRendererModel_CreateFromFile("Assets/Models/Buildings/Offices/SmallOffice.obj", "Assets/Models/Buildings/Offices");
+	GCRendererModel_SetTransform(BasicTerrainEntityMeshComponent->Model, &Transform);
 }
 
 void GCApplication_Run(void)
@@ -83,8 +87,8 @@ void GCApplication_Run(void)
 
 		GCRenderer_Begin();
 
-		GCRenderer_RenderModel(Application->BasicTerrainModel);
-		GCRenderer_RenderModel(Application->SmallOfficeModel);
+		GCRenderer_RenderEntity(BasicTerrainEntity);
+		GCRenderer_RenderEntity(SmallOfficeEntity);
 
 		GCRenderer_End();
 		GCRenderer_Present();
@@ -100,11 +104,11 @@ const GCWindow* const GCApplication_GetWindow(void)
 
 void GCApplication_Destroy(void)
 {
-	GCRendererModel_Destroy(Application->SmallOfficeModel);
-	GCRendererModel_Destroy(Application->BasicTerrainModel);
+	GCEntity_RemoveMeshComponent(SmallOfficeEntity);
+	GCEntity_RemoveMeshComponent(BasicTerrainEntity);
+	GCScene_Destroy(Application->Scene);
 
 	GCRenderer_Terminate();
-
 	GCWindow_Destroy(Application->Window);
 
 	GCMemory_Free(Application->WorldCamera);
