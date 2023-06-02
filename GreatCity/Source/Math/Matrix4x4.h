@@ -2,6 +2,7 @@
 #define GC_MATH_MATRIX_4X4_H
 
 #include "Math/Vector3.h"
+#include "Math/Vector4.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -25,6 +26,7 @@ extern "C"
 
 	GCMatrix4x4 GCMatrix4x4_Multiply(const GCMatrix4x4* const Matrix1, const GCMatrix4x4* const Matrix2);
 	GCMatrix4x4 GCMatrix4x4_MultiplyByScalar(const GCMatrix4x4* const Matrix, const float Scalar);
+	GCVector4 GCMatrix4x4_MultiplyByVector(const GCMatrix4x4* const Matrix, const GCVector4 Vector);
 
 	float GCMatrix4x4_Determinant(const GCMatrix4x4* const Matrix);
 	GCMatrix4x4 GCMatrix4x4_Inverse(const GCMatrix4x4* const Matrix);

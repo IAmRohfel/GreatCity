@@ -25,13 +25,20 @@ extern "C"
 	} GCRendererVertex;
 
 	typedef struct GCWorldCamera GCWorldCamera;
+	typedef struct GCRendererModel GCRendererModel;
+	typedef struct GCRendererDevice GCRendererDevice;
+	typedef struct GCRendererCommandList GCRendererCommandList;
 
 	void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera);
 	void GCRenderer_Begin(void);
-	void GCRenderer_Present(void);
+	void GCRenderer_RenderModel(const GCRendererModel* const Model);
 	void GCRenderer_End(void);
+	void GCRenderer_Present(void);
 	void GCRenderer_Resize(void);
 	void GCRenderer_Terminate(void);
+
+	const GCRendererDevice* const GCRenderer_GetDevice(void);
+	const GCRendererCommandList* const GCRenderer_GetCommandList(void);
 
 #ifdef __cplusplus
 }

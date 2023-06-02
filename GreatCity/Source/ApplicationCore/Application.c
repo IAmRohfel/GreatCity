@@ -4,7 +4,10 @@
 #include "ApplicationCore/Event/ApplicationEvent.h"
 #include "Core/Memory/Allocator.h"
 #include "Renderer/Renderer.h"
+#include "Renderer/RendererModel.h"
 #include "Scene/Camera/WorldCamera.h"
+#include "Math/Matrix4x4.h"
+#include "Math/Utilities.h"
 
 #include <stdbool.h>
 
@@ -12,6 +15,9 @@ typedef struct GCApplication
 {
 	GCWindow* Window;
 	GCWorldCamera* WorldCamera;
+
+	GCRendererModel* BasicTerrainModel;
+	GCRendererModel* SmallOfficeModel;
 
 	bool IsRunning;
 	bool IsMinimized;
@@ -28,6 +34,8 @@ void GCApplication_Create(void)
 	Application = (GCApplication*)GCMemory_Allocate(sizeof(GCApplication));
 	Application->Window = NULL;
 	Application->WorldCamera = NULL;
+	Application->BasicTerrainModel = NULL;
+	Application->SmallOfficeModel = NULL;
 	Application->IsRunning = true;
 	Application->IsMinimized = false;
 
@@ -38,10 +46,16 @@ void GCApplication_Create(void)
 	WindowProperties.EventCallback = GCApplication_OnEvent;
 
 	Application->Window = GCWindow_Create(&WindowProperties);
-
 	Application->WorldCamera = GCWorldCamera_Create(30.0f, 1280.0f / 720.0f, 0.1f, 1000.0f);
 
 	GCRenderer_Initialize(Application->WorldCamera);
+
+	Application->BasicTerrainModel = GCRendererModel_CreateFromFile("Assets/Models/Terrains/BasicTerrain.obj", "Assets/Models/Terrains");
+
+	GCMatrix4x4 Transform = GCMatrix4x4_CreateTranslation(GCVector3_Create(0.0f, 0.5f, 0.0f));
+	GCRendererModel_SetTransform(Application->BasicTerrainModel, &Transform);
+
+	Application->SmallOfficeModel = GCRendererModel_CreateFromFile("Assets/Models/Buildings/Offices/SmallOffice.obj", "Assets/Models/Buildings/Offices");
 }
 
 void GCApplication_Run(void)
@@ -51,8 +65,12 @@ void GCApplication_Run(void)
 		GCWorldCamera_Update(Application->WorldCamera);
 
 		GCRenderer_Begin();
-		GCRenderer_Present();
+
+		GCRenderer_RenderModel(Application->BasicTerrainModel);
+		GCRenderer_RenderModel(Application->SmallOfficeModel);
+
 		GCRenderer_End();
+		GCRenderer_Present();
 
 		GCWindow_ProcessEvents(Application->Window);
 	}
@@ -65,7 +83,11 @@ const GCWindow* const GCApplication_GetWindow(void)
 
 void GCApplication_Destroy(void)
 {
+	GCRendererModel_Destroy(Application->SmallOfficeModel);
+	GCRendererModel_Destroy(Application->BasicTerrainModel);
+
 	GCRenderer_Terminate();
+
 	GCWindow_Destroy(Application->Window);
 
 	GCMemory_Free(Application->WorldCamera);

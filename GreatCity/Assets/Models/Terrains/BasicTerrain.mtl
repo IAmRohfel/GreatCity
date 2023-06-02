@@ -1,7 +1,7 @@
-# Blender 3.5.1 MTL File: 'BasicTerrain.blend'
+# Blender 3.5.1 MTL File: 'GreatCityModels.blend'
 # www.blender.org
 
-newmtl Basic
+newmtl Terrain
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
 Kd 0.015996 0.558340 0.111933

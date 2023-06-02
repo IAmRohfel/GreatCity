@@ -252,6 +252,18 @@ GCMatrix4x4 GCMatrix4x4_MultiplyByScalar(const GCMatrix4x4* const Matrix, const 
 	return Result;
 }
 
+GCVector4 GCMatrix4x4_MultiplyByVector(const GCMatrix4x4* const Matrix, const GCVector4 Vector)
+{
+	GCVector4 Result;
+
+	Result.X = Matrix->Data[0][0] * Vector.X + Matrix->Data[1][0] * Vector.Y + Matrix->Data[2][0] * Vector.Z + Matrix->Data[3][0] * Vector.W;
+	Result.Y = Matrix->Data[0][1] * Vector.X + Matrix->Data[1][1] * Vector.Y + Matrix->Data[2][1] * Vector.Z + Matrix->Data[3][1] * Vector.W;
+	Result.Z = Matrix->Data[0][2] * Vector.X + Matrix->Data[1][2] * Vector.Y + Matrix->Data[2][2] * Vector.Z + Matrix->Data[3][2] * Vector.W;
+	Result.W = Matrix->Data[0][3] * Vector.X + Matrix->Data[1][3] * Vector.Y + Matrix->Data[2][3] * Vector.Z + Matrix->Data[3][3] * Vector.W;
+
+	return Result;
+}
+
 float GCMatrix4x4_Determinant(const GCMatrix4x4* const Matrix)
 {
 	float Result = 0.0f, InnerMatrixDeterminant = 0.0f;

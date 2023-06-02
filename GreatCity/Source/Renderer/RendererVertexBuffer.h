@@ -12,7 +12,9 @@ extern "C"
 	typedef struct GCRendererDevice GCRendererDevice;
 	typedef struct GCRendererCommandList GCRendererCommandList;
 
-	GCRendererVertexBuffer* GCRendererVertexBuffer_Create(const GCRendererDevice* const Device, const GCRendererCommandList* const CommandList, const void* const Vertices, const size_t VertexSize);
+	GCRendererVertexBuffer* GCRendererVertexBuffer_Create(const GCRendererDevice* const Device, const GCRendererCommandList* const CommandList, void* const Vertices, const size_t VertexSize);
+	GCRendererVertexBuffer* GCRendererVertexBuffer_CreateDynamic(const GCRendererDevice* const Device, const GCRendererCommandList* const CommandList, const size_t VertexSize);
+	void GCRendererVertexBuffer_SetVertices(GCRendererVertexBuffer* const VertexBuffer, const void* const Vertices, const size_t VertexSize);
 	void GCRendererVertexBuffer_Destroy(GCRendererVertexBuffer* VertexBuffer);
 
 #ifdef __cplusplus

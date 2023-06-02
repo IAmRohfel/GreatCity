@@ -1,8 +1,12 @@
 #include "Renderer/RendererModel.h"
 #include "Renderer/Renderer.h"
+#include "Renderer/RendererDevice.h"
+#include "Renderer/RendererVertexBuffer.h"
+#include "Renderer/RendererIndexBuffer.h"
 #include "Core/Memory/Allocator.h"
 #include "Core/Log.h"
 #include "Core/Assert.h"
+#include "Math/Matrix4x4.h"
 
 #include <vector>
 #include <unordered_map>
@@ -40,12 +44,20 @@ namespace std
 	};
 }
 
-GCRendererModel* GCRendererModel_CreateFromFile(const char* const* const ModelPaths, const char* const* const MaterialPaths, const uint32_t ModelCount)
+GCRendererModel* GCRendererModel_CreateFromFile(const char* const ModelPath, const char* const MaterialPath)
+{
+	const char* const ModelPaths[1] = { ModelPath };
+	const char* const MaterialPaths[1] = { MaterialPath };
+
+	return GCRendererModel_CreateFromFiles(ModelPaths, MaterialPaths, 1);
+}
+
+GCRendererModel* GCRendererModel_CreateFromFiles(const char* const* const ModelPaths, const char* const* const MaterialPaths, const uint32_t ModelCount)
 {
 	GCRendererModel* Model = (GCRendererModel*)GCMemory_Allocate(sizeof(GCRendererModel));
-	Model->Vertices = NULL;
+	Model->VertexBuffer = NULL;
 	Model->VertexCount = 0;
-	Model->Indices = NULL;
+	Model->IndexBuffer = NULL;
 	Model->IndexCount = 0;
 
 	std::vector<GCRendererVertex> Vertices{};
@@ -81,8 +93,10 @@ GCRendererModel* GCRendererModel_CreateFromFile(const char* const* const ModelPa
 		{
 			uint32_t IndexOffset = 0;
 
-			for (const uint32_t Face : Shape.mesh.num_face_vertices)
+			for (uint32_t FaceIndex = 0; FaceIndex < Shape.mesh.num_face_vertices.size(); FaceIndex++)
 			{
+				const uint32_t Face = Shape.mesh.num_face_vertices[FaceIndex];
+
 				for (uint32_t FaceVertex = 0; FaceVertex < Face; FaceVertex++)
 				{
 					GCRendererVertex Vertex{};
@@ -106,6 +120,9 @@ GCRendererModel* GCRendererModel_CreateFromFile(const char* const* const ModelPa
 						);
 					}
 
+					const tinyobj::material_t Material = Materials[Shape.mesh.material_ids[FaceIndex]];
+					Vertex.Color = GCVector4_Create(Material.diffuse[0], Material.diffuse[1], Material.diffuse[2], 1.0f);
+
 					if (UniqueVertices.count(Vertex) == 0)
 					{
 						UniqueVertices[Vertex] = static_cast<uint32_t>(Vertices.size());
@@ -116,34 +133,47 @@ GCRendererModel* GCRendererModel_CreateFromFile(const char* const* const ModelPa
 				}
 
 				IndexOffset += Face;
-
-				const tinyobj::material_t Material = Materials[Shape.mesh.material_ids[Face]];
-
-				for (GCRendererVertex& Vertex : Vertices)
-				{
-					Vertex.Color = GCVector4_Create(Material.diffuse[0], Material.diffuse[1], Material.diffuse[2], 1.0f);
-				}
-
-				//(void)Material;
 			}
 		}
 	}
 
+	const GCRendererDevice* const Device = GCRenderer_GetDevice();
+	const GCRendererCommandList* const CommandList = GCRenderer_GetCommandList();
+
+	Model->VertexBuffer = GCRendererVertexBuffer_CreateDynamic(Device, CommandList, Vertices.size() * sizeof(GCRendererVertex));
+	GCRendererVertexBuffer_SetVertices(Model->VertexBuffer, Vertices.data(), Vertices.size() * sizeof(GCRendererVertex));
+
 	Model->Vertices = static_cast<GCRendererVertex*>(GCMemory_Allocate(Vertices.size() * sizeof(GCRendererVertex)));
 	memcpy(Model->Vertices, Vertices.data(), Vertices.size() * sizeof(GCRendererVertex));
+
 	Model->VertexCount = static_cast<uint32_t>(Vertices.size());
 
-	Model->Indices = static_cast<uint32_t*>(GCMemory_Allocate(Indices.size() * sizeof(uint32_t)));
-	memcpy(Model->Indices, Indices.data(), Indices.size() * sizeof(uint32_t));
+	Model->IndexBuffer = GCRendererIndexBuffer_Create(Device, CommandList, Indices.data(), Indices.size() * sizeof(uint32_t));
 	Model->IndexCount = static_cast<uint32_t>(Indices.size());
 
 	return Model;
 }
 
+void GCRendererModel_SetTransform(GCRendererModel* const Model, const GCMatrix4x4* const Transform)
+{
+	for (uint32_t Counter = 0; Counter < Model->VertexCount; Counter++)
+	{
+		const GCVector3 Position = Model->Vertices[Counter].Position;
+		const GCVector4 TransformVector = GCMatrix4x4_MultiplyByVector(Transform, GCVector4_Create(Position.X, Position.Y, Position.Z, 1.0f));
+
+		Model->Vertices[Counter].Position = GCVector3_Create(TransformVector.X, TransformVector.Y, TransformVector.Z);
+	}
+
+	GCRendererVertexBuffer_SetVertices(Model->VertexBuffer, Model->Vertices, Model->VertexCount * sizeof(GCRendererVertex));
+}
+
 void GCRendererModel_Destroy(GCRendererModel* Model)
 {
-	GCMemory_Free(Model->Indices);
-	GCMemory_Free(Model->Vertices);
+	GCRendererDevice_WaitIdle(GCRenderer_GetDevice());
 
+	GCRendererIndexBuffer_Destroy(Model->IndexBuffer);
+	GCRendererVertexBuffer_Destroy(Model->VertexBuffer);
+
+	GCMemory_Free(Model->Vertices);
 	GCMemory_Free(Model);
 }
