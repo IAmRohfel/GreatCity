@@ -15,8 +15,17 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "Renderer/RendererCommandList.h"
+#include "Renderer/Vulkan/VulkanRendererCommandList.h"
+#include "Renderer/Vulkan/VulkanRendererDevice.h"
+#include "Renderer/Vulkan/VulkanRendererSwapChain.h"
+#include "Renderer/Vulkan/VulkanRendererVertexBuffer.h"
+#include "Renderer/Vulkan/VulkanRendererIndexBuffer.h"
+#include "Renderer/Vulkan/VulkanRendererUniformBuffer.h"
+#include "Renderer/Vulkan/VulkanRendererGraphicsPipeline.h"
+#include "Renderer/Vulkan/VulkanRendererFramebuffer.h"
 #include "Renderer/Vulkan/VulkanUtilities.h"
+#include "Renderer/RendererCommandList.h"
+#include "Renderer/RendererDevice.h"
 #include "Core/Memory/Allocator.h"
 #include "Core/Log.h"
 #include "Core/Assert.h"
@@ -47,28 +56,6 @@ typedef struct GCRendererCommandListRecordData
 {
 	uint32_t SwapChainImageIndex;
 } GCRendererCommandListRecordData;
-
-uint32_t GCRendererCommandList_GetMaximumFramesInFlight(const GCRendererCommandList* const CommandList);
-VkCommandPool GCRendererCommandList_GetTransientCommandPoolHandle(const GCRendererCommandList* const CommandList);
-VkCommandBuffer GCRendererCommandList_GetCurrentFrameCommandBufferHandle(const GCRendererCommandList* const CommandList);
-
-extern VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
-extern uint32_t GCRendererDevice_GetGraphicsFamilyQueueIndex(const GCRendererDevice* const Device);
-extern VkQueue GCRendererDevice_GetGraphicsQueueHandle(const GCRendererDevice* const Device);
-extern VkQueue GCRendererDevice_GetPresentQueueHandle(const GCRendererDevice* const Device);
-extern VkExtent2D GCRendererSwapChain_GetExtent(const GCRendererSwapChain* const SwapChain);
-extern VkSwapchainKHR GCRendererSwapChain_GetHandle(const GCRendererSwapChain* const SwapChain);
-extern VkBuffer GCRendererVertexBuffer_GetHandle(const GCRendererVertexBuffer* const VertexBuffer);
-extern VkBuffer GCRendererIndexBuffer_GetHandle(const GCRendererIndexBuffer* const IndexBuffer);
-extern void** GCRendererUniformBuffer_GetData(const GCRendererUniformBuffer* const UniformBuffer);
-extern VkDescriptorSet* GCRendererGraphicsPipeline_GetDescriptorSetHandles(const GCRendererGraphicsPipeline* const GraphicsPipeline);
-extern VkRenderPass GCRendererGraphicsPipeline_GetTextureRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
-extern VkRenderPass GCRendererGraphicsPipeline_GetSwapChainRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
-extern VkPipelineLayout GCRendererGraphicsPipeline_GetPipelineLayoutHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
-extern VkPipeline GCRendererGraphicsPipeline_GetPipelineHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
-extern VkFramebuffer GCRendererFramebuffer_GetTextureFramebufferHandle(const GCRendererFramebuffer* const Framebuffer);
-extern VkFramebuffer* GCRendererFramebuffer_GetSwapChainFramebufferHandles(const GCRendererFramebuffer* const Framebuffer);
-extern VkExtent2D GCRendererFramebuffer_GetTextureExtent(const GCRendererFramebuffer* const Framebuffer);
 
 static void GCRendererCommandList_CreateCommandPool(GCRendererCommandList* const CommandList);
 static void GCRendererCommandList_CreateCommandBuffers(GCRendererCommandList* const CommandList);
@@ -305,6 +292,8 @@ void GCRendererCommandList_SubmitAndPresent(GCRendererCommandList* const Command
 
 void GCRendererCommandList_Destroy(GCRendererCommandList* CommandList)
 {
+	GCRendererDevice_WaitIdle(CommandList->Device);
+
 	GCRendererCommandList_DestroyObjects(CommandList);
 
 	GCMemory_Free(CommandList);

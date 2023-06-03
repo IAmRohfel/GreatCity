@@ -15,8 +15,12 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "Renderer/RendererUniformBuffer.h"
+#include "Renderer/Vulkan/VulkanRendererUniformBuffer.h"
+#include "Renderer/Vulkan/VulkanRendererDevice.h"
+#include "Renderer/Vulkan/VulkanRendererCommandList.h"
 #include "Renderer/Vulkan/VulkanUtilities.h"
+#include "Renderer/RendererUniformBuffer.h"
+#include "Renderer/RendererDevice.h"
 #include "Core/Memory/Allocator.h"
 #include "Core/Log.h"
 #include "Core/Assert.h"
@@ -36,13 +40,6 @@ typedef struct GCRendererUniformBuffer
 	void** Data;
 	size_t DataSize;
 } GCRendererUniformBuffer;
-
-VkBuffer* GCRendererUniformBuffer_GetBufferHandles(const GCRendererUniformBuffer* const UniformBuffer);
-void** GCRendererUniformBuffer_GetData(const GCRendererUniformBuffer* const UniformBuffer);
-size_t GCRendererUniformBuffer_GetDataSize(const GCRendererUniformBuffer* const UniformBuffer);
-
-extern VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
-extern uint32_t GCRendererCommandList_GetMaximumFramesInFlight(const GCRendererCommandList* const CommandList);
 
 static void GCRendererUniformBuffer_CreateUniformBuffer(GCRendererUniformBuffer* const UniformBuffer);
 static void GCRendererUniformBuffer_DestroyObjects(GCRendererUniformBuffer* const UniformBuffer);
@@ -64,6 +61,8 @@ GCRendererUniformBuffer* GCRendererUniformBuffer_Create(const GCRendererDevice* 
 
 void GCRendererUniformBuffer_Destroy(GCRendererUniformBuffer* UniformBuffer)
 {
+	GCRendererDevice_WaitIdle(UniformBuffer->Device);
+
 	GCRendererUniformBuffer_DestroyObjects(UniformBuffer);
 
 	GCMemory_Free(UniformBuffer->Data);

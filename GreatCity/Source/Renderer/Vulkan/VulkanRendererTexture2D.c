@@ -15,9 +15,11 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include "Renderer/Vulkan/VulkanRendererTexture2D.h"
+#include "Renderer/Vulkan/VulkanRendererDevice.h"
+#include "Renderer/Vulkan/VulkanUtilities.h"
 #include "Renderer/RendererTexture2D.h"
 #include "Renderer/RendererDevice.h"
-#include "Renderer/Vulkan/VulkanUtilities.h"
 #include "Core/Memory/Allocator.h"
 #include "Core/Log.h"
 #include "Core/Assert.h"
@@ -39,11 +41,6 @@ typedef struct GCRendererTexture2D
 	VkImageView ImageViewHandle;
 	VkSampler ImageSamplerHandle;
 } GCRendererTexture2D;
-
-VkImageView GCRendererTexture2D_GetImageViewHandle(const GCRendererTexture2D* const Texture2D);
-VkSampler GCRendererTexture2D_GetSamplerHandle(const GCRendererTexture2D* const Texture2D);
-
-extern VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
 
 static uint8_t* GCRendererTexture2D_LoadImage(const char* const TexturePath, uint32_t* const Width, uint32_t* const Height, uint32_t* const Channels);
 static void GCRendererTexture2D_CreateTextureImage(GCRendererTexture2D* const Texture2D, const char* const TexturePath);

@@ -16,8 +16,11 @@
 */
 
 #define _CRT_SECURE_NO_WARNINGS
-#include "Renderer/RendererShader.h"
+#include "Renderer/Vulkan/VulkanRendererShader.h"
+#include "Renderer/Vulkan/VulkanRendererDevice.h"
 #include "Renderer/Vulkan/VulkanUtilities.h"
+#include "Renderer/RendererShader.h"
+#include "Renderer/RendererDevice.h"
 #include "Core/Memory/Allocator.h"
 #include "Core/FileSystem.h"
 #include "Core/Log.h"
@@ -48,11 +51,6 @@ typedef struct GCRendererShader
 	uint32_t* FragmentShaderData;
 	size_t FragmentShaderDataSize;
 } GCRendererShader;
-
-VkShaderModule GCRendererShader_GetVertexShaderModuleHandle(const GCRendererShader* const Shader);
-VkShaderModule GCRendererShader_GetFragmentShaderModuleHandle(const GCRendererShader* const Shader);
-
-extern VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
 
 static void GCRendererShader_CreateCacheDirectoryIfNeeded(const GCRendererShader* const Shader);
 static void GCRendererShader_WriteShaderBinaryFile(const char* const Path, const char* const Data, const size_t Size);
@@ -86,6 +84,8 @@ GCRendererShader* GCRendererShader_Create(const GCRendererDevice* const Device, 
 
 void GCRendererShader_Destroy(GCRendererShader* Shader)
 {
+	GCRendererDevice_WaitIdle(Shader->Device);
+
 	GCRendererShader_DestroyObjects(Shader);
 
 	GCMemory_Free(Shader);

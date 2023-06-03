@@ -16,11 +16,12 @@
 */
 
 #include "Renderer/Vulkan/VulkanUtilities.h"
+#include "Renderer/Vulkan/VulkanRendererDevice.h"
+#include "Renderer/Vulkan/VulkanRendererSwapChain.h"
+#include "Renderer/Vulkan/VulkanRendererCommandList.h"
+#include "Renderer/Vulkan/VulkanRendererGraphicsPipeline.h"
+#include "Renderer/Vulkan/VulkanRendererFramebuffer.h"
 #include "Renderer/Renderer.h"
-#include "Renderer/RendererDevice.h"
-#include "Renderer/RendererSwapChain.h"
-#include "Renderer/RendererCommandList.h"
-#include "Renderer/RendererGraphicsPipeline.h"
 #include "Core/Memory/Allocator.h"
 #include "Core/Log.h"
 #include "Core/Assert.h"
@@ -30,17 +31,6 @@
 #include <vulkan/vulkan.h>
 #include <imgui.h>
 #include <imgui_impl_vulkan.h>
-
-extern "C" VkInstance GCRendererDevice_GetInstanceHandle(const GCRendererDevice* const Device);
-extern "C" VkPhysicalDevice GCRendererDevice_GetPhysicalDeviceHandle(const GCRendererDevice* const Device);
-extern "C" VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
-extern "C" uint32_t GCRendererDevice_GetGraphicsFamilyQueueIndex(const GCRendererDevice* const Device);
-extern "C" VkQueue GCRendererDevice_GetGraphicsQueueHandle(const GCRendererDevice* const Device);
-extern "C" uint32_t GCRendererSwapChain_GetImageCount(const GCRendererSwapChain* const SwapChain);
-extern "C" VkCommandBuffer GCRendererCommandList_GetCurrentFrameCommandBufferHandle(const GCRendererCommandList* const CommandList);
-extern "C" VkRenderPass GCRendererGraphicsPipeline_GetSwapChainRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
-extern "C" VkImageView GCRendererFramebuffer_GetTextureImageViewHandle(const GCRendererFramebuffer* const Framebuffer);
-extern "C" VkSampler GCRendererFramebuffer_GetTextureSamplerHandle(const GCRendererFramebuffer* const Framebuffer);
 
 static VkDescriptorPool ImGuiDescriptorPoolHandle = VK_NULL_HANDLE;
 static VkDescriptorSet ImGuiDescriptorSetHandle = VK_NULL_HANDLE;
@@ -92,7 +82,7 @@ extern "C" void GCImGuiManager_BeginFrameRenderer(void)
 
 extern "C" void* GCImGuiManager_GetTexturePlatform(void)
 {
-	GCRendererDevice_WaitIdle(GCRenderer_GetDevice());
+	vkDeviceWaitIdle(GCRendererDevice_GetDeviceHandle(GCRenderer_GetDevice()));
 	GCImGuiManager_UpdateDescriptorSet();
 
 	return ImGuiDescriptorSetHandle;

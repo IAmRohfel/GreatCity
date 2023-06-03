@@ -144,8 +144,6 @@ void GCRenderer_Present(void)
 
 void GCRenderer_ResizeTexture(const uint32_t Width, const uint32_t Height)
 {
-	GCRendererDevice_WaitIdle(Renderer->Device);
-
 	GCRendererFramebuffer_RecreateTexture(Renderer->Framebuffer, Width, Height);
 }
 
@@ -159,8 +157,6 @@ void GCRenderer_ResizeSwapChain(void)
 
 void GCRenderer_Terminate(void)
 {
-	GCRendererDevice_WaitIdle(Renderer->Device);
-
 	GCRendererFramebuffer_Destroy(Renderer->Framebuffer);
 	GCRendererGraphicsPipeline_Destroy(Renderer->GraphicsPipeline);
 	GCRendererShader_Destroy(Renderer->BasicShader);
@@ -200,8 +196,6 @@ GCRendererFramebuffer* const GCRenderer_GetFramebuffer(void)
 
 void GCRenderer_ResizeSwapChainRenderer(void)
 {
-	GCRendererDevice_WaitIdle(Renderer->Device);
-
 	GCRendererSwapChain_Recreate(Renderer->SwapChain);
 	GCRendererFramebuffer_RecreateSwapChain(Renderer->Framebuffer);
 }

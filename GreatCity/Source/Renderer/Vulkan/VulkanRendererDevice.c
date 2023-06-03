@@ -15,8 +15,10 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "Renderer/RendererDevice.h"
+#include "Renderer/Vulkan/VulkanRendererDevice.h"
+#include "Renderer/Vulkan/VulkanRendererSwapChain.h"
 #include "Renderer/Vulkan/VulkanUtilities.h"
+#include "Renderer/RendererDevice.h"
 #include "Core/Memory/Allocator.h"
 #include "Core/Log.h"
 #include "Core/Assert.h"
@@ -53,18 +55,6 @@ typedef struct GCRendererDeviceQueueFamilyIndices
 	uint32_t PresentFamily;
 	bool PresentFamilyHasValue;
 } GCRendererDeviceQueueFamilyIndices;
-
-VkInstance GCRendererDevice_GetInstanceHandle(const GCRendererDevice* const Device);
-VkSurfaceKHR GCRendererDevice_GetSurfaceHandle(const GCRendererDevice* const Device);
-VkPhysicalDevice GCRendererDevice_GetPhysicalDeviceHandle(const GCRendererDevice* const Device);
-VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
-uint32_t GCRendererDevice_GetGraphicsFamilyQueueIndex(const GCRendererDevice* const Device);
-uint32_t GCRendererDevice_GetPresentFamilyQueueIndex(const GCRendererDevice* const Device);
-VkQueue GCRendererDevice_GetGraphicsQueueHandle(const GCRendererDevice* const Device);
-VkQueue GCRendererDevice_GetPresentQueueHandle(const GCRendererDevice* const Device);
-uint32_t GCRendererDevice_GetMemoryTypeIndex(const GCRendererDevice* const Device, const uint32_t TypeFilter, const VkMemoryPropertyFlags PropertyFlags);
-
-extern bool GCRendererSwapChain_IsSwapChainSupported(const VkPhysicalDevice PhysicalDeviceHandle, const VkSurfaceKHR SurfaceHandle);
 
 static bool GCRendererDevice_IsValidationLayerSupported(void);
 static bool GCRendererDevice_IsDeviceSuitable(const VkPhysicalDevice PhysicalDeviceHandle, const VkSurfaceKHR SurfaceHandle);
@@ -137,6 +127,8 @@ GCRendererDeviceCapabilities GCRendererDevice_GetDeviceCapabilities(const GCRend
 
 void GCRendererDevice_Destroy(GCRendererDevice* Device)
 {
+	GCRendererDevice_WaitIdle(Device);
+
 	GCRendererDevice_DestroyObjects(Device);
 
 	GCMemory_Free(Device);

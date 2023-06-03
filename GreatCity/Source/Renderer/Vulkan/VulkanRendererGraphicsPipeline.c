@@ -15,8 +15,16 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "Renderer/RendererGraphicsPipeline.h"
+#include "Renderer/Vulkan/VulkanRendererGraphicsPipeline.h"
+#include "Renderer/Vulkan/VulkanRendererDevice.h"
+#include "Renderer/Vulkan/VulkanRendererSwapChain.h"
+#include "Renderer/Vulkan/VulkanRendererCommandList.h"
+#include "Renderer/Vulkan/VulkanRendererUniformBuffer.h"
+#include "Renderer/Vulkan/VulkanRendererTexture2D.h"
+#include "Renderer/Vulkan/VulkanRendererShader.h"
 #include "Renderer/Vulkan/VulkanUtilities.h"
+#include "Renderer/RendererGraphicsPipeline.h"
+#include "Renderer/RendererDevice.h"
 #include "Core/Memory/Allocator.h"
 #include "Core/Log.h"
 #include "Core/Assert.h"
@@ -44,23 +52,6 @@ typedef struct GCRendererGraphicsPipeline
 	uint32_t Texture2DCount;
 	uint32_t DescriptorCount;
 } GCRendererGraphicsPipeline;
-
-VkRenderPass GCRendererGraphicsPipeline_GetTextureRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
-VkRenderPass GCRendererGraphicsPipeline_GetSwapChainRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
-VkPipelineLayout GCRendererGraphicsPipeline_GetPipelineLayoutHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
-VkPipeline GCRendererGraphicsPipeline_GetPipelineHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
-VkDescriptorSet* GCRendererGraphicsPipeline_GetDescriptorSetHandles(const GCRendererGraphicsPipeline* const GraphicsPipeline);
-
-extern VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
-extern VkFormat GCRendererSwapChain_GetFormat(const GCRendererSwapChain* const SwapChain);
-extern VkFormat GCRendererSwapChain_GetDepthFormat(const GCRendererSwapChain* const SwapChain);
-extern uint32_t GCRendererCommandList_GetMaximumFramesInFlight(const GCRendererCommandList* const CommandList);
-extern VkBuffer* GCRendererUniformBuffer_GetBufferHandles(const GCRendererUniformBuffer* const UniformBuffer);
-extern size_t GCRendererUniformBuffer_GetDataSize(const GCRendererUniformBuffer* const UniformBuffer);
-extern VkImageView GCRendererTexture2D_GetImageViewHandle(const GCRendererTexture2D* const Texture2D);
-extern VkSampler GCRendererTexture2D_GetSamplerHandle(const GCRendererTexture2D* const Texture2D);
-extern VkShaderModule GCRendererShader_GetVertexShaderModuleHandle(const GCRendererShader* const Shader);
-extern VkShaderModule GCRendererShader_GetFragmentShaderModuleHandle(const GCRendererShader* const Shader);
 
 static void GCRendererGraphicsPipeline_CreateTextureRenderPass(GCRendererGraphicsPipeline* const GraphicsPipeline);
 static void GCRendererGraphicsPipeline_CreateSwapChainRenderPass(GCRendererGraphicsPipeline* const GraphicsPipeline);
@@ -103,6 +94,8 @@ GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(const GCRendererDe
 
 void GCRendererGraphicsPipeline_Destroy(GCRendererGraphicsPipeline* GraphicsPipeline)
 {
+	GCRendererDevice_WaitIdle(GraphicsPipeline->Device);
+
 	GCRendererGraphicsPipeline_DestroyObjects(GraphicsPipeline);
 
 	GCMemory_Free(GraphicsPipeline->DescriptorSetHandles);

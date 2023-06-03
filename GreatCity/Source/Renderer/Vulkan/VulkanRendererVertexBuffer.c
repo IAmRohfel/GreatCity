@@ -15,8 +15,10 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "Renderer/RendererVertexBuffer.h"
+#include "Renderer/Vulkan/VulkanRendererVertexBuffer.h"
+#include "Renderer/Vulkan/VulkanRendererDevice.h"
 #include "Renderer/Vulkan/VulkanUtilities.h"
+#include "Renderer/RendererVertexBuffer.h"
 #include "Core/Memory/Allocator.h"
 #include "Core/Log.h"
 #include "Core/Assert.h"
@@ -38,10 +40,6 @@ typedef struct GCRendererVertexBuffer
 	void* Vertices;
 	size_t VertexSize;
 } GCRendererVertexBuffer;
-
-VkBuffer GCRendererVertexBuffer_GetHandle(const GCRendererVertexBuffer* const VertexBuffer);
-
-extern VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
 
 static void GCRendererVertexBuffer_CreateVertexBuffer(GCRendererVertexBuffer* const VertexBuffer);
 static void GCRendererVertexBuffer_CreateVertexBufferDynamic(GCRendererVertexBuffer* const VertexBuffer);

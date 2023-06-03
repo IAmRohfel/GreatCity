@@ -15,8 +15,10 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "Renderer/RendererIndexBuffer.h"
+#include "Renderer/Vulkan/VulkanRendererIndexBuffer.h"
+#include "Renderer/Vulkan/VulkanRendererDevice.h"
 #include "Renderer/Vulkan/VulkanUtilities.h"
+#include "Renderer/RendererIndexBuffer.h"
 #include "Core/Memory/Allocator.h"
 #include "Core/Log.h"
 #include "Core/Assert.h"
@@ -38,10 +40,6 @@ typedef struct GCRendererIndexBuffer
 	const uint32_t* Indices;
 	size_t IndexSize;
 } GCRendererIndexBuffer;
-
-VkBuffer GCRendererIndexBuffer_GetHandle(const GCRendererIndexBuffer* const IndexBuffer);
-
-extern VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
 
 static void GCRendererIndexBuffer_CreateIndexBuffer(GCRendererIndexBuffer* const IndexBuffer);
 static void GCRendererIndexBuffer_DestroyObjects(GCRendererIndexBuffer* const IndexBuffer);

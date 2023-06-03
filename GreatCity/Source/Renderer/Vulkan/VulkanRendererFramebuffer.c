@@ -15,9 +15,13 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include "Renderer/Vulkan/VulkanRendererFramebuffer.h"
+#include "Renderer/Vulkan/VulkanRendererDevice.h"
+#include "Renderer/Vulkan/VulkanRendererSwapChain.h"
+#include "Renderer/Vulkan/VulkanRendererGraphicsPipeline.h"
+#include "Renderer/Vulkan/VulkanUtilities.h"
 #include "Renderer/RendererFramebuffer.h"
 #include "Renderer/RendererDevice.h"
-#include "Renderer/Vulkan/VulkanUtilities.h"
 #include "Core/Memory/Allocator.h"
 #include "Core/Log.h"
 #include "Core/Assert.h"
@@ -43,22 +47,6 @@ typedef struct GCRendererFramebuffer
 
 	VkExtent2D TextureExtent;
 } GCRendererFramebuffer;
-
-VkImageView GCRendererFramebuffer_GetTextureImageViewHandle(const GCRendererFramebuffer* const Framebuffer);
-VkSampler GCRendererFramebuffer_GetTextureSamplerHandle(const GCRendererFramebuffer* const Framebuffer);
-VkFramebuffer GCRendererFramebuffer_GetTextureFramebufferHandle(const GCRendererFramebuffer* const Framebuffer);
-VkFramebuffer* GCRendererFramebuffer_GetSwapChainFramebufferHandles(const GCRendererFramebuffer* const Framebuffer);
-VkExtent2D GCRendererFramebuffer_GetTextureExtent(const GCRendererFramebuffer* const Framebuffer);
-
-extern VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
-extern VkFormat GCRendererSwapChain_GetFormat(const GCRendererSwapChain* const SwapChain);
-extern VkExtent2D GCRendererSwapChain_GetExtent(const GCRendererSwapChain* const SwapChain);
-extern VkImageView* GCRendererSwapChain_GetImageViewHandles(const GCRendererSwapChain* const SwapChain);
-extern VkImageView GCRendererSwapChain_GetDepthImageViewHandle(const GCRendererSwapChain* const SwapChain);
-extern uint32_t GCRendererSwapChain_GetImageCount(const GCRendererSwapChain* const SwapChain);
-extern VkFormat GCRendererSwapChain_GetDepthFormat(const GCRendererSwapChain* const SwapChain);
-extern VkRenderPass GCRendererGraphicsPipeline_GetTextureRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
-extern VkRenderPass GCRendererGraphicsPipeline_GetSwapChainRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
 
 static void GCRendererFramebuffer_CreateTextureImages(GCRendererFramebuffer* const Framebuffer);
 static void GCRendererFramebuffer_CreateTextureFramebuffer(GCRendererFramebuffer* const Framebuffer);
@@ -114,6 +102,8 @@ void GCRendererFramebuffer_RecreateSwapChain(GCRendererFramebuffer* const Frameb
 
 void GCRendererFramebuffer_Destroy(GCRendererFramebuffer* Framebuffer)
 {
+	GCRendererDevice_WaitIdle(Framebuffer->Device);
+
 	GCRendererFramebuffer_DestroyObjectsTexture(Framebuffer);
 	GCRendererFramebuffer_DestroyObjectsSwapChain(Framebuffer);
 

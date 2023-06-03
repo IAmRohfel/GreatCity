@@ -15,8 +15,11 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "Renderer/RendererSwapChain.h"
+#include "Renderer/Vulkan/VulkanRendererSwapChain.h"
+#include "Renderer/Vulkan/VulkanRendererDevice.h"
 #include "Renderer/Vulkan/VulkanUtilities.h"
+#include "Renderer/RendererSwapChain.h"
+#include "Renderer/RendererDevice.h"
 #include "Core/Memory/Allocator.h"
 #include "ApplicationCore/GenericPlatform/Window.h"
 #include "ApplicationCore/Application.h"
@@ -46,21 +49,6 @@ typedef struct GCRendererSwapChain
 	VkDeviceMemory DepthImageMemoryHandle;
 	VkImageView DepthImageViewHandle;
 } GCRendererSwapChain;
-
-bool GCRendererSwapChain_IsSwapChainSupported(const VkPhysicalDevice PhysicalDeviceHandle, const VkSurfaceKHR SurfaceHandle);
-VkFormat GCRendererSwapChain_GetFormat(const GCRendererSwapChain* const SwapChain);
-VkExtent2D GCRendererSwapChain_GetExtent(const GCRendererSwapChain* const SwapChain);
-VkSwapchainKHR GCRendererSwapChain_GetHandle(const GCRendererSwapChain* const SwapChain);
-VkImageView* GCRendererSwapChain_GetImageViewHandles(const GCRendererSwapChain* const SwapChain);
-VkImageView GCRendererSwapChain_GetDepthImageViewHandle(const GCRendererSwapChain* const SwapChain);
-uint32_t GCRendererSwapChain_GetImageCount(const GCRendererSwapChain* const SwapChain);
-VkFormat GCRendererSwapChain_GetDepthFormat(const GCRendererSwapChain* const SwapChain);
-
-extern VkSurfaceKHR GCRendererDevice_GetSurfaceHandle(const GCRendererDevice* const Device);
-extern VkPhysicalDevice GCRendererDevice_GetPhysicalDeviceHandle(const GCRendererDevice* const Device);
-extern VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
-extern uint32_t GCRendererDevice_GetGraphicsFamilyQueueIndex(const GCRendererDevice* const Device);
-extern uint32_t GCRendererDevice_GetPresentFamilyQueueIndex(const GCRendererDevice* const Device);
 
 static void GCRendererSwapChain_QuerySwapChainSupport(GCRendererSwapChain* const SwapChain);
 static void GCRendererSwapChain_SelectExtent(GCRendererSwapChain* const SwapChain);
@@ -100,6 +88,8 @@ GCRendererSwapChain* GCRendererSwapChain_Create(const GCRendererDevice* const De
 
 void GCRendererSwapChain_Recreate(GCRendererSwapChain* const SwapChain)
 {
+	GCRendererDevice_WaitIdle(SwapChain->Device);
+
 	GCRendererSwapChain_DestroyObjects(SwapChain);
 
 	GCRendererSwapChain_QuerySwapChainSupport(SwapChain);
@@ -110,6 +100,8 @@ void GCRendererSwapChain_Recreate(GCRendererSwapChain* const SwapChain)
 
 void GCRendererSwapChain_Destroy(GCRendererSwapChain* SwapChain)
 {
+	GCRendererDevice_WaitIdle(SwapChain->Device);
+
 	GCRendererSwapChain_DestroyObjects(SwapChain);
 
 	GCMemory_Free(SwapChain);
