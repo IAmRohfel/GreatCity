@@ -23,6 +23,8 @@
 #include "Math/Vector3.h"
 #include "Math/Vector4.h"
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -45,18 +47,25 @@ extern "C"
 	typedef struct GCWorldCamera GCWorldCamera;
 	typedef struct GCRendererModel GCRendererModel;
 	typedef struct GCRendererDevice GCRendererDevice;
+	typedef struct GCRendererSwapChain GCRendererSwapChain;
 	typedef struct GCRendererCommandList GCRendererCommandList;
+	typedef struct GCRendererGraphicsPipeline GCRendererGraphicsPipeline;
+	typedef struct GCRendererFramebuffer GCRendererFramebuffer;
 
 	void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera);
 	void GCRenderer_Begin(void);
 	void GCRenderer_RenderEntity(const GCEntity Entity);
 	void GCRenderer_End(void);
 	void GCRenderer_Present(void);
-	void GCRenderer_Resize(void);
+	void GCRenderer_ResizeTexture(const uint32_t Width, const uint32_t Height);
+	void GCRenderer_ResizeSwapChain(void);
 	void GCRenderer_Terminate(void);
 
-	const GCRendererDevice* const GCRenderer_GetDevice(void);
-	const GCRendererCommandList* const GCRenderer_GetCommandList(void);
+	GCRendererDevice* const GCRenderer_GetDevice(void);
+	GCRendererSwapChain* const GCRenderer_GetSwapChain(void);
+	GCRendererCommandList* const GCRenderer_GetCommandList(void);
+	GCRendererGraphicsPipeline* const GCRenderer_GetGraphicsPipeline(void);
+	GCRendererFramebuffer* const GCRenderer_GetFramebuffer(void);
 
 #ifdef __cplusplus
 }

@@ -30,12 +30,14 @@
 #include "Core/Memory/Allocator.h"
 #include "Scene/Entity.h"
 #include "Scene/Camera/WorldCamera.h"
+#include "ImGui/ImGuiManager.h"
 #include "Math/Vector2.h"
 #include "Math/Vector3.h"
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
 #include <stddef.h>
+#include <stdint.h>
 
 typedef struct GCRendererDrawData
 {
@@ -68,7 +70,7 @@ typedef struct GCRendererUniformBufferData
 	GCMatrix4x4 ViewProjectionMatrix;
 } GCRendererUniformBufferData;
 
-static void GCRenderer_ResizeSwapChain(void);
+static void GCRenderer_ResizeSwapChainRenderer(void);
 static void GCRenderer_RecordCommands(const GCRendererCommandListRecordData* const RecordData);
 
 static GCRenderer* Renderer = NULL;
@@ -104,7 +106,7 @@ void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera)
 	Renderer->GraphicsPipeline = GCRendererGraphicsPipeline_Create(Renderer->Device, Renderer->SwapChain, Renderer->CommandList, &GraphicsPipelineVertexInput, Renderer->UniformBuffer, NULL, 0, Renderer->BasicShader);
 	Renderer->Framebuffer = GCRendererFramebuffer_Create(Renderer->Device, Renderer->SwapChain, Renderer->GraphicsPipeline);
 
-	GCRendererCommandList_SetResizeCallback(Renderer->CommandList, GCRenderer_ResizeSwapChain);
+	GCRendererCommandList_SetResizeCallback(Renderer->CommandList, GCRenderer_ResizeSwapChainRenderer);
 
 	Renderer->WorldCamera = WorldCamera;
 
@@ -140,7 +142,14 @@ void GCRenderer_Present(void)
 	GCRendererCommandList_SubmitAndPresent(Renderer->CommandList, Renderer->SwapChain, GCRenderer_RecordCommands);
 }
 
-void GCRenderer_Resize(void)
+void GCRenderer_ResizeTexture(const uint32_t Width, const uint32_t Height)
+{
+	GCRendererDevice_WaitIdle(Renderer->Device);
+
+	GCRendererFramebuffer_RecreateTexture(Renderer->Framebuffer, Width, Height);
+}
+
+void GCRenderer_ResizeSwapChain(void)
 {
 	if (Renderer)
 	{
@@ -164,30 +173,45 @@ void GCRenderer_Terminate(void)
 	GCMemory_Free(Renderer);
 }
 
-const GCRendererDevice* const GCRenderer_GetDevice(void)
+GCRendererDevice* const GCRenderer_GetDevice(void)
 {
 	return Renderer->Device;
 }
 
-const GCRendererCommandList* const GCRenderer_GetCommandList(void)
+GCRendererSwapChain* const GCRenderer_GetSwapChain(void)
+{
+	return Renderer->SwapChain;
+}
+
+GCRendererCommandList* const GCRenderer_GetCommandList(void)
 {
 	return Renderer->CommandList;
 }
 
-void GCRenderer_ResizeSwapChain(void)
+GCRendererGraphicsPipeline* const GCRenderer_GetGraphicsPipeline(void)
+{
+	return Renderer->GraphicsPipeline;
+}
+
+GCRendererFramebuffer* const GCRenderer_GetFramebuffer(void)
+{
+	return Renderer->Framebuffer;
+}
+
+void GCRenderer_ResizeSwapChainRenderer(void)
 {
 	GCRendererDevice_WaitIdle(Renderer->Device);
 
 	GCRendererSwapChain_Recreate(Renderer->SwapChain);
-	GCRendererFramebuffer_Recreate(Renderer->Framebuffer);
+	GCRendererFramebuffer_RecreateSwapChain(Renderer->Framebuffer);
 }
 
 void GCRenderer_RecordCommands(const GCRendererCommandListRecordData* const RecordData)
 {
 	GCRendererCommandList_BeginRecord(Renderer->CommandList);
 
-	const float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	GCRendererCommandList_BeginRenderPass(Renderer->CommandList, Renderer->SwapChain, Renderer->GraphicsPipeline, Renderer->Framebuffer, RecordData, ClearColor);
+	const float ClearColorTexture[4] = { 0.729f, 0.901f, 0.992f, 1.0f };
+	GCRendererCommandList_BeginTextureRenderPass(Renderer->CommandList, Renderer->GraphicsPipeline, Renderer->Framebuffer, ClearColorTexture);
 
 	GCRendererUniformBufferData UniformBufferData = { 0 };
 	UniformBufferData.ViewProjectionMatrix = GCWorldCamera_GetViewProjectionMatrix(Renderer->WorldCamera);
@@ -203,6 +227,12 @@ void GCRenderer_RecordCommands(const GCRendererCommandListRecordData* const Reco
 		GCRendererCommandList_DrawIndexed(Renderer->CommandList, Renderer->DrawData[Counter].IndexCount, 0);
 	}
 
-	GCRendererCommandList_EndRenderPass(Renderer->CommandList);
+	GCRendererCommandList_EndTextureRenderPass(Renderer->CommandList);
+
+	const float ClearColorSwapChain[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	GCRendererCommandList_BeginSwapChainRenderPass(Renderer->CommandList, Renderer->SwapChain, Renderer->GraphicsPipeline, Renderer->Framebuffer, RecordData, ClearColorSwapChain);
+	GCImGuiManager_Render();
+	GCRendererCommandList_EndSwapChainRenderPass(Renderer->CommandList);
+
 	GCRendererCommandList_EndRecord(Renderer->CommandList);
 }

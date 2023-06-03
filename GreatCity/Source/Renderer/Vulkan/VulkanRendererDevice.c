@@ -54,6 +54,7 @@ typedef struct GCRendererDeviceQueueFamilyIndices
 	bool PresentFamilyHasValue;
 } GCRendererDeviceQueueFamilyIndices;
 
+VkInstance GCRendererDevice_GetInstanceHandle(const GCRendererDevice* const Device);
 VkSurfaceKHR GCRendererDevice_GetSurfaceHandle(const GCRendererDevice* const Device);
 VkPhysicalDevice GCRendererDevice_GetPhysicalDeviceHandle(const GCRendererDevice* const Device);
 VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
@@ -139,6 +140,11 @@ void GCRendererDevice_Destroy(GCRendererDevice* Device)
 	GCRendererDevice_DestroyObjects(Device);
 
 	GCMemory_Free(Device);
+}
+
+VkInstance GCRendererDevice_GetInstanceHandle(const GCRendererDevice* const Device)
+{
+	return Device->InstanceHandle;
 }
 
 VkSurfaceKHR GCRendererDevice_GetSurfaceHandle(const GCRendererDevice* const Device)

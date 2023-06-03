@@ -1,6 +1,7 @@
 .vs/
 Binaries/
 Intermediates/
+GreatCity/imgui.ini
 GreatCity/Assets/Cache/
 
 *.sln

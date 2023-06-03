@@ -50,6 +50,7 @@ typedef struct GCRendererCommandListRecordData
 
 uint32_t GCRendererCommandList_GetMaximumFramesInFlight(const GCRendererCommandList* const CommandList);
 VkCommandPool GCRendererCommandList_GetTransientCommandPoolHandle(const GCRendererCommandList* const CommandList);
+VkCommandBuffer GCRendererCommandList_GetCurrentFrameCommandBufferHandle(const GCRendererCommandList* const CommandList);
 
 extern VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
 extern uint32_t GCRendererDevice_GetGraphicsFamilyQueueIndex(const GCRendererDevice* const Device);
@@ -61,10 +62,13 @@ extern VkBuffer GCRendererVertexBuffer_GetHandle(const GCRendererVertexBuffer* c
 extern VkBuffer GCRendererIndexBuffer_GetHandle(const GCRendererIndexBuffer* const IndexBuffer);
 extern void** GCRendererUniformBuffer_GetData(const GCRendererUniformBuffer* const UniformBuffer);
 extern VkDescriptorSet* GCRendererGraphicsPipeline_GetDescriptorSetHandles(const GCRendererGraphicsPipeline* const GraphicsPipeline);
-extern VkRenderPass GCRendererGraphicsPipeline_GetRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
+extern VkRenderPass GCRendererGraphicsPipeline_GetTextureRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
+extern VkRenderPass GCRendererGraphicsPipeline_GetSwapChainRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
 extern VkPipelineLayout GCRendererGraphicsPipeline_GetPipelineLayoutHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
 extern VkPipeline GCRendererGraphicsPipeline_GetPipelineHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
-extern VkFramebuffer* GCRendererFramebuffer_GetFramebufferHandles(const GCRendererFramebuffer* const Framebuffer);
+extern VkFramebuffer GCRendererFramebuffer_GetTextureFramebufferHandle(const GCRendererFramebuffer* const Framebuffer);
+extern VkFramebuffer* GCRendererFramebuffer_GetSwapChainFramebufferHandles(const GCRendererFramebuffer* const Framebuffer);
+extern VkExtent2D GCRendererFramebuffer_GetTextureExtent(const GCRendererFramebuffer* const Framebuffer);
 
 static void GCRendererCommandList_CreateCommandPool(GCRendererCommandList* const CommandList);
 static void GCRendererCommandList_CreateCommandBuffers(GCRendererCommandList* const CommandList);
@@ -113,12 +117,33 @@ void GCRendererCommandList_BeginRecord(const GCRendererCommandList* const Comman
 	GC_VULKAN_VALIDATE(vkBeginCommandBuffer(CommandList->CommandBufferHandles[CommandList->CurrentFrame], &CommandBufferBeginInformation), "Failed to begin a Vulkan command buffer");
 }
 
-void GCRendererCommandList_BeginRenderPass(const GCRendererCommandList* const CommandList, const GCRendererSwapChain* const SwapChain, const GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererFramebuffer* const Framebuffer, const GCRendererCommandListRecordData* RecordData, const float* const ClearColor)
+void GCRendererCommandList_BeginTextureRenderPass(const GCRendererCommandList* const CommandList, const GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererFramebuffer* const Framebuffer, const float* const ClearColor)
 {
 	VkRenderPassBeginInfo RenderPassBeginInformation = { 0 };
 	RenderPassBeginInformation.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	RenderPassBeginInformation.renderPass = GCRendererGraphicsPipeline_GetRenderPassHandle(GraphicsPipeline);
-	RenderPassBeginInformation.framebuffer = GCRendererFramebuffer_GetFramebufferHandles(Framebuffer)[RecordData->SwapChainImageIndex];
+	RenderPassBeginInformation.renderPass = GCRendererGraphicsPipeline_GetTextureRenderPassHandle(GraphicsPipeline);
+	RenderPassBeginInformation.framebuffer = GCRendererFramebuffer_GetTextureFramebufferHandle(Framebuffer);
+	RenderPassBeginInformation.renderArea.offset = (VkOffset2D){ 0, 0 };
+	RenderPassBeginInformation.renderArea.extent = GCRendererFramebuffer_GetTextureExtent(Framebuffer);
+
+	VkClearValue ClearValues[2] = { 0 };
+	memcpy(ClearValues[0].color.float32, ClearColor, sizeof(ClearValues[0].color.float32));
+
+	ClearValues[1].depthStencil.depth = 1.0f;
+	ClearValues[1].depthStencil.stencil = 0;
+
+	RenderPassBeginInformation.clearValueCount = 2;
+	RenderPassBeginInformation.pClearValues = ClearValues;
+
+	vkCmdBeginRenderPass(CommandList->CommandBufferHandles[CommandList->CurrentFrame], &RenderPassBeginInformation, VK_SUBPASS_CONTENTS_INLINE);
+}
+
+void GCRendererCommandList_BeginSwapChainRenderPass(const GCRendererCommandList* const CommandList, const GCRendererSwapChain* const SwapChain, const GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererFramebuffer* const Framebuffer, const GCRendererCommandListRecordData* RecordData, const float* const ClearColor)
+{
+	VkRenderPassBeginInfo RenderPassBeginInformation = { 0 };
+	RenderPassBeginInformation.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	RenderPassBeginInformation.renderPass = GCRendererGraphicsPipeline_GetSwapChainRenderPassHandle(GraphicsPipeline);
+	RenderPassBeginInformation.framebuffer = GCRendererFramebuffer_GetSwapChainFramebufferHandles(Framebuffer)[RecordData->SwapChainImageIndex];
 	RenderPassBeginInformation.renderArea.offset = (VkOffset2D){ 0, 0 };
 	RenderPassBeginInformation.renderArea.extent = GCRendererSwapChain_GetExtent(SwapChain);
 
@@ -195,7 +220,12 @@ void GCRendererCommandList_DrawIndexed(const GCRendererCommandList* const Comman
 	vkCmdDrawIndexed(CommandList->CommandBufferHandles[CommandList->CurrentFrame], IndexCount, 1, FirstIndex, 0, 0);
 }
 
-void GCRendererCommandList_EndRenderPass(const GCRendererCommandList* const CommandList)
+void GCRendererCommandList_EndTextureRenderPass(const GCRendererCommandList* const CommandList)
+{
+	vkCmdEndRenderPass(CommandList->CommandBufferHandles[CommandList->CurrentFrame]);
+}
+
+void GCRendererCommandList_EndSwapChainRenderPass(const GCRendererCommandList* const CommandList)
 {
 	vkCmdEndRenderPass(CommandList->CommandBufferHandles[CommandList->CurrentFrame]);
 }
@@ -288,6 +318,11 @@ uint32_t GCRendererCommandList_GetMaximumFramesInFlight(const GCRendererCommandL
 VkCommandPool GCRendererCommandList_GetTransientCommandPoolHandle(const GCRendererCommandList* const CommandList)
 {
 	return CommandList->TransientCommandPoolHandle;
+}
+
+VkCommandBuffer GCRendererCommandList_GetCurrentFrameCommandBufferHandle(const GCRendererCommandList* const CommandList)
+{
+	return CommandList->CommandBufferHandles[CommandList->CurrentFrame];
 }
 
 void GCRendererCommandList_CreateCommandPool(GCRendererCommandList* const CommandList)

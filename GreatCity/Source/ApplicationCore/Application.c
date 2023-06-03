@@ -24,6 +24,7 @@
 #include "Renderer/RendererModel.h"
 #include "Scene/Scene.h"
 #include "Scene/Camera/WorldCamera.h"
+#include "ImGui/ImGuiManager.h"
 #include "Math/Matrix4x4.h"
 #include "Math/Utilities.h"
 
@@ -66,6 +67,7 @@ void GCApplication_Create(void)
 	Application->WorldCamera = GCWorldCamera_Create(30.0f, 1280.0f / 720.0f, 0.1f, 1000.0f);
 
 	GCRenderer_Initialize(Application->WorldCamera);
+	GCImGuiManager_Initialize();
 
 	BasicTerrainEntity = GCScene_CreateEntity(Application->Scene, "Basic Terrain");
 	GCMeshComponent* BasicTerrainEntityMeshComponent = GCEntity_AddMeshComponent(BasicTerrainEntity);
@@ -91,13 +93,17 @@ void GCApplication_Run(void)
 		GCRenderer_RenderEntity(SmallOfficeEntity);
 
 		GCRenderer_End();
+
+		GCImGuiManager_BeginFrame();
+		GCImGuiManager_EndFrame();
+		
 		GCRenderer_Present();
 
 		GCWindow_ProcessEvents(Application->Window);
 	}
 }
 
-const GCWindow* const GCApplication_GetWindow(void)
+GCWindow* const GCApplication_GetWindow(void)
 {
 	return Application->Window;
 }
@@ -108,6 +114,7 @@ void GCApplication_Destroy(void)
 	GCEntity_RemoveMeshComponent(BasicTerrainEntity);
 	GCScene_Destroy(Application->Scene);
 
+	GCImGuiManager_Terminate();
 	GCRenderer_Terminate();
 	GCWindow_Destroy(Application->Window);
 
@@ -138,7 +145,7 @@ bool GCApplication_OnWindowResized(GCEvent* const Event, void* CustomData)
 		return true;
 	}
 
-	GCRenderer_Resize();
+	GCRenderer_ResizeSwapChain();
 
 	if (Application->WorldCamera)
 	{

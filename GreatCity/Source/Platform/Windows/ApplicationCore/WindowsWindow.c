@@ -25,6 +25,7 @@
 #include "Core/Container/String.h"
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include <Windows.h>
 
@@ -34,6 +35,8 @@ typedef struct GCPlatformWindow
 	LPCWSTR ClassName;
 	HINSTANCE InstanceHandle;
 	HWND WindowHandle;
+
+	LRESULT(*AnotherMessageCallback)(HWND, UINT, WPARAM, LPARAM);
 } GCWindow, GCWindowsWindow;
 
 HWND GCWindowsWindow_GetWindowHandle(const GCWindowsWindow* const Window);
@@ -73,6 +76,7 @@ GCWindowsWindow* GCWindowsWindow_Create(const GCWindowProperties* const Properti
 	Window->ClassName = L"GreatCityWindow";
 	Window->InstanceHandle = GetModuleHandleW(NULL);
 	Window->WindowHandle = NULL;
+	Window->AnotherMessageCallback = NULL;
 
 	WNDCLASSEXW WindowClass;
 	ZeroMemory(&WindowClass, sizeof(WNDCLASSEXW));
@@ -120,6 +124,14 @@ LRESULT CALLBACK GCWindowsWindow_SetupMessageHandler(HWND WindowHandle, UINT Mes
 LRESULT CALLBACK GCWindowsWindow_MessageHandler(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam)
 {
 	GCWindowsWindow* const Window = (GCWindowsWindow* const)GetWindowLongPtrW(WindowHandle, GWLP_USERDATA);
+
+	if (Window->AnotherMessageCallback)
+	{
+		if (Window->AnotherMessageCallback(WindowHandle, Message, WParam, LParam))
+		{
+			return true;
+		}
+	}
 
 	switch (Message)
 	{
@@ -299,6 +311,11 @@ void GCWindowsWindow_Destroy(GCWindowsWindow* Window)
 	UnregisterClassW(Window->ClassName, Window->InstanceHandle);
 
 	GCMemory_Free(Window);
+}
+
+void GCWindowsWindow_SetAnotherMessageCallback(GCWindowsWindow* const Window, LRESULT(*MessageCallback)(HWND, UINT, WPARAM, LPARAM))
+{
+	Window->AnotherMessageCallback = MessageCallback;
 }
 
 HWND GCWindowsWindow_GetWindowHandle(const GCWindowsWindow* const Window)
