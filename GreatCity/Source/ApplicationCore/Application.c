@@ -108,6 +108,11 @@ GCWindow* const GCApplication_GetWindow(void)
 	return Application->Window;
 }
 
+GCWorldCamera* const GCApplication_GetWorldCamera(void)
+{
+	return Application->WorldCamera;
+}
+
 void GCApplication_Destroy(void)
 {
 	GCEntity_RemoveMeshComponent(SmallOfficeEntity);
@@ -146,11 +151,6 @@ bool GCApplication_OnWindowResized(GCEvent* const Event, void* CustomData)
 	}
 
 	GCRenderer_ResizeSwapChain();
-
-	if (Application->WorldCamera)
-	{
-		GCWorldCamera_SetSize(Application->WorldCamera, EventDetail->Width, EventDetail->Height);
-	}
 
 	return true;
 }

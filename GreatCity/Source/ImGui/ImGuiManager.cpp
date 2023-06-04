@@ -16,8 +16,12 @@
 */
 
 #include "ImGui/ImGuiManager.h"
+#include "ApplicationCore/GenericPlatform/Input.h"
+#include "ApplicationCore/Event/Event.h"
+#include "ApplicationCore/Application.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/RendererFramebuffer.h"
+#include "Scene/Camera/WorldCamera.h"
 
 #include <imgui.h>
 
@@ -30,6 +34,8 @@ extern "C" void* GCImGuiManager_GetTexturePlatform(void);
 extern "C" void GCImGuiManager_RenderDrawData(void);
 extern "C" void GCImGuiManager_TerminateRenderer(void);
 
+static void GCImGuiManager_SetDarkTheme(void);
+
 extern "C" void GCImGuiManager_Initialize(void)
 {
 	IMGUI_CHECKVERSION();
@@ -39,7 +45,9 @@ extern "C" void GCImGuiManager_Initialize(void)
 	IO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	IO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-	ImGui::StyleColorsDark();
+	IO.Fonts->AddFontFromFileTTF("Assets/Fonts/OpenSans/OpenSans-Regular.ttf", 18.0f);
+
+	GCImGuiManager_SetDarkTheme();
 
 	GCImGuiManager_InitializePlatform();
 	GCImGuiManager_InitializeRenderer();
@@ -95,7 +103,7 @@ extern "C" void GCImGuiManager_BeginFrame(void)
 
 	if (IO.ConfigFlags & ImGuiConfigFlags_DockingEnable)
 	{
-		ImGuiID DockspaceID = ImGui::GetID("MyDockspace");
+		ImGuiID DockspaceID = ImGui::GetID("GreatCityDockspace");
 		ImGui::DockSpace(DockspaceID, ImVec2{ 0.0f, 0.0f }, DockspaceFlags);
 	}
 
@@ -106,22 +114,31 @@ extern "C" void GCImGuiManager_BeginFrame(void)
 
 extern "C" void GCImGuiManager_EndFrame(void)
 {
+	const bool IsAltPressed = GCInput_IsKeyPressed(GCKeyCode_LeftAlt);
+
 	GCRendererFramebuffer* const RendererFramebuffer = GCRenderer_GetFramebuffer();
 	static ImVec2 ViewportSize = ImVec2{ 0.0f, 0.0f };
 
-	ImGui::Begin("Viewport");
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0.0f, 0.0f });
+	ImGui::Begin("Viewport", nullptr, IsAltPressed ? ImGuiWindowFlags_NoMove : ImGuiWindowFlags_None);
 
 	const ImVec2 CurrentViewportSize = ImGui::GetContentRegionAvail();
 
 	if (ViewportSize.x != CurrentViewportSize.x || ViewportSize.y != CurrentViewportSize.y)
 	{
 		ViewportSize = CurrentViewportSize;
-		GCRendererFramebuffer_RecreateTexture(RendererFramebuffer, static_cast<uint32_t>(ViewportSize.x), static_cast<uint32_t>(ViewportSize.y));
+
+		if (ViewportSize.x && ViewportSize.y)
+		{
+			GCRendererFramebuffer_RecreateTexture(RendererFramebuffer, static_cast<uint32_t>(ViewportSize.x), static_cast<uint32_t>(ViewportSize.y));
+			GCWorldCamera_SetSize(GCApplication_GetWorldCamera(), static_cast<uint32_t>(ViewportSize.x), static_cast<uint32_t>(ViewportSize.y));
+		}
 	}
 
 	ImGui::Image(static_cast<ImTextureID>(GCImGuiManager_GetTexturePlatform()), ViewportSize);
 
 	ImGui::End();
+	ImGui::PopStyleVar();
 }
 
 extern "C" void GCImGuiManager_Render(void)
@@ -136,4 +153,33 @@ extern "C" void GCImGuiManager_Terminate(void)
 	GCImGuiManager_TerminatePlatform();
 
 	ImGui::DestroyContext();
+}
+
+void GCImGuiManager_SetDarkTheme(void)
+{
+	ImGuiStyle& Style = ImGui::GetStyle();
+
+	Style.Colors[ImGuiCol_DockingPreview] = ImVec4{ 0.054f, 0.647f, 0.913f, 1.0f };
+
+	Style.Colors[ImGuiCol_Header] = ImVec4{ 0.121f, 0.160f, 0.215f, 1.0f };
+	Style.Colors[ImGuiCol_HeaderHovered] = ImVec4{ 0.215f, 0.254f, 0.317f, 1.0f };
+	Style.Colors[ImGuiCol_HeaderActive] = ImVec4{ 0.066f, 0.094f, 0.152f, 1.0f };
+
+	Style.Colors[ImGuiCol_Button] = ImVec4{ 0.215f, 0.254f, 0.317f, 1.0f };
+	Style.Colors[ImGuiCol_ButtonHovered] = ImVec4{ 0.294f, 0.333f, 0.388f, 1.0f };
+	Style.Colors[ImGuiCol_ButtonActive] = ImVec4{ 0.121f, 0.160f, 0.215f, 1.0f };
+
+	Style.Colors[ImGuiCol_FrameBg] = ImVec4{ 0.121f, 0.160f, 0.215f, 1.0f };
+	Style.Colors[ImGuiCol_FrameBgHovered] = ImVec4{ 0.215f, 0.254f, 0.317f, 1.0f };
+	Style.Colors[ImGuiCol_FrameBgActive] = ImVec4{ 0.066f, 0.094f, 0.152f, 1.0f };
+
+	Style.Colors[ImGuiCol_Tab] = ImVec4{ 0.215f, 0.254f, 0.317f, 1.0f };
+	Style.Colors[ImGuiCol_TabHovered] = ImVec4{ 0.294f, 0.333f, 0.388f, 1.0f };
+	Style.Colors[ImGuiCol_TabActive] = ImVec4{ 0.121f, 0.160f, 0.215f, 1.0f };
+	Style.Colors[ImGuiCol_TabUnfocused] = ImVec4{ 0.121f, 0.160f, 0.215f, 1.0f };
+	Style.Colors[ImGuiCol_TabUnfocusedActive] = ImVec4{ 0.066f, 0.094f, 0.152f, 1.0f };
+
+	Style.Colors[ImGuiCol_TitleBg] = ImVec4{ 0.121f, 0.160f, 0.215f, 1.0f };
+	Style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4{ 0.121f, 0.160f, 0.215f, 1.0f };
+	Style.Colors[ImGuiCol_TitleBgActive] = ImVec4{ 0.121f, 0.160f, 0.215f, 1.0f };
 }

@@ -23,8 +23,6 @@ extern "C"
 {
 #endif
 
-	typedef struct GCRendererCommandListRecordData GCRendererCommandListRecordData;
-
 	void GCImGuiManager_Initialize(void);
 	void GCImGuiManager_BeginFrame(void);
 	void GCImGuiManager_EndFrame(void);

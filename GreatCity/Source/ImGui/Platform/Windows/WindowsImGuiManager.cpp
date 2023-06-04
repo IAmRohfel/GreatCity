@@ -29,12 +29,14 @@ extern "C" HWND GCWindowsWindow_GetWindowHandle(const GCWindowsWindow* const Win
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+static LRESULT GCImGuiManager_MessageCallback(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam);
+
 extern "C" void GCImGuiManager_InitializePlatform(void)
 {
 	GCWindow* const Window = GCApplication_GetWindow();
 
 	ImGui_ImplWin32_Init(GCWindowsWindow_GetWindowHandle(Window));
-	GCWindowsWindow_SetAnotherMessageCallback(Window, ImGui_ImplWin32_WndProcHandler);
+	GCWindowsWindow_SetAnotherMessageCallback(Window, GCImGuiManager_MessageCallback);
 }
 
 extern "C" void GCImGuiManager_BeginFramePlatform(void)
@@ -45,4 +47,9 @@ extern "C" void GCImGuiManager_BeginFramePlatform(void)
 extern "C" void GCImGuiManager_TerminatePlatform(void)
 {
 	ImGui_ImplWin32_Shutdown();
+}
+
+LRESULT GCImGuiManager_MessageCallback(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam)
+{
+	return ImGui_ImplWin32_WndProcHandler(WindowHandle, Message, WParam, LParam);
 }

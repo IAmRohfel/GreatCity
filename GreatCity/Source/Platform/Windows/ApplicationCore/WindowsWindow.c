@@ -127,7 +127,7 @@ LRESULT CALLBACK GCWindowsWindow_MessageHandler(HWND WindowHandle, UINT Message,
 
 	if (Window->AnotherMessageCallback)
 	{
-		if (Window->AnotherMessageCallback(WindowHandle, Message, WParam, LParam))
+		if(Window->AnotherMessageCallback(WindowHandle, Message, WParam, LParam))
 		{
 			return true;
 		}

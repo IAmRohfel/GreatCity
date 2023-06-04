@@ -28,6 +28,8 @@
 #include "Renderer/RendererGraphicsPipeline.h"
 #include "Renderer/RendererFramebuffer.h"
 #include "Core/Memory/Allocator.h"
+#include "ApplicationCore/GenericPlatform/Window.h"
+#include "ApplicationCore/Application.h"
 #include "Scene/Entity.h"
 #include "Scene/Camera/WorldCamera.h"
 #include "ImGui/ImGuiManager.h"
@@ -142,11 +144,6 @@ void GCRenderer_Present(void)
 	GCRendererCommandList_SubmitAndPresent(Renderer->CommandList, Renderer->SwapChain, GCRenderer_RecordCommands);
 }
 
-void GCRenderer_ResizeTexture(const uint32_t Width, const uint32_t Height)
-{
-	GCRendererFramebuffer_RecreateTexture(Renderer->Framebuffer, Width, Height);
-}
-
 void GCRenderer_ResizeSwapChain(void)
 {
 	if (Renderer)
@@ -196,8 +193,14 @@ GCRendererFramebuffer* const GCRenderer_GetFramebuffer(void)
 
 void GCRenderer_ResizeSwapChainRenderer(void)
 {
-	GCRendererSwapChain_Recreate(Renderer->SwapChain);
-	GCRendererFramebuffer_RecreateSwapChain(Renderer->Framebuffer);
+	uint32_t Width = 0, Height = 0;
+	GCWindow_GetWindowSize(GCApplication_GetWindow(), &Width, &Height);
+
+	if (Width && Height)
+	{
+		GCRendererSwapChain_Recreate(Renderer->SwapChain);
+		GCRendererFramebuffer_RecreateSwapChain(Renderer->Framebuffer);
+	}
 }
 
 void GCRenderer_RecordCommands(const GCRendererCommandListRecordData* const RecordData)

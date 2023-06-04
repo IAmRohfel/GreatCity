@@ -57,7 +57,6 @@ extern "C"
 	void GCRenderer_RenderEntity(const GCEntity Entity);
 	void GCRenderer_End(void);
 	void GCRenderer_Present(void);
-	void GCRenderer_ResizeTexture(const uint32_t Width, const uint32_t Height);
 	void GCRenderer_ResizeSwapChain(void);
 	void GCRenderer_Terminate(void);
 
