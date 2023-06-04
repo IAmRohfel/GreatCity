@@ -130,26 +130,37 @@ VkDescriptorSet* GCRendererGraphicsPipeline_GetDescriptorSetHandles(const GCRend
 void GCRendererGraphicsPipeline_CreateTextureRenderPass(GCRendererGraphicsPipeline* const GraphicsPipeline)
 {
 	const VkFormat SwapChainFormat = GCRendererSwapChain_GetFormat(GraphicsPipeline->SwapChain);
+	const VkSampleCountFlagBits SampleCount = GCRendererSwapChain_GetMaximumUsableSampleCount(GraphicsPipeline->SwapChain);
 
 	VkAttachmentDescription ColorAttachmentDescription = { 0 };
 	ColorAttachmentDescription.format = SwapChainFormat;
-	ColorAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+	ColorAttachmentDescription.samples = SampleCount;
 	ColorAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	ColorAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	ColorAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	ColorAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	ColorAttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	ColorAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	ColorAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 	VkAttachmentDescription DepthAttachmentDescription = { 0 };
 	DepthAttachmentDescription.format = GCRendererSwapChain_GetDepthFormat(GraphicsPipeline->SwapChain);
-	DepthAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+	DepthAttachmentDescription.samples = SampleCount;
 	DepthAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	DepthAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	DepthAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	DepthAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	DepthAttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	DepthAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentDescription ResolveAttachmentDescription = { 0 };
+	ResolveAttachmentDescription.format = SwapChainFormat;
+	ResolveAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+	ResolveAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	ResolveAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	ResolveAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	ResolveAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	ResolveAttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	ResolveAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	VkAttachmentReference ColorAttachmentReference = { 0 };
 	ColorAttachmentReference.attachment = 0;
@@ -159,11 +170,16 @@ void GCRendererGraphicsPipeline_CreateTextureRenderPass(GCRendererGraphicsPipeli
 	DepthAttachmentReference.attachment = 1;
 	DepthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
+	VkAttachmentReference ResolveAttachmentReference = { 0 };
+	ResolveAttachmentReference.attachment = 2;
+	ResolveAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
 	VkSubpassDescription SubpassDescription = { 0 };
 	SubpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	SubpassDescription.colorAttachmentCount = 1;
 	SubpassDescription.pColorAttachments = &ColorAttachmentReference;
 	SubpassDescription.pDepthStencilAttachment = &DepthAttachmentReference;
+	SubpassDescription.pResolveAttachments = &ResolveAttachmentReference;
 
 	VkSubpassDependency SubpassDependency = { 0 };
 	SubpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -173,11 +189,11 @@ void GCRendererGraphicsPipeline_CreateTextureRenderPass(GCRendererGraphicsPipeli
 	SubpassDependency.srcAccessMask = 0;
 	SubpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-	const VkAttachmentDescription AttachmentDescriptions[2] = { ColorAttachmentDescription, DepthAttachmentDescription };
+	const VkAttachmentDescription AttachmentDescriptions[3] = { ColorAttachmentDescription, DepthAttachmentDescription, ResolveAttachmentDescription };
 
 	VkRenderPassCreateInfo RenderPassInformation = { 0 };
 	RenderPassInformation.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	RenderPassInformation.attachmentCount = 2;
+	RenderPassInformation.attachmentCount = 3;
 	RenderPassInformation.pAttachments = AttachmentDescriptions;
 	RenderPassInformation.subpassCount = 1;
 	RenderPassInformation.pSubpasses = &SubpassDescription;
@@ -265,6 +281,7 @@ void GCRendererGraphicsPipeline_CreateDescriptorSetLayout(GCRendererGraphicsPipe
 void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererGraphicsPipelineVertexInput* const VertexInput)
 {
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(GraphicsPipeline->Device);
+	const VkSampleCountFlagBits SampleCount = GCRendererSwapChain_GetMaximumUsableSampleCount(GraphicsPipeline->SwapChain);
 
 	VkPipelineLayoutCreateInfo PipelineLayoutInformation = { 0 };
 	PipelineLayoutInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -339,7 +356,7 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
 
 	VkPipelineMultisampleStateCreateInfo PipelineMultisampleStateInformation = { 0 };
 	PipelineMultisampleStateInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-	PipelineMultisampleStateInformation.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	PipelineMultisampleStateInformation.rasterizationSamples = SampleCount;
 	PipelineMultisampleStateInformation.sampleShadingEnable = VK_FALSE;
 	PipelineMultisampleStateInformation.minSampleShading = 1.0f;
 

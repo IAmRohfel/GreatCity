@@ -63,7 +63,7 @@ void GCVulkanUtilities_CopyBuffer(const GCRendererDevice* const Device, const GC
 	GCVulkanUtilities_EndSingleTimeCommands(Device, CommandList, CommandBufferHandle);
 }
 
-void GCVulkanUtilities_CreateImage(const GCRendererDevice* const Device, const uint32_t Width, const uint32_t Height, const uint32_t MipLevels, const VkFormat Format, const VkImageTiling Tiling, const VkImageUsageFlags Usage, const VkMemoryPropertyFlags MemoryProperty, VkImage* ImageHandle, VkDeviceMemory* ImageMemoryHandle)
+void GCVulkanUtilities_CreateImage(const GCRendererDevice* const Device, const uint32_t Width, const uint32_t Height, const uint32_t MipLevels, const VkFormat Format, const VkImageTiling Tiling, const VkSampleCountFlagBits SampleCount, const VkImageUsageFlags Usage, const VkMemoryPropertyFlags MemoryProperty, VkImage* ImageHandle, VkDeviceMemory* ImageMemoryHandle)
 {
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Device);
 
@@ -76,7 +76,7 @@ void GCVulkanUtilities_CreateImage(const GCRendererDevice* const Device, const u
 	ImageInformation.extent.depth = 1;
 	ImageInformation.mipLevels = MipLevels;
 	ImageInformation.arrayLayers = 1;
-	ImageInformation.samples = VK_SAMPLE_COUNT_1_BIT;
+	ImageInformation.samples = SampleCount;
 	ImageInformation.tiling = Tiling;
 	ImageInformation.usage = Usage;
 	ImageInformation.sharingMode = VK_SHARING_MODE_EXCLUSIVE;

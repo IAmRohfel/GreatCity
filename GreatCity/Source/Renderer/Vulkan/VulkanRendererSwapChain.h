@@ -37,6 +37,7 @@ extern "C"
 	VkImageView* GCRendererSwapChain_GetImageViewHandles(const GCRendererSwapChain* const SwapChain);
 	uint32_t GCRendererSwapChain_GetImageCount(const GCRendererSwapChain* const SwapChain);
 	VkFormat GCRendererSwapChain_GetDepthFormat(const GCRendererSwapChain* const SwapChain);
+	VkSampleCountFlagBits GCRendererSwapChain_GetMaximumUsableSampleCount(const GCRendererSwapChain* const SwapChain);
 
 #ifdef __cplusplus
 }

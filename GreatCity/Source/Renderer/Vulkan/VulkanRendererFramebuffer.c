@@ -42,6 +42,10 @@ typedef struct GCRendererFramebuffer
 	VkImageView TextureImageViewHandle, TextureDepthImageViewHandle;
 	VkSampler TextureImageSamplerHandle;
 
+	VkImage TextureMSAAImageHandle;
+	VkDeviceMemory TextureMSAAImageMemoryHandle;
+	VkImageView TextureMSAAImageViewHandle;
+
 	VkFramebuffer TextureFramebufferHandle;
 	VkFramebuffer* SwapChainFramebufferHandles;
 
@@ -49,6 +53,7 @@ typedef struct GCRendererFramebuffer
 } GCRendererFramebuffer;
 
 static void GCRendererFramebuffer_CreateTexture(GCRendererFramebuffer* const Framebuffer, const bool IsResize);
+static void GCRendererFramebuffer_CreateTextureMSAA(GCRendererFramebuffer* const Framebuffer);
 static void GCRendererFramebuffer_CreateTextureFramebuffer(GCRendererFramebuffer* const Framebuffer);
 static void GCRendererFramebuffer_CreateSwapChainFramebuffers(GCRendererFramebuffer* const Framebuffer);
 static void GCRendererFramebuffer_DestroyObjectsTexture(GCRendererFramebuffer* const Framebuffer, const bool IsResize);
@@ -73,6 +78,7 @@ GCRendererFramebuffer* GCRendererFramebuffer_Create(const GCRendererDevice* cons
 	Framebuffer->TextureExtent = GCRendererSwapChain_GetExtent(Framebuffer->SwapChain);
 
 	GCRendererFramebuffer_CreateTexture(Framebuffer, false);
+	GCRendererFramebuffer_CreateTextureMSAA(Framebuffer);
 	GCRendererFramebuffer_CreateTextureFramebuffer(Framebuffer);
 	GCRendererFramebuffer_CreateSwapChainFramebuffers(Framebuffer);
 
@@ -88,6 +94,7 @@ void GCRendererFramebuffer_RecreateTexture(GCRendererFramebuffer* const Framebuf
 	Framebuffer->TextureExtent = (VkExtent2D){ Width, Height };
 
 	GCRendererFramebuffer_CreateTexture(Framebuffer, true);
+	GCRendererFramebuffer_CreateTextureMSAA(Framebuffer);
 	GCRendererFramebuffer_CreateTextureFramebuffer(Framebuffer);
 }
 
@@ -139,8 +146,9 @@ void GCRendererFramebuffer_CreateTexture(GCRendererFramebuffer* const Framebuffe
 {
 	const VkFormat SwapChainFormat = GCRendererSwapChain_GetFormat(Framebuffer->SwapChain);
 	const VkFormat SwapChainDepthFormat = GCRendererSwapChain_GetDepthFormat(Framebuffer->SwapChain);
+	const VkSampleCountFlagBits SampleCount = GCRendererSwapChain_GetMaximumUsableSampleCount(Framebuffer->SwapChain);
 
-	GCVulkanUtilities_CreateImage(Framebuffer->Device, Framebuffer->TextureExtent.width, Framebuffer->TextureExtent.height, 1, SwapChainFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &Framebuffer->TextureImageHandle, &Framebuffer->TextureImageMemoryHandle);
+	GCVulkanUtilities_CreateImage(Framebuffer->Device, Framebuffer->TextureExtent.width, Framebuffer->TextureExtent.height, 1, SwapChainFormat, VK_IMAGE_TILING_OPTIMAL, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &Framebuffer->TextureImageHandle, &Framebuffer->TextureImageMemoryHandle);
 	GCVulkanUtilities_CreateImageView(Framebuffer->Device, Framebuffer->TextureImageHandle, SwapChainFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1, &Framebuffer->TextureImageViewHandle);
 
 	if (!IsResize)
@@ -148,24 +156,34 @@ void GCRendererFramebuffer_CreateTexture(GCRendererFramebuffer* const Framebuffe
 		GCVulkanUtilities_CreateSampler(Framebuffer->Device, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, 0, &Framebuffer->TextureImageSamplerHandle);
 	}
 
-	GCVulkanUtilities_CreateImage(Framebuffer->Device, Framebuffer->TextureExtent.width, Framebuffer->TextureExtent.height, 1, SwapChainDepthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &Framebuffer->TextureDepthImageHandle, &Framebuffer->TextureDepthImageMemoryHandle);
+	GCVulkanUtilities_CreateImage(Framebuffer->Device, Framebuffer->TextureExtent.width, Framebuffer->TextureExtent.height, 1, SwapChainDepthFormat, VK_IMAGE_TILING_OPTIMAL, SampleCount, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &Framebuffer->TextureDepthImageHandle, &Framebuffer->TextureDepthImageMemoryHandle);
 	GCVulkanUtilities_CreateImageView(Framebuffer->Device, Framebuffer->TextureDepthImageHandle, SwapChainDepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1, &Framebuffer->TextureDepthImageViewHandle);
+}
+
+void GCRendererFramebuffer_CreateTextureMSAA(GCRendererFramebuffer* const Framebuffer)
+{
+	const VkFormat SwapChainFormat = GCRendererSwapChain_GetFormat(Framebuffer->SwapChain);
+	const VkSampleCountFlagBits SampleCount = GCRendererSwapChain_GetMaximumUsableSampleCount(Framebuffer->SwapChain);
+
+	GCVulkanUtilities_CreateImage(Framebuffer->Device, Framebuffer->TextureExtent.width, Framebuffer->TextureExtent.height, 1, SwapChainFormat, VK_IMAGE_TILING_OPTIMAL, SampleCount, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &Framebuffer->TextureMSAAImageHandle, &Framebuffer->TextureMSAAImageMemoryHandle);
+	GCVulkanUtilities_CreateImageView(Framebuffer->Device, Framebuffer->TextureMSAAImageHandle, SwapChainFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1, &Framebuffer->TextureMSAAImageViewHandle);
 }
 
 void GCRendererFramebuffer_CreateTextureFramebuffer(GCRendererFramebuffer* const Framebuffer)
 {
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Framebuffer->Device);
 	const VkRenderPass RenderPassHandle = GCRendererGraphicsPipeline_GetTextureRenderPassHandle(Framebuffer->GraphicsPipeline);
-	const VkImageView AttachmentHandles[2] =
+	const VkImageView AttachmentHandles[3] =
 	{
-		Framebuffer->TextureImageViewHandle,
-		Framebuffer->TextureDepthImageViewHandle
+		Framebuffer->TextureMSAAImageViewHandle,
+		Framebuffer->TextureDepthImageViewHandle,
+		Framebuffer->TextureImageViewHandle
 	};
 
 	VkFramebufferCreateInfo FramebufferInformation = { 0 };
 	FramebufferInformation.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 	FramebufferInformation.renderPass = RenderPassHandle;
-	FramebufferInformation.attachmentCount = 2;
+	FramebufferInformation.attachmentCount = 3;
 	FramebufferInformation.pAttachments = AttachmentHandles;
 	FramebufferInformation.width = Framebuffer->TextureExtent.width;
 	FramebufferInformation.height = Framebuffer->TextureExtent.height;
@@ -210,6 +228,10 @@ void GCRendererFramebuffer_DestroyObjectsTexture(GCRendererFramebuffer* const Fr
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Framebuffer->Device);
 
 	vkDestroyFramebuffer(DeviceHandle, Framebuffer->TextureFramebufferHandle, NULL);
+
+	vkDestroyImageView(DeviceHandle, Framebuffer->TextureMSAAImageViewHandle, NULL);
+	vkFreeMemory(DeviceHandle, Framebuffer->TextureMSAAImageMemoryHandle, NULL);
+	vkDestroyImage(DeviceHandle, Framebuffer->TextureMSAAImageHandle, NULL);
 
 	vkDestroyImageView(DeviceHandle, Framebuffer->TextureDepthImageViewHandle, NULL);
 	vkFreeMemory(DeviceHandle, Framebuffer->TextureDepthImageMemoryHandle, NULL);

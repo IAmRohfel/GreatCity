@@ -139,6 +139,41 @@ VkFormat GCRendererSwapChain_GetDepthFormat(const GCRendererSwapChain* const Swa
 	return GCRendererSwapChain_GetSupportedFormat(SwapChain, Formats, sizeof(Formats) / sizeof(VkFormat), VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
+VkSampleCountFlagBits GCRendererSwapChain_GetMaximumUsableSampleCount(const GCRendererSwapChain* const SwapChain)
+{
+	VkPhysicalDeviceProperties PhysicalDeviceProperties = { 0 };
+	vkGetPhysicalDeviceProperties(GCRendererDevice_GetPhysicalDeviceHandle(SwapChain->Device), &PhysicalDeviceProperties);
+
+	const VkSampleCountFlags SampleCount = PhysicalDeviceProperties.limits.framebufferColorSampleCounts & PhysicalDeviceProperties.limits.framebufferDepthSampleCounts;
+
+	if (SampleCount & VK_SAMPLE_COUNT_64_BIT)
+	{
+		return VK_SAMPLE_COUNT_64_BIT;
+	}
+	else if (SampleCount & VK_SAMPLE_COUNT_32_BIT)
+	{
+		return VK_SAMPLE_COUNT_32_BIT;
+	}
+	else if (SampleCount & VK_SAMPLE_COUNT_16_BIT)
+	{
+		return VK_SAMPLE_COUNT_16_BIT;
+	}
+	else if (SampleCount & VK_SAMPLE_COUNT_8_BIT)
+	{
+		return VK_SAMPLE_COUNT_8_BIT;
+	}
+	else if (SampleCount & VK_SAMPLE_COUNT_4_BIT)
+	{
+		return VK_SAMPLE_COUNT_4_BIT;
+	}
+	else if (SampleCount & VK_SAMPLE_COUNT_2_BIT)
+	{
+		return VK_SAMPLE_COUNT_2_BIT;
+	}
+
+	return VK_SAMPLE_COUNT_1_BIT;
+}
+
 void GCRendererSwapChain_QuerySwapChainSupport(GCRendererSwapChain* const SwapChain)
 {
 	const VkPhysicalDevice PhysicalDeviceHandle = GCRendererDevice_GetPhysicalDeviceHandle(SwapChain->Device);
