@@ -203,44 +203,27 @@ void GCRendererGraphicsPipeline_CreateSwapChainRenderPass(GCRendererGraphicsPipe
 	ColorAttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	ColorAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-	VkAttachmentDescription DepthAttachmentDescription = { 0 };
-	DepthAttachmentDescription.format = GCRendererSwapChain_GetDepthFormat(GraphicsPipeline->SwapChain);
-	DepthAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
-	DepthAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	DepthAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	DepthAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	DepthAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	DepthAttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	DepthAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
 	VkAttachmentReference ColorAttachmentReference = { 0 };
 	ColorAttachmentReference.attachment = 0;
 	ColorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-	VkAttachmentReference DepthAttachmentReference = { 0 };
-	DepthAttachmentReference.attachment = 1;
-	DepthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 	VkSubpassDescription SubpassDescription = { 0 };
 	SubpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	SubpassDescription.colorAttachmentCount = 1;
 	SubpassDescription.pColorAttachments = &ColorAttachmentReference;
-	SubpassDescription.pDepthStencilAttachment = &DepthAttachmentReference;
 
 	VkSubpassDependency SubpassDependency = { 0 };
 	SubpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 	SubpassDependency.dstSubpass = 0;
-	SubpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-	SubpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+	SubpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	SubpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	SubpassDependency.srcAccessMask = 0;
-	SubpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-	const VkAttachmentDescription AttachmentDescriptions[2] = { ColorAttachmentDescription, DepthAttachmentDescription };
+	SubpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
 	VkRenderPassCreateInfo RenderPassInformation = { 0 };
 	RenderPassInformation.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	RenderPassInformation.attachmentCount = 2;
-	RenderPassInformation.pAttachments = AttachmentDescriptions;
+	RenderPassInformation.attachmentCount = 1;
+	RenderPassInformation.pAttachments = &ColorAttachmentDescription;
 	RenderPassInformation.subpassCount = 1;
 	RenderPassInformation.pSubpasses = &SubpassDescription;
 	RenderPassInformation.dependencyCount = 1;
@@ -308,10 +291,14 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
 		PipelineFragmentShaderStageInformation
 	};
 
-	VkVertexInputBindingDescription VertexInputBindingDescription = { 0 };
-	VertexInputBindingDescription.binding = 0;
-	VertexInputBindingDescription.stride = VertexInput->Stride;
-	VertexInputBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+	VkVertexInputBindingDescription* VertexInputBindingDescriptions = (VkVertexInputBindingDescription*)GCMemory_Allocate(VertexInput->BindingCount * sizeof(VkVertexInputBindingDescription));
+	
+	for (uint32_t Counter = 0; Counter < VertexInput->BindingCount; Counter++)
+	{
+		VertexInputBindingDescriptions[Counter].binding = VertexInput->Bindings[Counter].Binding;
+		VertexInputBindingDescriptions[Counter].stride = VertexInput->Bindings[Counter].Stride;
+		VertexInputBindingDescriptions[Counter].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+	}
 
 	VkVertexInputAttributeDescription* VertexInputAttributeDescriptions = (VkVertexInputAttributeDescription*)GCMemory_Allocate(VertexInput->AttributeCount * sizeof(VkVertexInputAttributeDescription));
 
@@ -325,8 +312,8 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
 
 	VkPipelineVertexInputStateCreateInfo PipelineVertexInputStateInformation = { 0 };
 	PipelineVertexInputStateInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	PipelineVertexInputStateInformation.vertexBindingDescriptionCount = 1;
-	PipelineVertexInputStateInformation.pVertexBindingDescriptions = &VertexInputBindingDescription;
+	PipelineVertexInputStateInformation.vertexBindingDescriptionCount = VertexInput->BindingCount;
+	PipelineVertexInputStateInformation.pVertexBindingDescriptions = VertexInputBindingDescriptions;
 	PipelineVertexInputStateInformation.vertexAttributeDescriptionCount = VertexInput->AttributeCount;
 	PipelineVertexInputStateInformation.pVertexAttributeDescriptions = VertexInputAttributeDescriptions;
 
@@ -410,6 +397,7 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
 	GC_VULKAN_VALIDATE(vkCreateGraphicsPipelines(DeviceHandle, VK_NULL_HANDLE, 1, &GraphicsPipelineInformation, NULL, &GraphicsPipeline->PipelineHandle), "Failed to create a Vulkan graphics pipeline");
 
 	GCMemory_Free(VertexInputAttributeDescriptions);
+	GCMemory_Free(VertexInputBindingDescriptions);
 }
 
 void GCRendererGraphicsPipeline_CreateDescriptorPool(GCRendererGraphicsPipeline* const GraphicsPipeline)

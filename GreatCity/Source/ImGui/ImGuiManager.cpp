@@ -128,7 +128,7 @@ extern "C" void GCImGuiManager_EndFrame(void)
 	{
 		ViewportSize = CurrentViewportSize;
 
-		if (ViewportSize.x && ViewportSize.y)
+		if (ViewportSize.x > 0.0f && ViewportSize.y > 0.0f)
 		{
 			GCRendererFramebuffer_RecreateTexture(RendererFramebuffer, static_cast<uint32_t>(ViewportSize.x), static_cast<uint32_t>(ViewportSize.y));
 			GCWorldCamera_SetSize(GCApplication_GetWorldCamera(), static_cast<uint32_t>(ViewportSize.x), static_cast<uint32_t>(ViewportSize.y));

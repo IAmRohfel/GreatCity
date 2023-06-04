@@ -134,14 +134,11 @@ void GCRendererCommandList_BeginSwapChainRenderPass(const GCRendererCommandList*
 	RenderPassBeginInformation.renderArea.offset = (VkOffset2D){ 0, 0 };
 	RenderPassBeginInformation.renderArea.extent = GCRendererSwapChain_GetExtent(SwapChain);
 
-	VkClearValue ClearValues[2] = { 0 };
-	memcpy(ClearValues[0].color.float32, ClearColor, sizeof(ClearValues[0].color.float32));
+	VkClearValue ClearValue = { 0 };
+	memcpy(ClearValue.color.float32, ClearColor, sizeof(ClearValue.color.float32));
 
-	ClearValues[1].depthStencil.depth = 1.0f;
-	ClearValues[1].depthStencil.stencil = 0;
-
-	RenderPassBeginInformation.clearValueCount = 2;
-	RenderPassBeginInformation.pClearValues = ClearValues;
+	RenderPassBeginInformation.clearValueCount = 1;
+	RenderPassBeginInformation.pClearValues = &ClearValue;
 
 	vkCmdBeginRenderPass(CommandList->CommandBufferHandles[CommandList->CurrentFrame], &RenderPassBeginInformation, VK_SUBPASS_CONTENTS_INLINE);
 }
@@ -176,15 +173,15 @@ void GCRendererCommandList_BindGraphicsPipeline(const GCRendererCommandList* con
 	vkCmdBindDescriptorSets(CommandList->CommandBufferHandles[CommandList->CurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, GCRendererGraphicsPipeline_GetPipelineLayoutHandle(GraphicsPipeline), 0, 1, &DescriptorSetHandle, 0, NULL);
 }
 
-void GCRendererCommandList_SetViewport(const GCRendererCommandList* const CommandList, const GCRendererSwapChain* const SwapChain)
+void GCRendererCommandList_SetViewport(const GCRendererCommandList* const CommandList, const GCRendererFramebuffer* const Framebuffer)
 {
-	const VkExtent2D SwapChainExtent = GCRendererSwapChain_GetExtent(SwapChain);
+	const VkExtent2D TextureExtent = GCRendererFramebuffer_GetTextureExtent(Framebuffer);
 
 	VkViewport Viewport = { 0 };
 	Viewport.x = 0.0f;
 	Viewport.y = 0.0f;
-	Viewport.width = (float)SwapChainExtent.width;
-	Viewport.height = (float)SwapChainExtent.height;
+	Viewport.width = (float)TextureExtent.width;
+	Viewport.height = (float)TextureExtent.height;
 	Viewport.minDepth = 0.0f;
 	Viewport.maxDepth = 1.0f;
 
@@ -192,7 +189,7 @@ void GCRendererCommandList_SetViewport(const GCRendererCommandList* const Comman
 
 	VkRect2D Scissor = { 0 };
 	Scissor.offset = (VkOffset2D){ 0, 0 };
-	Scissor.extent = SwapChainExtent;
+	Scissor.extent = TextureExtent;
 
 	vkCmdSetScissor(CommandList->CommandBufferHandles[CommandList->CurrentFrame], 0, 1, &Scissor);
 }

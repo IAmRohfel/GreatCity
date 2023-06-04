@@ -18,6 +18,7 @@
 #include "Renderer/Vulkan/VulkanUtilities.h"
 #include "Renderer/Vulkan/VulkanRendererDevice.h"
 #include "Renderer/Vulkan/VulkanRendererCommandList.h"
+#include "Renderer/RendererDevice.h"
 #include "Core/Log.h"
 #include "Core/Assert.h"
 
@@ -62,7 +63,7 @@ void GCVulkanUtilities_CopyBuffer(const GCRendererDevice* const Device, const GC
 	GCVulkanUtilities_EndSingleTimeCommands(Device, CommandList, CommandBufferHandle);
 }
 
-void GCVulkanUtilities_CreateImage(const GCRendererDevice* const Device, const uint32_t Width, const uint32_t Height, const VkFormat Format, const VkImageTiling Tiling, const VkImageUsageFlags Usage, const VkMemoryPropertyFlags MemoryProperty, VkImage* ImageHandle, VkDeviceMemory* ImageMemoryHandle)
+void GCVulkanUtilities_CreateImage(const GCRendererDevice* const Device, const uint32_t Width, const uint32_t Height, const uint32_t MipLevels, const VkFormat Format, const VkImageTiling Tiling, const VkImageUsageFlags Usage, const VkMemoryPropertyFlags MemoryProperty, VkImage* ImageHandle, VkDeviceMemory* ImageMemoryHandle)
 {
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Device);
 
@@ -73,7 +74,7 @@ void GCVulkanUtilities_CreateImage(const GCRendererDevice* const Device, const u
 	ImageInformation.extent.width = Width;
 	ImageInformation.extent.height = Height;
 	ImageInformation.extent.depth = 1;
-	ImageInformation.mipLevels = 1;
+	ImageInformation.mipLevels = MipLevels;
 	ImageInformation.arrayLayers = 1;
 	ImageInformation.samples = VK_SAMPLE_COUNT_1_BIT;
 	ImageInformation.tiling = Tiling;
@@ -95,7 +96,7 @@ void GCVulkanUtilities_CreateImage(const GCRendererDevice* const Device, const u
 	vkBindImageMemory(DeviceHandle, *ImageHandle, *ImageMemoryHandle, 0);
 }
 
-void GCVulkanUtilities_TransitionImageLayout(const GCRendererDevice* const Device, const GCRendererCommandList* const CommandList, const VkImage ImageHandle, const VkFormat Format, const VkImageLayout OldLayout, const VkImageLayout NewLayout)
+void GCVulkanUtilities_TransitionImageLayout(const GCRendererDevice* const Device, const GCRendererCommandList* const CommandList, const VkImage ImageHandle, const VkFormat Format, const uint32_t MipLevels, const VkImageLayout OldLayout, const VkImageLayout NewLayout)
 {
 	(void)Format;
 
@@ -110,7 +111,7 @@ void GCVulkanUtilities_TransitionImageLayout(const GCRendererDevice* const Devic
 	ImageMemoryBarrier.image = ImageHandle;
 	ImageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	ImageMemoryBarrier.subresourceRange.baseMipLevel = 0;
-	ImageMemoryBarrier.subresourceRange.levelCount = 1;
+	ImageMemoryBarrier.subresourceRange.levelCount = MipLevels;
 	ImageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
 	ImageMemoryBarrier.subresourceRange.layerCount = 1;
 
@@ -164,7 +165,7 @@ void GCVulkanUtilities_CopyBufferToImage(const GCRendererDevice* const Device, c
 	GCVulkanUtilities_EndSingleTimeCommands(Device, CommandList, CommandBufferHandle);
 }
 
-void GCVulkanUtilities_CreateImageView(const GCRendererDevice* const Device, const VkImage ImageHandle, const VkFormat Format, const VkImageAspectFlags ImageAspect, VkImageView* ImageViewHandle)
+void GCVulkanUtilities_CreateImageView(const GCRendererDevice* const Device, const VkImage ImageHandle, const VkFormat Format, const VkImageAspectFlags ImageAspect, const uint32_t MipLevels, VkImageView* ImageViewHandle)
 {
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Device);
 
@@ -179,11 +180,126 @@ void GCVulkanUtilities_CreateImageView(const GCRendererDevice* const Device, con
 	ImageViewInformation.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
 	ImageViewInformation.subresourceRange.aspectMask = ImageAspect;
 	ImageViewInformation.subresourceRange.baseMipLevel = 0;
-	ImageViewInformation.subresourceRange.levelCount = 1;
+	ImageViewInformation.subresourceRange.levelCount = MipLevels;
 	ImageViewInformation.subresourceRange.baseArrayLayer = 0;
 	ImageViewInformation.subresourceRange.layerCount = 1;
 
 	GC_VULKAN_VALIDATE(vkCreateImageView(DeviceHandle, &ImageViewInformation, NULL, ImageViewHandle), "Failed to create a Vulkan image view");
+}
+
+void GCVulkanUtilities_CreateSampler(const GCRendererDevice* const Device, const VkFilter Filter, const VkSamplerAddressMode AddressMode, const uint32_t MipLevels, VkSampler* SamplerHandle)
+{
+	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Device);
+	const GCRendererDeviceCapabilities DeviceCapabilities = GCRendererDevice_GetDeviceCapabilities(Device);
+
+	VkSamplerCreateInfo SamplerInformation = { 0 };
+	SamplerInformation.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	SamplerInformation.magFilter = Filter;
+	SamplerInformation.minFilter = Filter;
+	SamplerInformation.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	SamplerInformation.addressModeU = AddressMode;
+	SamplerInformation.addressModeV = AddressMode;
+	SamplerInformation.addressModeW = AddressMode;
+	SamplerInformation.mipLodBias = 0.0f;
+
+	if (DeviceCapabilities.IsAnisotropySupported)
+	{
+		SamplerInformation.anisotropyEnable = VK_TRUE;
+		SamplerInformation.maxAnisotropy = DeviceCapabilities.MaximumAnisotropy;
+	}
+	else
+	{
+		SamplerInformation.anisotropyEnable = VK_FALSE;
+		SamplerInformation.maxAnisotropy = 1.0f;
+	}
+
+	SamplerInformation.compareEnable = VK_FALSE;
+	SamplerInformation.compareOp = VK_COMPARE_OP_ALWAYS;
+	SamplerInformation.minLod = 0.0f;
+	SamplerInformation.maxLod = (float)MipLevels;
+	SamplerInformation.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	SamplerInformation.unnormalizedCoordinates = VK_FALSE;
+
+	GC_VULKAN_VALIDATE(vkCreateSampler(DeviceHandle, &SamplerInformation, NULL, SamplerHandle), "Failed to create a Vulkan sampler");
+}
+
+void GCVulkanUtilities_GenerateMipmap(const GCRendererDevice* const Device, const GCRendererCommandList* const CommandList, const VkImage ImageHandle, const uint32_t Width, const uint32_t Height, const uint32_t MipLevels, const VkFormat Format)
+{
+	VkFormatProperties FormatProperties = { 0 };
+	vkGetPhysicalDeviceFormatProperties(GCRendererDevice_GetPhysicalDeviceHandle(Device), Format, &FormatProperties);
+
+	if (!(FormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+	{
+		GC_ASSERT_WITH_MESSAGE(false, "Image format does not support linear blitting");
+	}
+
+	const VkCommandBuffer CommandBufferHandle = GCVulkanUtilities_BeginSingleTimeCommands(Device, CommandList);
+
+	VkImageMemoryBarrier ImageMemoryBarrier = { 0 };
+	ImageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	ImageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	ImageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	ImageMemoryBarrier.image = ImageHandle;
+	ImageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	ImageMemoryBarrier.subresourceRange.levelCount = 1;
+	ImageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
+	ImageMemoryBarrier.subresourceRange.layerCount = 1;
+
+	int32_t MipWidth = Width, MipHeight = Height;
+
+	for (uint32_t Counter = 1; Counter < MipLevels; Counter++)
+	{
+		ImageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		ImageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+		ImageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		ImageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		ImageMemoryBarrier.subresourceRange.baseMipLevel = Counter - 1;
+
+		vkCmdPipelineBarrier(CommandBufferHandle, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, NULL, 0, NULL, 1, &ImageMemoryBarrier);
+
+		VkImageBlit ImageBlit = { 0 };
+		ImageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		ImageBlit.srcSubresource.mipLevel = Counter - 1;
+		ImageBlit.srcSubresource.baseArrayLayer = 0;
+		ImageBlit.srcSubresource.layerCount = 1;
+		ImageBlit.srcOffsets[0] = (VkOffset3D){ 0, 0, 0 };
+		ImageBlit.srcOffsets[1] = (VkOffset3D){ MipWidth, MipHeight, 1 };
+		ImageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		ImageBlit.dstSubresource.mipLevel = Counter;
+		ImageBlit.dstSubresource.baseArrayLayer = 0;
+		ImageBlit.dstSubresource.layerCount = 1;
+		ImageBlit.dstOffsets[0] = (VkOffset3D){ 0, 0, 0 };
+		ImageBlit.dstOffsets[1] = (VkOffset3D){ MipWidth > 1 ? MipWidth / 2 : 1, MipHeight > 1 ? MipHeight / 2 : 1, 1 };
+
+		vkCmdBlitImage(CommandBufferHandle, ImageHandle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, ImageHandle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &ImageBlit, VK_FILTER_LINEAR);
+
+		ImageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+		ImageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		ImageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		ImageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		vkCmdPipelineBarrier(CommandBufferHandle, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, NULL, 0, NULL, 1, &ImageMemoryBarrier);
+
+		if (MipWidth > 1)
+		{
+			MipWidth /= 2;
+		}
+
+		if (MipHeight > 1)
+		{
+			MipHeight /= 2;
+		}
+	}
+
+	ImageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	ImageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+	ImageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	ImageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	ImageMemoryBarrier.subresourceRange.baseMipLevel = MipLevels - 1;
+
+	vkCmdPipelineBarrier(CommandBufferHandle, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, NULL, 0, NULL, 1, &ImageMemoryBarrier);
+
+	GCVulkanUtilities_EndSingleTimeCommands(Device, CommandList, CommandBufferHandle);
 }
 
 VkCommandBuffer GCVulkanUtilities_BeginSingleTimeCommands(const GCRendererDevice* const Device, const GCRendererCommandList* const CommandList)

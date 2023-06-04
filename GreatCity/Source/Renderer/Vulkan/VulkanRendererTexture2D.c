@@ -25,6 +25,7 @@
 #include "Core/Assert.h"
 
 #include <string.h>
+#include <math.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -43,8 +44,7 @@ typedef struct GCRendererTexture2D
 } GCRendererTexture2D;
 
 static uint8_t* GCRendererTexture2D_LoadImage(const char* const TexturePath, uint32_t* const Width, uint32_t* const Height, uint32_t* const Channels);
-static void GCRendererTexture2D_CreateTextureImage(GCRendererTexture2D* const Texture2D, const char* const TexturePath);
-static void GCRendererTexture2D_CreateTextureSampler(GCRendererTexture2D* const Texture2D);
+static void GCRendererTexture2D_CreateTexture(GCRendererTexture2D* const Texture2D, const char* const TexturePath);
 static void GCRendererTexture2D_DestroyObjects(GCRendererTexture2D* const Texture2D);
 
 GCRendererTexture2D* GCRendererTexture2D_Create(const GCRendererDevice* const Device, const GCRendererCommandList* const CommandList, const char* const TexturePath)
@@ -57,8 +57,7 @@ GCRendererTexture2D* GCRendererTexture2D_Create(const GCRendererDevice* const De
 	Texture2D->ImageViewHandle = VK_NULL_HANDLE;
 	Texture2D->ImageSamplerHandle = VK_NULL_HANDLE;
 
-	GCRendererTexture2D_CreateTextureImage(Texture2D, TexturePath);
-	GCRendererTexture2D_CreateTextureSampler(Texture2D);
+	GCRendererTexture2D_CreateTexture(Texture2D, TexturePath);
 
 	return Texture2D;
 }
@@ -97,7 +96,7 @@ uint8_t* GCRendererTexture2D_LoadImage(const char* const TexturePath, uint32_t* 
 	return TextureData;
 }
 
-void GCRendererTexture2D_CreateTextureImage(GCRendererTexture2D* const Texture2D, const char* const TexturePath)
+void GCRendererTexture2D_CreateTexture(GCRendererTexture2D* const Texture2D, const char* const TexturePath)
 {
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Texture2D->Device);
 
@@ -105,6 +104,7 @@ void GCRendererTexture2D_CreateTextureImage(GCRendererTexture2D* const Texture2D
 	uint8_t* TextureData = GCRendererTexture2D_LoadImage(TexturePath, &TextureWidth, &TextureHeight, &TextureChannels);
 
 	const size_t ImageSize = TextureWidth * TextureHeight * 4;
+	const uint32_t MipLevels = (uint32_t)floorf(log2f(fmaxf((float)TextureWidth, (float)TextureHeight))) + 1;
 
 	VkBuffer StagingImageBufferHandle = VK_NULL_HANDLE;
 	VkDeviceMemory StagingImageBufferMemoryHandle = VK_NULL_HANDLE;
@@ -118,51 +118,16 @@ void GCRendererTexture2D_CreateTextureImage(GCRendererTexture2D* const Texture2D
 
 	stbi_image_free(TextureData);
 
-	GCVulkanUtilities_CreateImage(Texture2D->Device, TextureWidth, TextureHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &Texture2D->ImageHandle, &Texture2D->ImageMemoryHandle);
-	GCVulkanUtilities_TransitionImageLayout(Texture2D->Device, Texture2D->CommandList, Texture2D->ImageHandle, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	GCVulkanUtilities_CreateImage(Texture2D->Device, TextureWidth, TextureHeight, MipLevels, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &Texture2D->ImageHandle, &Texture2D->ImageMemoryHandle);
+	GCVulkanUtilities_TransitionImageLayout(Texture2D->Device, Texture2D->CommandList, Texture2D->ImageHandle, VK_FORMAT_R8G8B8A8_SRGB, MipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 	GCVulkanUtilities_CopyBufferToImage(Texture2D->Device, Texture2D->CommandList, StagingImageBufferHandle, Texture2D->ImageHandle, TextureWidth, TextureHeight);
-	GCVulkanUtilities_TransitionImageLayout(Texture2D->Device, Texture2D->CommandList, Texture2D->ImageHandle, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	GCVulkanUtilities_GenerateMipmap(Texture2D->Device, Texture2D->CommandList, Texture2D->ImageHandle, TextureWidth, TextureHeight, MipLevels, VK_FORMAT_R8G8B8A8_SRGB);
 
 	vkFreeMemory(DeviceHandle, StagingImageBufferMemoryHandle, NULL);
 	vkDestroyBuffer(DeviceHandle, StagingImageBufferHandle, NULL);
 
-	GCVulkanUtilities_CreateImageView(Texture2D->Device, Texture2D->ImageHandle, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, &Texture2D->ImageViewHandle);
-}
-
-void GCRendererTexture2D_CreateTextureSampler(GCRendererTexture2D* const Texture2D)
-{
-	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Texture2D->Device);
-	const GCRendererDeviceCapabilities DeviceCapabilities = GCRendererDevice_GetDeviceCapabilities(Texture2D->Device);
-
-	VkSamplerCreateInfo SamplerInformation = { 0 };
-	SamplerInformation.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	SamplerInformation.magFilter = VK_FILTER_LINEAR;
-	SamplerInformation.minFilter = VK_FILTER_LINEAR;
-	SamplerInformation.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-	SamplerInformation.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	SamplerInformation.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	SamplerInformation.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	SamplerInformation.mipLodBias = 0.0f;
-
-	if (DeviceCapabilities.IsAnisotropySupported)
-	{
-		SamplerInformation.anisotropyEnable = VK_TRUE;
-		SamplerInformation.maxAnisotropy = DeviceCapabilities.MaximumAnisotropy;
-	}
-	else
-	{
-		SamplerInformation.anisotropyEnable = VK_FALSE;
-		SamplerInformation.maxAnisotropy = 1.0f;
-	}
-
-	SamplerInformation.compareEnable = VK_FALSE;
-	SamplerInformation.compareOp = VK_COMPARE_OP_ALWAYS;
-	SamplerInformation.minLod = 0.0f;
-	SamplerInformation.maxLod = 0.0f;
-	SamplerInformation.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-	SamplerInformation.unnormalizedCoordinates = VK_FALSE;
-
-	GC_VULKAN_VALIDATE(vkCreateSampler(DeviceHandle, &SamplerInformation, NULL, &Texture2D->ImageSamplerHandle), "Failed to create a Vulkan texture sampler");
+	GCVulkanUtilities_CreateImageView(Texture2D->Device, Texture2D->ImageHandle, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, MipLevels, &Texture2D->ImageViewHandle);
+	GCVulkanUtilities_CreateSampler(Texture2D->Device, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, MipLevels, &Texture2D->ImageSamplerHandle);
 }
 
 void GCRendererTexture2D_DestroyObjects(GCRendererTexture2D* const Texture2D)

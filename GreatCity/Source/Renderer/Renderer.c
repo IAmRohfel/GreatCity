@@ -87,7 +87,10 @@ void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera)
 	Renderer->BasicShader = GCRendererShader_Create(Renderer->Device, "Assets/Shaders/Basic/Basic.vertex.glsl", "Assets/Shaders/Basic/Basic.fragment.glsl");
 
 	GCRendererGraphicsPipelineVertexInput GraphicsPipelineVertexInput = { 0 };
-	GraphicsPipelineVertexInput.Stride = sizeof(GCRendererVertex);
+
+	GCRendererGraphicsPipelineVertexInputBinding GraphicsPipelineVertexInputBindings[1] = { 0 };
+	GraphicsPipelineVertexInputBindings[0].Binding = 0;
+	GraphicsPipelineVertexInputBindings[0].Stride = sizeof(GCRendererVertex);
 
 	GCRendererGraphicsPipelineVertexInputAttribute GraphicsPipelineVertexInputAttributes[3] = { 0 };
 	GraphicsPipelineVertexInputAttributes[0].Location = 0;
@@ -102,6 +105,8 @@ void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera)
 	GraphicsPipelineVertexInputAttributes[2].Format = GCRendererGraphicsPipelineVertexInputAttributeFormat_Vector2;
 	GraphicsPipelineVertexInputAttributes[2].Offset = offsetof(GCRendererVertex, TextureCoordinate);
 
+	GraphicsPipelineVertexInput.Bindings = GraphicsPipelineVertexInputBindings;
+	GraphicsPipelineVertexInput.BindingCount = sizeof(GraphicsPipelineVertexInputBindings) / sizeof(GCRendererGraphicsPipelineVertexInputBinding);
 	GraphicsPipelineVertexInput.Attributes = GraphicsPipelineVertexInputAttributes;
 	GraphicsPipelineVertexInput.AttributeCount = sizeof(GraphicsPipelineVertexInputAttributes) / sizeof(GCRendererGraphicsPipelineVertexInputAttribute);
 
@@ -126,6 +131,12 @@ void GCRenderer_RenderEntity(const GCEntity Entity)
 {
 	const GCMeshComponent* const MeshComponent = GCEntity_GetMeshComponent(Entity);
 	const GCRendererModel* const Model = MeshComponent->Model;
+
+	if (Renderer->DrawDataCount >= Renderer->MaximumDrawDataCount)
+	{
+		Renderer->MaximumDrawDataCount += Renderer->MaximumDrawDataCount;
+		Renderer->DrawData = (GCRendererDrawData*)GCMemory_Reallocate(Renderer->DrawData, Renderer->MaximumDrawDataCount * sizeof(GCRendererDrawData));
+	}
 
 	Renderer->DrawData[Renderer->DrawDataCount].VertexBuffer = Model->VertexBuffer;
 	Renderer->DrawData[Renderer->DrawDataCount].VertexCount = Model->VertexCount;
@@ -196,7 +207,7 @@ void GCRenderer_ResizeSwapChainRenderer(void)
 	uint32_t Width = 0, Height = 0;
 	GCWindow_GetWindowSize(GCApplication_GetWindow(), &Width, &Height);
 
-	if (Width && Height)
+	if (Width > 0 && Height > 0)
 	{
 		GCRendererSwapChain_Recreate(Renderer->SwapChain);
 		GCRendererFramebuffer_RecreateSwapChain(Renderer->Framebuffer);
@@ -215,7 +226,7 @@ void GCRenderer_RecordCommands(const GCRendererCommandListRecordData* const Reco
 
 	GCRendererCommandList_UpdateUniformBuffer(Renderer->CommandList, Renderer->UniformBuffer, RecordData, &UniformBufferData, sizeof(GCRendererUniformBufferData));
 	GCRendererCommandList_BindGraphicsPipeline(Renderer->CommandList, Renderer->GraphicsPipeline);
-	GCRendererCommandList_SetViewport(Renderer->CommandList, Renderer->SwapChain);
+	GCRendererCommandList_SetViewport(Renderer->CommandList, Renderer->Framebuffer);
 
 	for (uint32_t Counter = 0; Counter < Renderer->DrawDataCount; Counter++)
 	{

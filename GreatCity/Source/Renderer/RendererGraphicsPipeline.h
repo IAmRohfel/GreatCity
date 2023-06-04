@@ -41,6 +41,12 @@ extern "C"
 		GCRendererGraphicsPipelineVertexInputAttributeFormat_Vector4,
 	} GCRendererGraphicsPipelineVertexInputAttributeFormat;
 
+	typedef struct GCRendererGraphicsPipelineVertexInputBinding
+	{
+		uint32_t Binding;
+		uint32_t Stride;
+	} GCRendererGraphicsPipelineVertexInputBinding;
+
 	typedef struct GCRendererGraphicsPipelineVertexInputAttribute
 	{
 		uint32_t Location;
@@ -50,7 +56,9 @@ extern "C"
 
 	typedef struct GCRendererGraphicsPipelineVertexInput
 	{
-		uint32_t Stride;
+		GCRendererGraphicsPipelineVertexInputBinding* Bindings;
+		uint32_t BindingCount;
+
 		GCRendererGraphicsPipelineVertexInputAttribute* Attributes;
 		uint32_t AttributeCount;
 	} GCRendererGraphicsPipelineVertexInput;
