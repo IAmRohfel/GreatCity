@@ -27,11 +27,11 @@ extern "C"
 
 	typedef struct GCRendererFramebuffer GCRendererFramebuffer;
 
-	VkImageView GCRendererFramebuffer_GetTextureImageViewHandle(const GCRendererFramebuffer* const Framebuffer);
-	VkSampler GCRendererFramebuffer_GetTextureSamplerHandle(const GCRendererFramebuffer* const Framebuffer);
-	VkFramebuffer GCRendererFramebuffer_GetTextureFramebufferHandle(const GCRendererFramebuffer* const Framebuffer);
+	VkImageView GCRendererFramebuffer_GetColorAttachmentImageViewHandle(const GCRendererFramebuffer* const Framebuffer, const uint32_t AttachmentIndex);
+	VkSampler GCRendererFramebuffer_GetColorAttachmentSampledSamplerHandle(const GCRendererFramebuffer* const Framebuffer, const uint32_t AttachmentIndex);
 	VkFramebuffer* GCRendererFramebuffer_GetSwapChainFramebufferHandles(const GCRendererFramebuffer* const Framebuffer);
-	VkExtent2D GCRendererFramebuffer_GetTextureExtent(const GCRendererFramebuffer* const Framebuffer);
+	VkFramebuffer GCRendererFramebuffer_GetAttachmentFramebufferHandle(const GCRendererFramebuffer* const Framebuffer);
+	VkExtent2D GCRendererFramebuffer_GetFramebufferSize(const GCRendererFramebuffer* const Framebuffer);
 
 #ifdef __cplusplus
 }

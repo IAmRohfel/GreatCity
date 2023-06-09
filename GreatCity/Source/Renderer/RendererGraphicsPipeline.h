@@ -39,6 +39,8 @@ extern "C"
 		GCRendererGraphicsPipelineVertexInputAttributeFormat_Vector2,
 		GCRendererGraphicsPipelineVertexInputAttributeFormat_Vector3,
 		GCRendererGraphicsPipelineVertexInputAttributeFormat_Vector4,
+
+		GCRendererGraphicsPipelineVertexInputAttributeFormat_Integer
 	} GCRendererGraphicsPipelineVertexInputAttributeFormat;
 
 	typedef struct GCRendererGraphicsPipelineVertexInputBinding

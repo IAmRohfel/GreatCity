@@ -92,7 +92,7 @@ void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera)
 	GraphicsPipelineVertexInputBindings[0].Binding = 0;
 	GraphicsPipelineVertexInputBindings[0].Stride = sizeof(GCRendererVertex);
 
-	GCRendererGraphicsPipelineVertexInputAttribute GraphicsPipelineVertexInputAttributes[3] = { 0 };
+	GCRendererGraphicsPipelineVertexInputAttribute GraphicsPipelineVertexInputAttributes[4] = { 0 };
 	GraphicsPipelineVertexInputAttributes[0].Location = 0;
 	GraphicsPipelineVertexInputAttributes[0].Format = GCRendererGraphicsPipelineVertexInputAttributeFormat_Vector3;
 	GraphicsPipelineVertexInputAttributes[0].Offset = offsetof(GCRendererVertex, Position);
@@ -105,13 +105,37 @@ void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera)
 	GraphicsPipelineVertexInputAttributes[2].Format = GCRendererGraphicsPipelineVertexInputAttributeFormat_Vector2;
 	GraphicsPipelineVertexInputAttributes[2].Offset = offsetof(GCRendererVertex, TextureCoordinate);
 
+	GraphicsPipelineVertexInputAttributes[3].Location = 3;
+	GraphicsPipelineVertexInputAttributes[3].Format = GCRendererGraphicsPipelineVertexInputAttributeFormat_Integer;
+	GraphicsPipelineVertexInputAttributes[3].Offset = offsetof(GCRendererVertex, EntityID);
+
 	GraphicsPipelineVertexInput.Bindings = GraphicsPipelineVertexInputBindings;
 	GraphicsPipelineVertexInput.BindingCount = sizeof(GraphicsPipelineVertexInputBindings) / sizeof(GCRendererGraphicsPipelineVertexInputBinding);
 	GraphicsPipelineVertexInput.Attributes = GraphicsPipelineVertexInputAttributes;
 	GraphicsPipelineVertexInput.AttributeCount = sizeof(GraphicsPipelineVertexInputAttributes) / sizeof(GCRendererGraphicsPipelineVertexInputAttribute);
 
 	Renderer->GraphicsPipeline = GCRendererGraphicsPipeline_Create(Renderer->Device, Renderer->SwapChain, Renderer->CommandList, &GraphicsPipelineVertexInput, Renderer->UniformBuffer, NULL, 0, Renderer->BasicShader);
-	Renderer->Framebuffer = GCRendererFramebuffer_Create(Renderer->Device, Renderer->SwapChain, Renderer->GraphicsPipeline);
+
+	GCRendererFramebufferAttachment FramebufferAttachments[3] = { 0 };
+	FramebufferAttachments[0].Type = GCRendererFramebufferAttachmentType_Color;
+	FramebufferAttachments[0].Flags = GCRendererFramebufferAttachmentFlags_Sampled;
+	FramebufferAttachments[0].Format = GCRendererFramebufferAttachmentFormat_SRGB;
+	FramebufferAttachments[0].SampleCount = GCRendererFramebufferAttachmentSampleCount_MaximumUsable;
+
+	FramebufferAttachments[1].Type = GCRendererFramebufferAttachmentType_Color;
+	FramebufferAttachments[1].Flags = GCRendererFramebufferAttachmentFlags_Mapped;
+	FramebufferAttachments[1].Format = GCRendererFramebufferAttachmentFormat_Integer;
+	FramebufferAttachments[1].SampleCount = GCRendererFramebufferAttachmentSampleCount_MaximumUsable;
+
+	FramebufferAttachments[2].Type = GCRendererFramebufferAttachmentType_DepthStencil;
+	FramebufferAttachments[2].Flags = GCRendererFramebufferAttachmentFlags_None;
+	FramebufferAttachments[2].Format = GCRendererFramebufferAttachmentFormat_D32;
+	FramebufferAttachments[2].SampleCount = GCRendererFramebufferAttachmentSampleCount_MaximumUsable;
+
+	uint32_t WindowWidth = 0, WindowHeight = 0;
+	GCWindow_GetWindowSize(GCApplication_GetWindow(), &WindowWidth, &WindowHeight);
+
+	Renderer->Framebuffer = GCRendererFramebuffer_Create(Renderer->Device, Renderer->SwapChain, Renderer->GraphicsPipeline, WindowWidth, WindowHeight, FramebufferAttachments, 3);
 
 	GCRendererCommandList_SetResizeCallback(Renderer->CommandList, GCRenderer_ResizeSwapChainRenderer);
 
@@ -210,7 +234,7 @@ void GCRenderer_ResizeSwapChainRenderer(void)
 	if (Width > 0 && Height > 0)
 	{
 		GCRendererSwapChain_Recreate(Renderer->SwapChain);
-		GCRendererFramebuffer_RecreateSwapChain(Renderer->Framebuffer);
+		GCRendererFramebuffer_RecreateSwapChainFramebuffer(Renderer->Framebuffer);
 	}
 }
 
@@ -243,4 +267,8 @@ void GCRenderer_RecordCommands(const GCRendererCommandListRecordData* const Reco
 	GCRendererCommandList_EndSwapChainRenderPass(Renderer->CommandList);
 
 	GCRendererCommandList_EndRecord(Renderer->CommandList);
+
+	int32_t Pixel = GCRendererFramebuffer_GetPixel(Renderer->Framebuffer, Renderer->CommandList, 1, 0);
+
+	(void)Pixel;
 }

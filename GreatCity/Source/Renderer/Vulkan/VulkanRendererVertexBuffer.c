@@ -107,7 +107,10 @@ void GCRendererVertexBuffer_CreateVertexBuffer(GCRendererVertexBuffer* const Ver
 	vkUnmapMemory(DeviceHandle, StagingVertexBufferMemoryHandle);
 
 	GCVulkanUtilities_CreateBuffer(VertexBuffer->Device, VertexBuffer->VertexSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &VertexBuffer->VertexBufferHandle, &VertexBuffer->VertexBufferMemoryHandle);
-	GCVulkanUtilities_CopyBuffer(VertexBuffer->Device, VertexBuffer->CommandList, StagingVertexBufferHandle, VertexBuffer->VertexBufferHandle, VertexBuffer->VertexSize);
+
+	const VkCommandBuffer CommandBufferHandle = GCVulkanUtilities_BeginSingleTimeCommands(VertexBuffer->Device, VertexBuffer->CommandList);
+	GCVulkanUtilities_CopyBuffer(CommandBufferHandle, StagingVertexBufferHandle, VertexBuffer->VertexBufferHandle, VertexBuffer->VertexSize);
+	GCVulkanUtilities_EndSingleTimeCommands(VertexBuffer->Device, VertexBuffer->CommandList, CommandBufferHandle);
 
 	vkFreeMemory(DeviceHandle, StagingVertexBufferMemoryHandle, NULL);
 	vkDestroyBuffer(DeviceHandle, StagingVertexBufferHandle, NULL);

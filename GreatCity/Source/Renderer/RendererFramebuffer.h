@@ -28,11 +28,51 @@ extern "C"
 	typedef struct GCRendererFramebuffer GCRendererFramebuffer;
 	typedef struct GCRendererDevice GCRendererDevice;
 	typedef struct GCRendererSwapChain GCRendererSwapChain;
+    typedef struct GCRendererCommandList GCRendererCommandList;
 	typedef struct GCRendererGraphicsPipeline GCRendererGraphicsPipeline;
 
-	GCRendererFramebuffer* GCRendererFramebuffer_Create(const GCRendererDevice* const Device, const GCRendererSwapChain* const SwapChain, const GCRendererGraphicsPipeline* const GraphicsPipeline);
-    void GCRendererFramebuffer_RecreateTexture(GCRendererFramebuffer* const Framebuffer, const uint32_t Width, const uint32_t Height);
-    void GCRendererFramebuffer_RecreateSwapChain(GCRendererFramebuffer* const Framebuffer);
+    typedef enum GCRendererFramebufferAttachmentType
+    {
+        GCRendererFramebufferAttachmentType_Color,
+        GCRendererFramebufferAttachmentType_DepthStencil
+    } GCRendererFramebufferAttachmentType;
+
+    typedef enum GCRendererFramebufferAttachmentFlags
+    {
+        GCRendererFramebufferAttachmentFlags_None,
+        GCRendererFramebufferAttachmentFlags_Sampled,
+        GCRendererFramebufferAttachmentFlags_Mapped
+    } GCRendererFramebufferAttachmentFlags;
+
+    typedef enum GCRendererFramebufferAttachmentFormat
+    {
+        GCRendererFramebufferAttachmentFormat_SRGB,
+        GCRendererFramebufferAttachmentFormat_Integer,
+        GCRendererFramebufferAttachmentFormat_D32
+    } GCRendererFramebufferAttachmentFormat;
+
+    typedef enum GCRendererFramebufferAttachmentSampleCount
+    {
+        GCRendererFramebufferAttachmentSampleCount_1,
+        GCRendererFramebufferAttachmentSampleCount_2,
+        GCRendererFramebufferAttachmentSampleCount_4,
+        GCRendererFramebufferAttachmentSampleCount_8,
+
+        GCRendererFramebufferAttachmentSampleCount_MaximumUsable
+    } GCRendererFramebufferAttachmentSampleCount;
+
+    typedef struct GCRendererFramebufferAttachment
+    {
+        GCRendererFramebufferAttachmentType Type;
+        GCRendererFramebufferAttachmentFlags Flags;
+        GCRendererFramebufferAttachmentFormat Format;
+        GCRendererFramebufferAttachmentSampleCount SampleCount;
+    } GCRendererFramebufferAttachment;
+
+	GCRendererFramebuffer* GCRendererFramebuffer_Create(const GCRendererDevice* const Device, const GCRendererSwapChain* const SwapChain, const GCRendererGraphicsPipeline* const GraphicsPipeline, const uint32_t Width, const uint32_t Height, const GCRendererFramebufferAttachment* const Attachments, const uint32_t AttachmentCount);
+    void GCRendererFramebuffer_RecreateSwapChainFramebuffer(GCRendererFramebuffer* const Framebuffer);
+    void GCRendererFramebuffer_RecreateAttachmentFramebuffer(GCRendererFramebuffer* const Framebuffer, const uint32_t Width, const uint32_t Height);
+    int32_t GCRendererFramebuffer_GetPixel(const GCRendererFramebuffer* const Framebuffer, const GCRendererCommandList* const CommandList, const uint32_t ColorAttachmentIndex, const uint32_t ColorAttachmentMappedIndex);
 	void GCRendererFramebuffer_Destroy(GCRendererFramebuffer* Framebuffer);
 
 #ifdef __cplusplus

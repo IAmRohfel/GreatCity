@@ -86,7 +86,10 @@ void GCRendererIndexBuffer_CreateIndexBuffer(GCRendererIndexBuffer* const IndexB
 	vkUnmapMemory(DeviceHandle, StagingIndexBufferMemoryHandle);
 
 	GCVulkanUtilities_CreateBuffer(IndexBuffer->Device, IndexBuffer->IndexSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &IndexBuffer->IndexBufferHandle, &IndexBuffer->IndexBufferMemoryHandle);
-	GCVulkanUtilities_CopyBuffer(IndexBuffer->Device, IndexBuffer->CommandList, StagingIndexBufferHandle, IndexBuffer->IndexBufferHandle, IndexBuffer->IndexSize);
+
+	const VkCommandBuffer CommandBufferHandle = GCVulkanUtilities_BeginSingleTimeCommands(IndexBuffer->Device, IndexBuffer->CommandList);
+	GCVulkanUtilities_CopyBuffer(CommandBufferHandle, StagingIndexBufferHandle, IndexBuffer->IndexBufferHandle, IndexBuffer->IndexSize);
+	GCVulkanUtilities_EndSingleTimeCommands(IndexBuffer->Device, IndexBuffer->CommandList, CommandBufferHandle);
 
 	vkFreeMemory(DeviceHandle, StagingIndexBufferMemoryHandle, NULL);
 	vkDestroyBuffer(DeviceHandle, StagingIndexBufferHandle, NULL);

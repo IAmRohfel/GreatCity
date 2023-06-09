@@ -20,6 +20,7 @@
 layout(location = 0) in vec3 Position;
 layout(location = 1) in vec4 Color;
 layout(location = 2) in vec2 TextureCoordinate;
+layout(location = 3) in int EntityID;
 
 layout(binding = 0) uniform UniformBuffer
 {
@@ -28,6 +29,7 @@ layout(binding = 0) uniform UniformBuffer
 
 layout(location = 0) out vec4 FragmentColor;
 layout(location = 1) out vec2 FragmentTextureCoordinate;
+layout(location = 2) out float FragmentEntityID;
 
 void main()
 {
@@ -35,4 +37,5 @@ void main()
 
 	FragmentTextureCoordinate = TextureCoordinate;
 	FragmentColor = Color;
+    FragmentEntityID = EntityID;
 }

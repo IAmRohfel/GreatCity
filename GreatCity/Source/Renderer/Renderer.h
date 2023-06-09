@@ -35,6 +35,7 @@ extern "C"
 		GCVector3 Position;
 		GCVector4 Color;
 		GCVector2 TextureCoordinate;
+		int32_t EntityID;
 
 	#ifdef __cplusplus
 		bool operator==(const GCRendererVertex& OtherVertex) const noexcept

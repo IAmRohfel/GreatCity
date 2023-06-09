@@ -109,17 +109,20 @@ void GCRendererCommandList_BeginTextureRenderPass(const GCRendererCommandList* c
 	VkRenderPassBeginInfo RenderPassBeginInformation = { 0 };
 	RenderPassBeginInformation.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	RenderPassBeginInformation.renderPass = GCRendererGraphicsPipeline_GetTextureRenderPassHandle(GraphicsPipeline);
-	RenderPassBeginInformation.framebuffer = GCRendererFramebuffer_GetTextureFramebufferHandle(Framebuffer);
+	RenderPassBeginInformation.framebuffer = GCRendererFramebuffer_GetAttachmentFramebufferHandle(Framebuffer);
 	RenderPassBeginInformation.renderArea.offset = (VkOffset2D){ 0, 0 };
-	RenderPassBeginInformation.renderArea.extent = GCRendererFramebuffer_GetTextureExtent(Framebuffer);
+	RenderPassBeginInformation.renderArea.extent = GCRendererFramebuffer_GetFramebufferSize(Framebuffer);
 
-	VkClearValue ClearValues[2] = { 0 };
+	VkClearValue ClearValues[3] = { 0 };
 	memcpy(ClearValues[0].color.float32, ClearColor, sizeof(ClearValues[0].color.float32));
 
-	ClearValues[1].depthStencil.depth = 1.0f;
-	ClearValues[1].depthStencil.stencil = 0;
+	const int32_t ClearColorInt[4] = { -1, -1, -1, -1 };
+	memcpy(ClearValues[1].color.int32, ClearColorInt, sizeof(ClearValues[1].color.int32));
 
-	RenderPassBeginInformation.clearValueCount = 2;
+	ClearValues[2].depthStencil.depth = 1.0f;
+	ClearValues[2].depthStencil.stencil = 0;
+
+	RenderPassBeginInformation.clearValueCount = 3;
 	RenderPassBeginInformation.pClearValues = ClearValues;
 
 	vkCmdBeginRenderPass(CommandList->CommandBufferHandles[CommandList->CurrentFrame], &RenderPassBeginInformation, VK_SUBPASS_CONTENTS_INLINE);
@@ -175,7 +178,7 @@ void GCRendererCommandList_BindGraphicsPipeline(const GCRendererCommandList* con
 
 void GCRendererCommandList_SetViewport(const GCRendererCommandList* const CommandList, const GCRendererFramebuffer* const Framebuffer)
 {
-	const VkExtent2D TextureExtent = GCRendererFramebuffer_GetTextureExtent(Framebuffer);
+	const VkExtent2D TextureExtent = GCRendererFramebuffer_GetFramebufferSize(Framebuffer);
 
 	VkViewport Viewport = { 0 };
 	Viewport.x = 0.0f;

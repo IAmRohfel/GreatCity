@@ -132,15 +132,24 @@ void GCRendererGraphicsPipeline_CreateTextureRenderPass(GCRendererGraphicsPipeli
 	const VkFormat SwapChainFormat = GCRendererSwapChain_GetFormat(GraphicsPipeline->SwapChain);
 	const VkSampleCountFlagBits SampleCount = GCRendererSwapChain_GetMaximumUsableSampleCount(GraphicsPipeline->SwapChain);
 
-	VkAttachmentDescription ColorAttachmentDescription = { 0 };
-	ColorAttachmentDescription.format = SwapChainFormat;
-	ColorAttachmentDescription.samples = SampleCount;
-	ColorAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	ColorAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	ColorAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	ColorAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	ColorAttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	ColorAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	VkAttachmentDescription ColorAttachmentDescriptions[2] = { 0 };
+	ColorAttachmentDescriptions[0].format = SwapChainFormat;
+	ColorAttachmentDescriptions[0].samples = SampleCount;
+	ColorAttachmentDescriptions[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	ColorAttachmentDescriptions[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	ColorAttachmentDescriptions[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	ColorAttachmentDescriptions[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	ColorAttachmentDescriptions[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	ColorAttachmentDescriptions[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	ColorAttachmentDescriptions[1].format = VK_FORMAT_R32_SINT;
+	ColorAttachmentDescriptions[1].samples = SampleCount;
+	ColorAttachmentDescriptions[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	ColorAttachmentDescriptions[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	ColorAttachmentDescriptions[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	ColorAttachmentDescriptions[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	ColorAttachmentDescriptions[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	ColorAttachmentDescriptions[1].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 	VkAttachmentDescription DepthAttachmentDescription = { 0 };
 	DepthAttachmentDescription.format = GCRendererSwapChain_GetDepthFormat(GraphicsPipeline->SwapChain);
@@ -152,34 +161,49 @@ void GCRendererGraphicsPipeline_CreateTextureRenderPass(GCRendererGraphicsPipeli
 	DepthAttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	DepthAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-	VkAttachmentDescription ResolveAttachmentDescription = { 0 };
-	ResolveAttachmentDescription.format = SwapChainFormat;
-	ResolveAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
-	ResolveAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	ResolveAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	ResolveAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	ResolveAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	ResolveAttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	ResolveAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	VkAttachmentDescription ResolveAttachmentDescriptions[2] = {0};
+	ResolveAttachmentDescriptions[0].format = SwapChainFormat;
+	ResolveAttachmentDescriptions[0].samples = VK_SAMPLE_COUNT_1_BIT;
+	ResolveAttachmentDescriptions[0].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	ResolveAttachmentDescriptions[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	ResolveAttachmentDescriptions[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	ResolveAttachmentDescriptions[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	ResolveAttachmentDescriptions[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	ResolveAttachmentDescriptions[0].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-	VkAttachmentReference ColorAttachmentReference = { 0 };
-	ColorAttachmentReference.attachment = 0;
-	ColorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	ResolveAttachmentDescriptions[1].format = VK_FORMAT_R32_SINT;
+	ResolveAttachmentDescriptions[1].samples = VK_SAMPLE_COUNT_1_BIT;
+	ResolveAttachmentDescriptions[1].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	ResolveAttachmentDescriptions[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	ResolveAttachmentDescriptions[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	ResolveAttachmentDescriptions[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	ResolveAttachmentDescriptions[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	ResolveAttachmentDescriptions[1].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentReference ColorAttachmentReferences[2] = {0};
+	ColorAttachmentReferences[0].attachment = 0;
+	ColorAttachmentReferences[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	ColorAttachmentReferences[1].attachment = 1;
+	ColorAttachmentReferences[1].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 	VkAttachmentReference DepthAttachmentReference = { 0 };
-	DepthAttachmentReference.attachment = 1;
+	DepthAttachmentReference.attachment = 2;
 	DepthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-	VkAttachmentReference ResolveAttachmentReference = { 0 };
-	ResolveAttachmentReference.attachment = 2;
-	ResolveAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	VkAttachmentReference ResolveAttachmentReferences[2] = {0};
+	ResolveAttachmentReferences[0].attachment = 3;
+	ResolveAttachmentReferences[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	ResolveAttachmentReferences[1].attachment = 4;
+	ResolveAttachmentReferences[1].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 	VkSubpassDescription SubpassDescription = { 0 };
 	SubpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	SubpassDescription.colorAttachmentCount = 1;
-	SubpassDescription.pColorAttachments = &ColorAttachmentReference;
+	SubpassDescription.colorAttachmentCount = 2;
+	SubpassDescription.pColorAttachments = ColorAttachmentReferences;
 	SubpassDescription.pDepthStencilAttachment = &DepthAttachmentReference;
-	SubpassDescription.pResolveAttachments = &ResolveAttachmentReference;
+	SubpassDescription.pResolveAttachments = ResolveAttachmentReferences;
 
 	VkSubpassDependency SubpassDependency = { 0 };
 	SubpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -189,11 +213,11 @@ void GCRendererGraphicsPipeline_CreateTextureRenderPass(GCRendererGraphicsPipeli
 	SubpassDependency.srcAccessMask = 0;
 	SubpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-	const VkAttachmentDescription AttachmentDescriptions[3] = { ColorAttachmentDescription, DepthAttachmentDescription, ResolveAttachmentDescription };
+	const VkAttachmentDescription AttachmentDescriptions[5] = { ColorAttachmentDescriptions[0], ColorAttachmentDescriptions[1], DepthAttachmentDescription, ResolveAttachmentDescriptions[0], ResolveAttachmentDescriptions[1] };
 
 	VkRenderPassCreateInfo RenderPassInformation = { 0 };
 	RenderPassInformation.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	RenderPassInformation.attachmentCount = 3;
+	RenderPassInformation.attachmentCount = 5;
 	RenderPassInformation.pAttachments = AttachmentDescriptions;
 	RenderPassInformation.subpassCount = 1;
 	RenderPassInformation.pSubpasses = &SubpassDescription;
@@ -368,21 +392,30 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
 	PipelineDepthStencilStateInformation.depthBoundsTestEnable = VK_FALSE;
 	PipelineDepthStencilStateInformation.stencilTestEnable = VK_FALSE;
 
-	VkPipelineColorBlendAttachmentState PipelineColorBlendAttachmentState = { 0 };
-	PipelineColorBlendAttachmentState.blendEnable = VK_TRUE;
-	PipelineColorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-	PipelineColorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-	PipelineColorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
-	PipelineColorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-	PipelineColorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-	PipelineColorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
-	PipelineColorBlendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	VkPipelineColorBlendAttachmentState PipelineColorBlendAttachmentStates[2] = {0};
+	PipelineColorBlendAttachmentStates[0].blendEnable = VK_TRUE;
+	PipelineColorBlendAttachmentStates[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+	PipelineColorBlendAttachmentStates[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	PipelineColorBlendAttachmentStates[0].colorBlendOp = VK_BLEND_OP_ADD;
+	PipelineColorBlendAttachmentStates[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+	PipelineColorBlendAttachmentStates[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	PipelineColorBlendAttachmentStates[0].alphaBlendOp = VK_BLEND_OP_ADD;
+	PipelineColorBlendAttachmentStates[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
+	PipelineColorBlendAttachmentStates[1].blendEnable = VK_FALSE;
+	PipelineColorBlendAttachmentStates[1].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+	PipelineColorBlendAttachmentStates[1].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	PipelineColorBlendAttachmentStates[1].colorBlendOp = VK_BLEND_OP_ADD;
+	PipelineColorBlendAttachmentStates[1].srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+	PipelineColorBlendAttachmentStates[1].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	PipelineColorBlendAttachmentStates[1].alphaBlendOp = VK_BLEND_OP_ADD;
+	PipelineColorBlendAttachmentStates[1].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 
 	VkPipelineColorBlendStateCreateInfo PipelineColorBlendStateInformation = { 0 };
 	PipelineColorBlendStateInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	PipelineColorBlendStateInformation.logicOpEnable = VK_FALSE;
-	PipelineColorBlendStateInformation.attachmentCount = 1;
-	PipelineColorBlendStateInformation.pAttachments = &PipelineColorBlendAttachmentState;
+	PipelineColorBlendStateInformation.attachmentCount = 2;
+	PipelineColorBlendStateInformation.pAttachments = PipelineColorBlendAttachmentStates;
 
 	const VkDynamicState DynamicStates[2] =
 	{
@@ -544,6 +577,12 @@ VkFormat GCRendererGraphicsPipeline_ToVkFormat(const GCRendererGraphicsPipelineV
 		case GCRendererGraphicsPipelineVertexInputAttributeFormat_Vector4:
 		{
 			return VK_FORMAT_R32G32B32A32_SFLOAT;
+
+			break;
+		}
+		case GCRendererGraphicsPipelineVertexInputAttributeFormat_Integer:
+		{
+			return VK_FORMAT_R32_SINT;
 
 			break;
 		}

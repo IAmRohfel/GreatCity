@@ -119,9 +119,12 @@ void GCRendererTexture2D_CreateTexture(GCRendererTexture2D* const Texture2D, con
 	stbi_image_free(TextureData);
 
 	GCVulkanUtilities_CreateImage(Texture2D->Device, TextureWidth, TextureHeight, MipLevels, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &Texture2D->ImageHandle, &Texture2D->ImageMemoryHandle);
-	GCVulkanUtilities_TransitionImageLayout(Texture2D->Device, Texture2D->CommandList, Texture2D->ImageHandle, VK_FORMAT_R8G8B8A8_SRGB, MipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-	GCVulkanUtilities_CopyBufferToImage(Texture2D->Device, Texture2D->CommandList, StagingImageBufferHandle, Texture2D->ImageHandle, TextureWidth, TextureHeight);
-	GCVulkanUtilities_GenerateMipmap(Texture2D->Device, Texture2D->CommandList, Texture2D->ImageHandle, TextureWidth, TextureHeight, MipLevels, VK_FORMAT_R8G8B8A8_SRGB);
+
+	const VkCommandBuffer CommandBufferHandle = GCVulkanUtilities_BeginSingleTimeCommands(Texture2D->Device, Texture2D->CommandList);
+	GCVulkanUtilities_TransitionImageLayout(CommandBufferHandle, Texture2D->ImageHandle, MipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	GCVulkanUtilities_CopyBufferToImage(CommandBufferHandle, StagingImageBufferHandle, Texture2D->ImageHandle, TextureWidth, TextureHeight);
+	GCVulkanUtilities_GenerateMipmap(Texture2D->Device, CommandBufferHandle, Texture2D->ImageHandle, TextureWidth, TextureHeight, MipLevels, VK_FORMAT_R8G8B8A8_SRGB);
+	GCVulkanUtilities_EndSingleTimeCommands(Texture2D->Device, Texture2D->CommandList, CommandBufferHandle);
 
 	vkFreeMemory(DeviceHandle, StagingImageBufferMemoryHandle, NULL);
 	vkDestroyBuffer(DeviceHandle, StagingImageBufferHandle, NULL);

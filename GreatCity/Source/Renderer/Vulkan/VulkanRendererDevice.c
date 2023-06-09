@@ -280,7 +280,7 @@ bool GCRendererDevice_CheckDeviceExtensionSupport(const VkPhysicalDevice Physica
 
 	for (uint32_t Counter = 0; Counter < ExtensionCount; Counter++)
 	{
-		if (!strcmp(VK_KHR_SWAPCHAIN_EXTENSION_NAME, AvailableExtensions[Counter].extensionName))
+		if (strcmp(VK_KHR_SWAPCHAIN_EXTENSION_NAME, AvailableExtensions[Counter].extensionName) == 0)
 		{
 			IsExtensionFound = true;
 
@@ -420,6 +420,7 @@ void GCRendererDevice_CreateDevice(GCRendererDevice* const Device)
 
 	VkPhysicalDeviceFeatures DeviceFeatures = { 0 };
 	DeviceFeatures.samplerAnisotropy = VK_TRUE;
+	DeviceFeatures.independentBlend = VK_TRUE;
 
 	VkDeviceCreateInfo DeviceInformation = { 0 };
 	DeviceInformation.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -438,7 +439,6 @@ void GCRendererDevice_CreateDevice(GCRendererDevice* const Device)
 
 	DeviceInformation.enabledExtensionCount = 1;
 	DeviceInformation.ppEnabledExtensionNames = &DeviceExtensionName;
-
 	DeviceInformation.pEnabledFeatures = &DeviceFeatures;
 
 	GC_VULKAN_VALIDATE(vkCreateDevice(Device->PhysicalDeviceHandle, &DeviceInformation, NULL, &Device->DeviceHandle), "Failed to create a Vulkan device");

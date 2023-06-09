@@ -72,7 +72,7 @@ extern "C" void GCImGuiManager_InitializeRenderer(void)
 
 	ImGui_ImplVulkan_DestroyFontUploadObjects();
 
-	ImGuiDescriptorSetHandle = ImGui_ImplVulkan_AddTexture(GCRendererFramebuffer_GetTextureSamplerHandle(RendererFramebuffer), GCRendererFramebuffer_GetTextureImageViewHandle(RendererFramebuffer), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	ImGuiDescriptorSetHandle = ImGui_ImplVulkan_AddTexture(GCRendererFramebuffer_GetColorAttachmentSampledSamplerHandle(RendererFramebuffer, 0), GCRendererFramebuffer_GetColorAttachmentImageViewHandle(RendererFramebuffer, 0), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 
 extern "C" void GCImGuiManager_BeginFrameRenderer(void)
@@ -139,8 +139,8 @@ void GCImGuiManager_UpdateDescriptorSet(void)
 	const ImGui_ImplVulkan_InitInfo* const VulkanInformation = static_cast<const ImGui_ImplVulkan_InitInfo* const>(ImGui::GetIO().BackendRendererUserData);
 
 	VkDescriptorImageInfo DescriptorImageInformation{};
-	DescriptorImageInformation.sampler = GCRendererFramebuffer_GetTextureSamplerHandle(RendererFramebuffer);
-	DescriptorImageInformation.imageView = GCRendererFramebuffer_GetTextureImageViewHandle(RendererFramebuffer);
+	DescriptorImageInformation.sampler = GCRendererFramebuffer_GetColorAttachmentSampledSamplerHandle(RendererFramebuffer, 0);
+	DescriptorImageInformation.imageView = GCRendererFramebuffer_GetColorAttachmentImageViewHandle(RendererFramebuffer, 0);
 	DescriptorImageInformation.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	VkWriteDescriptorSet WriteDescriptorSet{};

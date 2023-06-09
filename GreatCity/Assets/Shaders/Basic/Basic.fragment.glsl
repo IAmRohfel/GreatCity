@@ -19,13 +19,16 @@
 
 layout(location = 0) in vec4 FragmentColor;
 layout(location = 1) in vec2 FragmentTextureCoordinate;
+layout(location = 2) in float FragmentEntityID;
 
 layout(binding = 1) uniform sampler2D TextureSampler;
 
 layout(location = 0) out vec4 Color;
+layout(location = 1) out int EntityID;
 
 void main()
 {
 	//Color = texture(TextureSampler, FragmentTextureCoordinate);
 	Color = FragmentColor;
+    EntityID = 50;
 }
