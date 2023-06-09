@@ -39,7 +39,12 @@ extern "C"
 	typedef void(*GCRendererCommandListRecordFunction)(const GCRendererCommandListRecordData* const);
 	typedef void(*GCRendererCommandListResizeCallbackFunction)(void);
 
-	GCRendererCommandList* GCRendererCommandList_Create(const GCRendererDevice* const Device);
+	typedef struct GCRendererCommandListDescription
+	{
+		const GCRendererDevice* Device;
+	} GCRendererCommandListDescription;
+
+	GCRendererCommandList* GCRendererCommandList_Create(const GCRendererCommandListDescription* const Description);
 	void GCRendererCommandList_SetResize(GCRendererCommandList* const CommandList, const bool IsResized);
 	void GCRendererCommandList_SetResizeCallback(GCRendererCommandList* const CommandList, const GCRendererCommandListResizeCallbackFunction ResizeCallbackFunction);
 	void GCRendererCommandList_BeginRecord(const GCRendererCommandList* const CommandList);

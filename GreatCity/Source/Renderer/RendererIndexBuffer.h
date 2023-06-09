@@ -29,7 +29,16 @@ extern "C"
 	typedef struct GCRendererDevice GCRendererDevice;
 	typedef struct GCRendererCommandList GCRendererCommandList;
 
-	GCRendererIndexBuffer* GCRendererIndexBuffer_Create(const GCRendererDevice* const Device, const GCRendererCommandList* const CommandList, const uint32_t* const Indices, const size_t IndexSize);
+    typedef struct GCRendererIndexBufferDescription
+    {
+        const GCRendererDevice* Device;
+        const GCRendererCommandList* CommandList;
+
+        const uint32_t* Indices;
+        size_t IndexSize;
+    } GCRendererIndexBufferDescription;
+
+	GCRendererIndexBuffer* GCRendererIndexBuffer_Create(const GCRendererIndexBufferDescription* const Description);
 	void GCRendererIndexBuffer_Destroy(GCRendererIndexBuffer* IndexBuffer);
 
 #ifdef __cplusplus

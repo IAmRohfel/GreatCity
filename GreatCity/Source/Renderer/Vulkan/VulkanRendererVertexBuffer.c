@@ -45,32 +45,24 @@ static void GCRendererVertexBuffer_CreateVertexBuffer(GCRendererVertexBuffer* co
 static void GCRendererVertexBuffer_CreateVertexBufferDynamic(GCRendererVertexBuffer* const VertexBuffer);
 static void GCRendererVertexBuffer_DestroyObjects(GCRendererVertexBuffer* const VertexBuffer);
 
-GCRendererVertexBuffer* GCRendererVertexBuffer_Create(const GCRendererDevice* const Device, const GCRendererCommandList* const CommandList, void* const Vertices, const size_t VertexSize)
+GCRendererVertexBuffer* GCRendererVertexBuffer_Create(const GCRendererVertexBufferDescription* const Description)
 {
 	GCRendererVertexBuffer* VertexBuffer = (GCRendererVertexBuffer*)GCMemory_Allocate(sizeof(GCRendererVertexBuffer));
-	VertexBuffer->Device = Device;
-	VertexBuffer->CommandList = CommandList;
+	VertexBuffer->Device = Description->Device;
+	VertexBuffer->CommandList = Description->CommandList;
 	VertexBuffer->VertexBufferHandle = VK_NULL_HANDLE;
 	VertexBuffer->VertexBufferMemoryHandle = VK_NULL_HANDLE;
-	VertexBuffer->Vertices = Vertices;
-	VertexBuffer->VertexSize = VertexSize;
+	VertexBuffer->Vertices = Description->Vertices;
+	VertexBuffer->VertexSize = Description->VertexSize;
 
-	GCRendererVertexBuffer_CreateVertexBuffer(VertexBuffer);
-
-	return VertexBuffer;
-}
-
-GCRendererVertexBuffer* GCRendererVertexBuffer_CreateDynamic(const GCRendererDevice* const Device, const GCRendererCommandList* const CommandList, const size_t VertexSize)
-{
-	GCRendererVertexBuffer* VertexBuffer = (GCRendererVertexBuffer*)GCMemory_Allocate(sizeof(GCRendererVertexBuffer));
-	VertexBuffer->Device = Device;
-	VertexBuffer->CommandList = CommandList;
-	VertexBuffer->VertexBufferHandle = VK_NULL_HANDLE;
-	VertexBuffer->VertexBufferMemoryHandle = VK_NULL_HANDLE;
-	VertexBuffer->Vertices = NULL;
-	VertexBuffer->VertexSize = VertexSize;
-
-	GCRendererVertexBuffer_CreateVertexBufferDynamic(VertexBuffer);
+	if (VertexBuffer->Vertices)
+	{
+		GCRendererVertexBuffer_CreateVertexBuffer(VertexBuffer);
+	}
+	else
+	{
+		GCRendererVertexBuffer_CreateVertexBufferDynamic(VertexBuffer);
+	}
 
 	return VertexBuffer;
 }

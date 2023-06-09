@@ -65,7 +65,19 @@ extern "C"
 		uint32_t AttributeCount;
 	} GCRendererGraphicsPipelineVertexInput;
 
-	GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(const GCRendererDevice* const Device, const GCRendererSwapChain* const SwapChain, const GCRendererCommandList* const CommandList, const GCRendererGraphicsPipelineVertexInput* const VertexInput, const GCRendererUniformBuffer* const UniformBuffer, const GCRendererTexture2D* const* const Texture2Ds, const uint32_t Texture2DCount, const GCRendererShader* const Shader);
+	typedef struct GCRendererGraphicsPipelineDescription
+	{
+		const GCRendererDevice* Device;
+		const GCRendererSwapChain* SwapChain;
+		const GCRendererCommandList* CommandList;
+		const GCRendererGraphicsPipelineVertexInput* VertexInput;
+		const GCRendererUniformBuffer* UniformBuffer;
+		const GCRendererTexture2D* const* Texture2Ds;
+		uint32_t Texture2DCount;
+		const GCRendererShader* Shader;
+	} GCRendererGraphicsPipelineDescription;
+
+	GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(const GCRendererGraphicsPipelineDescription* const Description);
 	void GCRendererGraphicsPipeline_Destroy(GCRendererGraphicsPipeline* GraphicsPipeline);
 
 #ifdef __cplusplus

@@ -157,15 +157,26 @@ GCRendererModel* GCRendererModel_CreateFromFiles(const char* const* const ModelP
 	const GCRendererDevice* const Device = GCRenderer_GetDevice();
 	const GCRendererCommandList* const CommandList = GCRenderer_GetCommandList();
 
-	Model->VertexBuffer = GCRendererVertexBuffer_CreateDynamic(Device, CommandList, Vertices.size() * sizeof(GCRendererVertex));
+	GCRendererVertexBufferDescription VertexBufferDescription = { 0 };
+	VertexBufferDescription.Device = Device;
+	VertexBufferDescription.CommandList = CommandList;
+	VertexBufferDescription.Vertices = NULL;
+	VertexBufferDescription.VertexSize = Vertices.size() * sizeof(GCRendererVertex);
+
+	Model->VertexBuffer = GCRendererVertexBuffer_Create(&VertexBufferDescription);
 	GCRendererVertexBuffer_SetVertices(Model->VertexBuffer, Vertices.data(), Vertices.size() * sizeof(GCRendererVertex));
 
 	Model->Vertices = static_cast<GCRendererVertex*>(GCMemory_Allocate(Vertices.size() * sizeof(GCRendererVertex)));
 	memcpy(Model->Vertices, Vertices.data(), Vertices.size() * sizeof(GCRendererVertex));
-
 	Model->VertexCount = static_cast<uint32_t>(Vertices.size());
 
-	Model->IndexBuffer = GCRendererIndexBuffer_Create(Device, CommandList, Indices.data(), Indices.size() * sizeof(uint32_t));
+	GCRendererIndexBufferDescription IndexBufferDescription = { 0 };
+	IndexBufferDescription.Device = Device;
+	IndexBufferDescription.CommandList = CommandList;
+	IndexBufferDescription.Indices = Indices.data();
+	IndexBufferDescription.IndexSize = Indices.size() * sizeof(uint32_t);
+
+	Model->IndexBuffer = GCRendererIndexBuffer_Create(&IndexBufferDescription);
 	Model->IndexCount = static_cast<uint32_t>(Indices.size());
 
 	return Model;

@@ -63,15 +63,15 @@ static void GCRendererGraphicsPipeline_DestroyObjects(GCRendererGraphicsPipeline
 
 static VkFormat GCRendererGraphicsPipeline_ToVkFormat(const GCRendererGraphicsPipelineVertexInputAttributeFormat Format);
 
-GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(const GCRendererDevice* const Device, const GCRendererSwapChain* const SwapChain, const GCRendererCommandList* const CommandList, const GCRendererGraphicsPipelineVertexInput* const VertexInput, const GCRendererUniformBuffer* const UniformBuffer, const GCRendererTexture2D* const* const Texture2Ds, const uint32_t Texture2DCount, const GCRendererShader* const Shader)
+GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(const GCRendererGraphicsPipelineDescription* const Description)
 {
 	GCRendererGraphicsPipeline* GraphicsPipeline = (GCRendererGraphicsPipeline*)GCMemory_Allocate(sizeof(GCRendererGraphicsPipeline));
-	GraphicsPipeline->Device = Device;
-	GraphicsPipeline->SwapChain = SwapChain;
-	GraphicsPipeline->CommandList = CommandList;
-	GraphicsPipeline->UniformBuffer = UniformBuffer;
-	GraphicsPipeline->Texture2Ds = Texture2Ds;
-	GraphicsPipeline->Shader = Shader;
+	GraphicsPipeline->Device = Description->Device;
+	GraphicsPipeline->SwapChain = Description->SwapChain;
+	GraphicsPipeline->CommandList = Description->CommandList;
+	GraphicsPipeline->UniformBuffer = Description->UniformBuffer;
+	GraphicsPipeline->Texture2Ds = Description->Texture2Ds;
+	GraphicsPipeline->Shader = Description->Shader;
 	GraphicsPipeline->TextureRenderPassHandle = VK_NULL_HANDLE;
 	GraphicsPipeline->SwapChainRenderPassHandle = VK_NULL_HANDLE;
 	GraphicsPipeline->DescriptorSetLayoutHandle = VK_NULL_HANDLE;
@@ -79,13 +79,13 @@ GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(const GCRendererDe
 	GraphicsPipeline->DescriptorSetHandles = NULL;
 	GraphicsPipeline->PipelineLayoutHandle = VK_NULL_HANDLE;
 	GraphicsPipeline->PipelineHandle = VK_NULL_HANDLE;
-	GraphicsPipeline->Texture2DCount = Texture2DCount;
+	GraphicsPipeline->Texture2DCount = Description->Texture2DCount;
 	GraphicsPipeline->DescriptorCount = 1 + GraphicsPipeline->Texture2DCount;
 
 	GCRendererGraphicsPipeline_CreateTextureRenderPass(GraphicsPipeline);
 	GCRendererGraphicsPipeline_CreateSwapChainRenderPass(GraphicsPipeline);
 	GCRendererGraphicsPipeline_CreateDescriptorSetLayout(GraphicsPipeline);
-	GCRendererGraphicsPipeline_CreateGraphicsPipeline(GraphicsPipeline, VertexInput);
+	GCRendererGraphicsPipeline_CreateGraphicsPipeline(GraphicsPipeline, Description->VertexInput);
 	GCRendererGraphicsPipeline_CreateDescriptorPool(GraphicsPipeline);
 	GCRendererGraphicsPipeline_CreateDescriptorSets(GraphicsPipeline);
 

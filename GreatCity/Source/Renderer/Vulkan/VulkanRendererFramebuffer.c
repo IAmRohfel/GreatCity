@@ -80,16 +80,16 @@ static void GCRendererFramebuffer_DestroyObjectsAttachments(GCRendererFramebuffe
 static VkFormat GCRendererFramebuffer_ToVkFormat(const GCRendererFramebuffer* const Framebuffer, const GCRendererFramebufferAttachmentFormat Format);
 static VkSampleCountFlagBits GCRendererFramebuffer_ToVkSampleCountFlagBits(const GCRendererFramebuffer* const Framebuffer, const GCRendererFramebufferAttachmentSampleCount SampleCount);
 
-GCRendererFramebuffer* GCRendererFramebuffer_Create(const GCRendererDevice* const Device, const GCRendererSwapChain* const SwapChain, const GCRendererGraphicsPipeline* const GraphicsPipeline, const uint32_t Width, const uint32_t Height, const GCRendererFramebufferAttachment* const Attachments, const uint32_t AttachmentCount)
+GCRendererFramebuffer* GCRendererFramebuffer_Create(const GCRendererFramebufferDescription* const Description)
 {
 	GCRendererFramebuffer* Framebuffer = (GCRendererFramebuffer*)GCMemory_Allocate(sizeof(GCRendererFramebuffer));
-	Framebuffer->Device = Device;
-	Framebuffer->SwapChain = SwapChain;
-	Framebuffer->GraphicsPipeline = GraphicsPipeline;
+	Framebuffer->Device = Description->Device;
+	Framebuffer->SwapChain = Description->SwapChain;
+	Framebuffer->GraphicsPipeline = Description->GraphicsPipeline;
 	Framebuffer->Attachments = NULL;
-	Framebuffer->AttachmentCount = AttachmentCount;
-	Framebuffer->Width = Width;
-	Framebuffer->Height = Height;
+	Framebuffer->AttachmentCount = Description->AttachmentCount;
+	Framebuffer->Width = Description->Width;
+	Framebuffer->Height = Description->Height;
 	Framebuffer->ColorAttachmentImageHandles = NULL;
 	Framebuffer->ColorAttachmentImageMemoryHandles = NULL;
 	Framebuffer->ColorAttachmentImageViewHandles = NULL;
@@ -113,7 +113,7 @@ GCRendererFramebuffer* GCRendererFramebuffer_Create(const GCRendererDevice* cons
 	Framebuffer->AttachmentFramebufferHandle = VK_NULL_HANDLE;
 
 	Framebuffer->Attachments = (GCRendererFramebufferAttachment*)GCMemory_Allocate(Framebuffer->AttachmentCount * sizeof(GCRendererFramebufferAttachment));
-	memcpy(Framebuffer->Attachments, Attachments, Framebuffer->AttachmentCount * sizeof(GCRendererFramebufferAttachment));
+	memcpy(Framebuffer->Attachments, Description->Attachments, Framebuffer->AttachmentCount * sizeof(GCRendererFramebufferAttachment));
 
 	const uint32_t ColorAttachmentCount = GCRendererFramebuffer_GetColorAttachmentCount(Framebuffer);
 	const uint32_t ColorAttachmentMappedCount = GCRendererFramebuffer_GetColorAttachmentMappedCount(Framebuffer);

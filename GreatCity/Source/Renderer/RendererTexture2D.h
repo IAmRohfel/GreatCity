@@ -27,7 +27,15 @@ extern "C"
 	typedef struct GCRendererDevice GCRendererDevice;
 	typedef struct GCRendererCommandList GCRendererCommandList;
 
-	GCRendererTexture2D* GCRendererTexture2D_Create(const GCRendererDevice* const Device, const GCRendererCommandList* const CommandList, const char* const TexturePath);
+    typedef struct GCRendererTexture2DDescription
+    {
+        const GCRendererDevice* Device;
+        const GCRendererCommandList* CommandList;
+
+        const char* TexturePath;
+    } GCRendererTexture2DDescription;
+
+	GCRendererTexture2D* GCRendererTexture2D_Create(const GCRendererTexture2DDescription* const Description);
 	void GCRendererTexture2D_Destroy(GCRendererTexture2D* Texture2D);
 
 #ifdef __cplusplus

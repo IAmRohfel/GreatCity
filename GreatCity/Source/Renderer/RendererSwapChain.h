@@ -23,10 +23,15 @@ extern "C"
 {
 #endif
 
-	typedef struct GCRendererSwapChain GCRendererSwapChain;
 	typedef struct GCRendererDevice GCRendererDevice;
+	typedef struct GCRendererSwapChain GCRendererSwapChain;
 
-	GCRendererSwapChain* GCRendererSwapChain_Create(const GCRendererDevice* const Device);
+    typedef struct GCRendererSwapChainDescription
+    {
+        const GCRendererDevice* Device;
+    } GCRendererSwapChainDescription;
+
+	GCRendererSwapChain* GCRendererSwapChain_Create(const GCRendererSwapChainDescription* const Description);
 	void GCRendererSwapChain_Recreate(GCRendererSwapChain* const SwapChain);
 	void GCRendererSwapChain_Destroy(GCRendererSwapChain* SwapChain);
 

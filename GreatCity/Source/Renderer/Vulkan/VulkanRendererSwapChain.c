@@ -57,10 +57,10 @@ static void GCRendererSwapChain_DestroyObjects(GCRendererSwapChain* const SwapCh
 static void GCRendererSwapChain_ClampExtent(VkExtent2D* const Extent, const VkSurfaceCapabilitiesKHR* const SurfaceCapabilities);
 static VkFormat GCRendererSwapChain_GetSupportedFormat(const GCRendererSwapChain* const SwapChain, const VkFormat* const Formats, const uint32_t FormatCount, const VkImageTiling Tiling, const VkFormatFeatureFlags FormatFeature);
 
-GCRendererSwapChain* GCRendererSwapChain_Create(const GCRendererDevice* const Device)
+GCRendererSwapChain* GCRendererSwapChain_Create(const GCRendererSwapChainDescription* const Description)
 {
 	GCRendererSwapChain* SwapChain = (GCRendererSwapChain*)GCMemory_Allocate(sizeof(GCRendererSwapChain));
-	SwapChain->Device = Device;
+	SwapChain->Device = Description->Device;
 	SwapChain->SurfaceCapabilities = (VkSurfaceCapabilitiesKHR){ 0 };
 	SwapChain->Extent = (VkExtent2D){ 0 };
 	SwapChain->SurfaceFormat = (VkSurfaceFormatKHR){ 0 };

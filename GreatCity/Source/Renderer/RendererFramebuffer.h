@@ -69,7 +69,17 @@ extern "C"
         GCRendererFramebufferAttachmentSampleCount SampleCount;
     } GCRendererFramebufferAttachment;
 
-	GCRendererFramebuffer* GCRendererFramebuffer_Create(const GCRendererDevice* const Device, const GCRendererSwapChain* const SwapChain, const GCRendererGraphicsPipeline* const GraphicsPipeline, const uint32_t Width, const uint32_t Height, const GCRendererFramebufferAttachment* const Attachments, const uint32_t AttachmentCount);
+    typedef struct GCRendererFramebufferDescription
+    {
+        const GCRendererDevice* Device;
+        const GCRendererSwapChain* SwapChain;
+        const GCRendererGraphicsPipeline* GraphicsPipeline;
+        uint32_t Width, Height;
+        const GCRendererFramebufferAttachment* Attachments;
+        uint32_t AttachmentCount;
+    } GCRendererFramebufferDescription;
+
+	GCRendererFramebuffer* GCRendererFramebuffer_Create(const GCRendererFramebufferDescription* const Description);
     void GCRendererFramebuffer_RecreateSwapChainFramebuffer(GCRendererFramebuffer* const Framebuffer);
     void GCRendererFramebuffer_RecreateAttachmentFramebuffer(GCRendererFramebuffer* const Framebuffer, const uint32_t Width, const uint32_t Height);
     int32_t GCRendererFramebuffer_GetPixel(const GCRendererFramebuffer* const Framebuffer, const GCRendererCommandList* const CommandList, const uint32_t ColorAttachmentIndex, const uint32_t ColorAttachmentMappedIndex);

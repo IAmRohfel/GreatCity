@@ -26,7 +26,14 @@ extern "C"
 	typedef struct GCRendererShader GCRendererShader;
 	typedef struct GCRendererDevice GCRendererDevice;
 
-	GCRendererShader* GCRendererShader_Create(const GCRendererDevice* const Device, const char* const VertexShaderPath, const char* const FragmentShaderPath);
+    typedef struct GCRendererShaderDescription
+    {
+        const GCRendererDevice* Device;
+        const char* VertexShaderPath;
+        const char* FragmentShaderPath;
+    } GCRendererShaderDescription;
+
+	GCRendererShader* GCRendererShader_Create(const GCRendererShaderDescription* const Description);
 	void GCRendererShader_Destroy(GCRendererShader* Shader);
 
 #ifdef __cplusplus

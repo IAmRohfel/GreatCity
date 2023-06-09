@@ -47,17 +47,17 @@ static uint8_t* GCRendererTexture2D_LoadImage(const char* const TexturePath, uin
 static void GCRendererTexture2D_CreateTexture(GCRendererTexture2D* const Texture2D, const char* const TexturePath);
 static void GCRendererTexture2D_DestroyObjects(GCRendererTexture2D* const Texture2D);
 
-GCRendererTexture2D* GCRendererTexture2D_Create(const GCRendererDevice* const Device, const GCRendererCommandList* const CommandList, const char* const TexturePath)
+GCRendererTexture2D* GCRendererTexture2D_Create(const GCRendererTexture2DDescription* const Description)
 {
 	GCRendererTexture2D* Texture2D = (GCRendererTexture2D*)GCMemory_Allocate(sizeof(GCRendererTexture2D));
-	Texture2D->Device = Device;
-	Texture2D->CommandList = CommandList;
+	Texture2D->Device = Description->Device;
+	Texture2D->CommandList = Description->CommandList;
 	Texture2D->ImageHandle = VK_NULL_HANDLE;
 	Texture2D->ImageMemoryHandle = VK_NULL_HANDLE;
 	Texture2D->ImageViewHandle = VK_NULL_HANDLE;
 	Texture2D->ImageSamplerHandle = VK_NULL_HANDLE;
 
-	GCRendererTexture2D_CreateTexture(Texture2D, TexturePath);
+	GCRendererTexture2D_CreateTexture(Texture2D, Description->TexturePath);
 
 	return Texture2D;
 }

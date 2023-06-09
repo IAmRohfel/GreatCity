@@ -44,15 +44,15 @@ typedef struct GCRendererIndexBuffer
 static void GCRendererIndexBuffer_CreateIndexBuffer(GCRendererIndexBuffer* const IndexBuffer);
 static void GCRendererIndexBuffer_DestroyObjects(GCRendererIndexBuffer* const IndexBuffer);
 
-GCRendererIndexBuffer* GCRendererIndexBuffer_Create(const GCRendererDevice* const Device, const GCRendererCommandList* const CommandList, const uint32_t* const Indices, const size_t IndexSize)
+GCRendererIndexBuffer* GCRendererIndexBuffer_Create(const GCRendererIndexBufferDescription* const Description)
 {
 	GCRendererIndexBuffer* IndexBuffer = (GCRendererIndexBuffer*)GCMemory_Allocate(sizeof(GCRendererIndexBuffer));
-	IndexBuffer->Device = Device;
-	IndexBuffer->CommandList = CommandList;
+	IndexBuffer->Device = Description->Device;
+	IndexBuffer->CommandList = Description->CommandList;
 	IndexBuffer->IndexBufferHandle = VK_NULL_HANDLE;
 	IndexBuffer->IndexBufferMemoryHandle = VK_NULL_HANDLE;
-	IndexBuffer->Indices = Indices;
-	IndexBuffer->IndexSize = IndexSize;
+	IndexBuffer->Indices = Description->Indices;
+	IndexBuffer->IndexSize = Description->IndexSize;
 
 	GCRendererIndexBuffer_CreateIndexBuffer(IndexBuffer);
 

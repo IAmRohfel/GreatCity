@@ -81,12 +81,26 @@ void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera)
 {
 	Renderer = (GCRenderer*)GCMemory_Allocate(sizeof(GCRenderer));
 	Renderer->Device = GCRendererDevice_Create();
-	Renderer->SwapChain = GCRendererSwapChain_Create(Renderer->Device);
-	Renderer->CommandList = GCRendererCommandList_Create(Renderer->Device);
-	Renderer->UniformBuffer = GCRendererUniformBuffer_Create(Renderer->Device, Renderer->CommandList, sizeof(GCRendererUniformBufferData));
-	Renderer->BasicShader = GCRendererShader_Create(Renderer->Device, "Assets/Shaders/Basic/Basic.vertex.glsl", "Assets/Shaders/Basic/Basic.fragment.glsl");
 
-	GCRendererGraphicsPipelineVertexInput GraphicsPipelineVertexInput = { 0 };
+	GCRendererSwapChainDescription SwapChainDescription = { 0 };
+	SwapChainDescription.Device = Renderer->Device;
+	Renderer->SwapChain = GCRendererSwapChain_Create(&SwapChainDescription);
+
+	GCRendererCommandListDescription CommandListDescription = { 0 };
+	CommandListDescription.Device = Renderer->Device;
+	Renderer->CommandList = GCRendererCommandList_Create(&CommandListDescription);
+
+	GCRendererUniformBufferDescription UniformBufferDescription = { 0 };
+	UniformBufferDescription.Device = Renderer->Device;
+	UniformBufferDescription.CommandList = Renderer->CommandList;
+	UniformBufferDescription.DataSize = sizeof(GCRendererUniformBufferData);
+	Renderer->UniformBuffer = GCRendererUniformBuffer_Create(&UniformBufferDescription);
+	
+	GCRendererShaderDescription ShaderDescription = { 0 };
+	ShaderDescription.Device = Renderer->Device;
+	ShaderDescription.VertexShaderPath = "Assets/Shaders/Basic/Basic.vertex.glsl";
+	ShaderDescription.FragmentShaderPath = "Assets/Shaders/Basic/Basic.fragment.glsl";
+	Renderer->BasicShader = GCRendererShader_Create(&ShaderDescription);
 
 	GCRendererGraphicsPipelineVertexInputBinding GraphicsPipelineVertexInputBindings[1] = { 0 };
 	GraphicsPipelineVertexInputBindings[0].Binding = 0;
@@ -109,12 +123,22 @@ void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera)
 	GraphicsPipelineVertexInputAttributes[3].Format = GCRendererGraphicsPipelineVertexInputAttributeFormat_Integer;
 	GraphicsPipelineVertexInputAttributes[3].Offset = offsetof(GCRendererVertex, EntityID);
 
+	GCRendererGraphicsPipelineVertexInput GraphicsPipelineVertexInput = { 0 };
 	GraphicsPipelineVertexInput.Bindings = GraphicsPipelineVertexInputBindings;
 	GraphicsPipelineVertexInput.BindingCount = sizeof(GraphicsPipelineVertexInputBindings) / sizeof(GCRendererGraphicsPipelineVertexInputBinding);
 	GraphicsPipelineVertexInput.Attributes = GraphicsPipelineVertexInputAttributes;
 	GraphicsPipelineVertexInput.AttributeCount = sizeof(GraphicsPipelineVertexInputAttributes) / sizeof(GCRendererGraphicsPipelineVertexInputAttribute);
 
-	Renderer->GraphicsPipeline = GCRendererGraphicsPipeline_Create(Renderer->Device, Renderer->SwapChain, Renderer->CommandList, &GraphicsPipelineVertexInput, Renderer->UniformBuffer, NULL, 0, Renderer->BasicShader);
+	GCRendererGraphicsPipelineDescription GraphicsPipelineDescription = { 0 };
+	GraphicsPipelineDescription.Device = Renderer->Device;
+	GraphicsPipelineDescription.SwapChain = Renderer->SwapChain;
+	GraphicsPipelineDescription.CommandList = Renderer->CommandList;
+	GraphicsPipelineDescription.VertexInput = &GraphicsPipelineVertexInput;
+	GraphicsPipelineDescription.UniformBuffer = Renderer->UniformBuffer;
+	GraphicsPipelineDescription.Texture2Ds = NULL;
+	GraphicsPipelineDescription.Texture2DCount = 0;
+	GraphicsPipelineDescription.Shader = Renderer->BasicShader;
+	Renderer->GraphicsPipeline = GCRendererGraphicsPipeline_Create(&GraphicsPipelineDescription);
 
 	GCRendererFramebufferAttachment FramebufferAttachments[3] = { 0 };
 	FramebufferAttachments[0].Type = GCRendererFramebufferAttachmentType_Color;
@@ -135,15 +159,21 @@ void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera)
 	uint32_t WindowWidth = 0, WindowHeight = 0;
 	GCWindow_GetWindowSize(GCApplication_GetWindow(), &WindowWidth, &WindowHeight);
 
-	Renderer->Framebuffer = GCRendererFramebuffer_Create(Renderer->Device, Renderer->SwapChain, Renderer->GraphicsPipeline, WindowWidth, WindowHeight, FramebufferAttachments, 3);
-
-	GCRendererCommandList_SetResizeCallback(Renderer->CommandList, GCRenderer_ResizeSwapChainRenderer);
-
+	GCRendererFramebufferDescription FramebufferDescription = { 0 };
+	FramebufferDescription.Device = Renderer->Device;
+	FramebufferDescription.SwapChain = Renderer->SwapChain;
+	FramebufferDescription.GraphicsPipeline = Renderer->GraphicsPipeline;
+	FramebufferDescription.Width = WindowWidth;
+	FramebufferDescription.Height = WindowHeight;
+	FramebufferDescription.Attachments = FramebufferAttachments;
+	FramebufferDescription.AttachmentCount = 3;
+	Renderer->Framebuffer = GCRendererFramebuffer_Create(&FramebufferDescription);
 	Renderer->WorldCamera = WorldCamera;
-
 	Renderer->MaximumDrawDataCount = 100;
 	Renderer->DrawData = (GCRendererDrawData*)GCMemory_Allocate(Renderer->MaximumDrawDataCount * sizeof(GCRendererDrawData));
 	Renderer->DrawDataCount = 0;
+
+	GCRendererCommandList_SetResizeCallback(Renderer->CommandList, GCRenderer_ResizeSwapChainRenderer);
 }
 
 void GCRenderer_Begin(void)

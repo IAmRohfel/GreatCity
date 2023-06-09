@@ -44,15 +44,15 @@ typedef struct GCRendererUniformBuffer
 static void GCRendererUniformBuffer_CreateUniformBuffer(GCRendererUniformBuffer* const UniformBuffer);
 static void GCRendererUniformBuffer_DestroyObjects(GCRendererUniformBuffer* const UniformBuffer);
 
-GCRendererUniformBuffer* GCRendererUniformBuffer_Create(const GCRendererDevice* const Device, const GCRendererCommandList* const CommandList, const size_t DataSize)
+GCRendererUniformBuffer* GCRendererUniformBuffer_Create(const GCRendererUniformBufferDescription* const Description)
 {
 	GCRendererUniformBuffer* UniformBuffer = (GCRendererUniformBuffer*)GCMemory_Allocate(sizeof(GCRendererUniformBuffer));
-	UniformBuffer->Device = Device;
-	UniformBuffer->CommandList = CommandList;
+	UniformBuffer->Device = Description->Device;
+	UniformBuffer->CommandList = Description->CommandList;
 	UniformBuffer->UniformBufferHandles = NULL;
 	UniformBuffer->UniformBufferMemoryHandles = NULL;
 	UniformBuffer->Data = NULL;
-	UniformBuffer->DataSize = DataSize;
+	UniformBuffer->DataSize = Description->DataSize;
 
 	GCRendererUniformBuffer_CreateUniformBuffer(UniformBuffer);
 

@@ -29,7 +29,15 @@ extern "C"
 	typedef struct GCRendererDevice GCRendererDevice;
 	typedef struct GCRendererCommandList GCRendererCommandList;
 
-	GCRendererUniformBuffer* GCRendererUniformBuffer_Create(const GCRendererDevice* const Device, const GCRendererCommandList* const CommandList, const size_t DataSize);
+    typedef struct GCRendererUniformBufferDescription
+    {
+        const GCRendererDevice* Device;
+        const GCRendererCommandList* CommandList;
+
+        size_t DataSize;
+    } GCRendererUniformBufferDescription;
+
+	GCRendererUniformBuffer* GCRendererUniformBuffer_Create(const GCRendererUniformBufferDescription* const Description);
 	void GCRendererUniformBuffer_Destroy(GCRendererUniformBuffer* UniformBuffer);
 
 #ifdef __cplusplus

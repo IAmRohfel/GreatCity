@@ -63,10 +63,10 @@ static void GCRendererCommandList_CreateSemaphores(GCRendererCommandList* const 
 static void GCRendererCommandList_CreateFences(GCRendererCommandList* const CommandList);
 static void GCRendererCommandList_DestroyObjects(GCRendererCommandList* const CommandList);
 
-GCRendererCommandList* GCRendererCommandList_Create(const GCRendererDevice* const Device)
+GCRendererCommandList* GCRendererCommandList_Create(const GCRendererCommandListDescription* const Description)
 {
 	GCRendererCommandList* CommandList = (GCRendererCommandList*)GCMemory_Allocate(sizeof(GCRendererCommandList));
-	CommandList->Device = Device;
+	CommandList->Device = Description->Device;
 	CommandList->CommandPoolHandle = VK_NULL_HANDLE;
 	CommandList->TransientCommandPoolHandle = VK_NULL_HANDLE;
 	CommandList->CommandBufferHandles = NULL;

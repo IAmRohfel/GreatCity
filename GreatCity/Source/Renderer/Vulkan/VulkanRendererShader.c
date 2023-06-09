@@ -63,10 +63,10 @@ static void GCRendererShader_CompileOrGetBinaries(GCRendererShader* const Shader
 static void GCRendererShader_CreateShaderModule(GCRendererShader* const Shader);
 static void GCRendererShader_DestroyObjects(GCRendererShader* const Shader);
 
-GCRendererShader* GCRendererShader_Create(const GCRendererDevice* const Device, const char* const VertexShaderPath, const char* const FragmentShaderPath)
+GCRendererShader* GCRendererShader_Create(const GCRendererShaderDescription* const Description)
 {
 	GCRendererShader* Shader = (GCRendererShader*)GCMemory_Allocate(sizeof(GCRendererShader));
-	Shader->Device = Device;
+	Shader->Device = Description->Device;
 	Shader->VertexShaderModuleHandle = VK_NULL_HANDLE;
 	Shader->FragmentShaderModuleHandle = VK_NULL_HANDLE;
 	Shader->ShaderCacheDirectory = "Assets/Cache/Shaders/Vulkan/";
@@ -76,7 +76,7 @@ GCRendererShader* GCRendererShader_Create(const GCRendererDevice* const Device, 
 	Shader->FragmentShaderDataSize = 0;
 
 	GCRendererShader_CreateCacheDirectoryIfNeeded(Shader);
-	GCRendererShader_CompileOrGetBinaries(Shader, VertexShaderPath, FragmentShaderPath);
+	GCRendererShader_CompileOrGetBinaries(Shader, Description->VertexShaderPath, Description->FragmentShaderPath);
 	GCRendererShader_CreateShaderModule(Shader);
 
 	return Shader;
