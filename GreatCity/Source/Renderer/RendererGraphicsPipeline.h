@@ -33,6 +33,10 @@ extern "C"
 	typedef struct GCRendererTexture2D GCRendererTexture2D;
 	typedef struct GCRendererShader GCRendererShader;
 
+	typedef enum GCRendererAttachmentType GCRendererAttachmentType;
+	typedef enum GCRendererAttachmentFormat GCRendererAttachmentFormat;
+	typedef enum GCRendererAttachmentSampleCount GCRendererAttachmentSampleCount;
+
 	typedef enum GCRendererGraphicsPipelineVertexInputAttributeFormat
 	{
 		GCRendererGraphicsPipelineVertexInputAttributeFormat_Float,
@@ -65,12 +69,24 @@ extern "C"
 		uint32_t AttributeCount;
 	} GCRendererGraphicsPipelineVertexInput;
 
+	typedef struct GCRendererGraphicsPipelineAttachment
+	{
+		GCRendererAttachmentType Type;
+		GCRendererAttachmentFormat Format;
+		GCRendererAttachmentSampleCount SampleCount;
+	} GCRendererGraphicsPipelineAttachment;
+
 	typedef struct GCRendererGraphicsPipelineDescription
 	{
 		const GCRendererDevice* Device;
 		const GCRendererSwapChain* SwapChain;
 		const GCRendererCommandList* CommandList;
+
+		const GCRendererGraphicsPipelineAttachment* Attachments;
+		uint32_t AttachmentCount;
 		const GCRendererGraphicsPipelineVertexInput* VertexInput;
+		GCRendererAttachmentSampleCount SampleCount;
+
 		const GCRendererUniformBuffer* UniformBuffer;
 		const GCRendererTexture2D* const* Texture2Ds;
 		uint32_t Texture2DCount;

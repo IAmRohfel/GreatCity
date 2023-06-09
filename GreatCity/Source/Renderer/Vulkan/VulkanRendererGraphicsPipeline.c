@@ -25,6 +25,7 @@
 #include "Renderer/Vulkan/VulkanUtilities.h"
 #include "Renderer/RendererGraphicsPipeline.h"
 #include "Renderer/RendererDevice.h"
+#include "Renderer/RendererEnums.h"
 #include "Core/Memory/Allocator.h"
 #include "Core/Log.h"
 #include "Core/Assert.h"
@@ -42,7 +43,7 @@ typedef struct GCRendererGraphicsPipeline
 	const GCRendererTexture2D* const* Texture2Ds;
 	const GCRendererShader* Shader;
 
-	VkRenderPass TextureRenderPassHandle, SwapChainRenderPassHandle;
+	VkRenderPass SwapChainRenderPassHandle, AttachmentRenderPassHandle;
 	VkDescriptorSetLayout DescriptorSetLayoutHandle;
 	VkDescriptorPool DescriptorPoolHandle;
 	VkDescriptorSet* DescriptorSetHandles;
@@ -53,10 +54,13 @@ typedef struct GCRendererGraphicsPipeline
 	uint32_t DescriptorCount;
 } GCRendererGraphicsPipeline;
 
-static void GCRendererGraphicsPipeline_CreateTextureRenderPass(GCRendererGraphicsPipeline* const GraphicsPipeline);
+static uint32_t GCRendererGraphicsPipeline_GetColorAttachmentCount(const GCRendererGraphicsPipelineAttachment* const Attachments, const uint32_t AttachmentCount);
+static uint32_t GCRendererGraphicsPipeline_GetColorResolveAttachmentCount(const GCRendererGraphicsPipelineAttachment* const Attachments, const uint32_t AttachmentCount);
+static uint32_t GCRendererGraphicsPipeline_GetDepthAttachmentCount(const GCRendererGraphicsPipelineAttachment* const Attachments, const uint32_t AttachmentCount);
 static void GCRendererGraphicsPipeline_CreateSwapChainRenderPass(GCRendererGraphicsPipeline* const GraphicsPipeline);
+static void GCRendererGraphicsPipeline_CreateAttachmentRenderPass(GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererGraphicsPipelineAttachment* const Attachments, const uint32_t AttachmentCount);
 static void GCRendererGraphicsPipeline_CreateDescriptorSetLayout(GCRendererGraphicsPipeline* const GraphicsPipeline);
-static void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererGraphicsPipelineVertexInput* const VertexInput);
+static void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererGraphicsPipelineVertexInput* const VertexInput, const VkSampleCountFlagBits SampleCount);
 static void GCRendererGraphicsPipeline_CreateDescriptorPool(GCRendererGraphicsPipeline* const GraphicsPipeline);
 static void GCRendererGraphicsPipeline_CreateDescriptorSets(GCRendererGraphicsPipeline* const GraphicsPipeline);
 static void GCRendererGraphicsPipeline_DestroyObjects(GCRendererGraphicsPipeline* const GraphicsPipeline);
@@ -72,8 +76,8 @@ GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(const GCRendererGr
 	GraphicsPipeline->UniformBuffer = Description->UniformBuffer;
 	GraphicsPipeline->Texture2Ds = Description->Texture2Ds;
 	GraphicsPipeline->Shader = Description->Shader;
-	GraphicsPipeline->TextureRenderPassHandle = VK_NULL_HANDLE;
 	GraphicsPipeline->SwapChainRenderPassHandle = VK_NULL_HANDLE;
+	GraphicsPipeline->AttachmentRenderPassHandle = VK_NULL_HANDLE;
 	GraphicsPipeline->DescriptorSetLayoutHandle = VK_NULL_HANDLE;
 	GraphicsPipeline->DescriptorPoolHandle = VK_NULL_HANDLE;
 	GraphicsPipeline->DescriptorSetHandles = NULL;
@@ -82,10 +86,10 @@ GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(const GCRendererGr
 	GraphicsPipeline->Texture2DCount = Description->Texture2DCount;
 	GraphicsPipeline->DescriptorCount = 1 + GraphicsPipeline->Texture2DCount;
 
-	GCRendererGraphicsPipeline_CreateTextureRenderPass(GraphicsPipeline);
 	GCRendererGraphicsPipeline_CreateSwapChainRenderPass(GraphicsPipeline);
+	GCRendererGraphicsPipeline_CreateAttachmentRenderPass(GraphicsPipeline, Description->Attachments, Description->AttachmentCount);
 	GCRendererGraphicsPipeline_CreateDescriptorSetLayout(GraphicsPipeline);
-	GCRendererGraphicsPipeline_CreateGraphicsPipeline(GraphicsPipeline, Description->VertexInput);
+	GCRendererGraphicsPipeline_CreateGraphicsPipeline(GraphicsPipeline, Description->VertexInput, Description->SampleCount);
 	GCRendererGraphicsPipeline_CreateDescriptorPool(GraphicsPipeline);
 	GCRendererGraphicsPipeline_CreateDescriptorSets(GraphicsPipeline);
 
@@ -102,14 +106,14 @@ void GCRendererGraphicsPipeline_Destroy(GCRendererGraphicsPipeline* GraphicsPipe
 	GCMemory_Free(GraphicsPipeline);
 }
 
-VkRenderPass GCRendererGraphicsPipeline_GetTextureRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline)
-{
-	return GraphicsPipeline->TextureRenderPassHandle;
-}
-
 VkRenderPass GCRendererGraphicsPipeline_GetSwapChainRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline)
 {
 	return GraphicsPipeline->SwapChainRenderPassHandle;
+}
+
+VkRenderPass GCRendererGraphicsPipeline_GetAttachmentRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline)
+{
+	return GraphicsPipeline->AttachmentRenderPassHandle;
 }
 
 VkPipelineLayout GCRendererGraphicsPipeline_GetPipelineLayoutHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline)
@@ -127,106 +131,49 @@ VkDescriptorSet* GCRendererGraphicsPipeline_GetDescriptorSetHandles(const GCRend
 	return GraphicsPipeline->DescriptorSetHandles;
 }
 
-void GCRendererGraphicsPipeline_CreateTextureRenderPass(GCRendererGraphicsPipeline* const GraphicsPipeline)
+uint32_t GCRendererGraphicsPipeline_GetColorAttachmentCount(const GCRendererGraphicsPipelineAttachment* const Attachments, const uint32_t AttachmentCount)
 {
-	const VkFormat SwapChainFormat = GCRendererSwapChain_GetFormat(GraphicsPipeline->SwapChain);
-	const VkSampleCountFlagBits SampleCount = GCRendererSwapChain_GetMaximumUsableSampleCount(GraphicsPipeline->SwapChain);
+	uint32_t Count = 0;
+	for (uint32_t Counter = 0; Counter < AttachmentCount; Counter++)
+	{
+		if (Attachments[Counter].Type == GCRendererAttachmentType_Color)
+		{
+			Count++;
+		}
+	}
 
-	VkAttachmentDescription ColorAttachmentDescriptions[2] = { 0 };
-	ColorAttachmentDescriptions[0].format = SwapChainFormat;
-	ColorAttachmentDescriptions[0].samples = SampleCount;
-	ColorAttachmentDescriptions[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	ColorAttachmentDescriptions[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	ColorAttachmentDescriptions[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	ColorAttachmentDescriptions[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	ColorAttachmentDescriptions[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	ColorAttachmentDescriptions[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	return Count;
+}
 
-	ColorAttachmentDescriptions[1].format = VK_FORMAT_R32_SINT;
-	ColorAttachmentDescriptions[1].samples = SampleCount;
-	ColorAttachmentDescriptions[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	ColorAttachmentDescriptions[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	ColorAttachmentDescriptions[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	ColorAttachmentDescriptions[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	ColorAttachmentDescriptions[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	ColorAttachmentDescriptions[1].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+uint32_t GCRendererGraphicsPipeline_GetColorResolveAttachmentCount(const GCRendererGraphicsPipelineAttachment* const Attachments, const uint32_t AttachmentCount)
+{
+	uint32_t Count = 0;
+	for (uint32_t Counter = 0; Counter < AttachmentCount; Counter++)
+	{
+		if (Attachments[Counter].Type == GCRendererAttachmentType_Color)
+		{
+			if (Attachments[Counter].SampleCount > GCRendererAttachmentSampleCount_1)
+			{
+				Count++;
+			}
+		}
+	}
 
-	VkAttachmentDescription DepthAttachmentDescription = { 0 };
-	DepthAttachmentDescription.format = GCRendererSwapChain_GetDepthFormat(GraphicsPipeline->SwapChain);
-	DepthAttachmentDescription.samples = SampleCount;
-	DepthAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	DepthAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	DepthAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	DepthAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	DepthAttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	DepthAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	return Count;
+}
 
-	VkAttachmentDescription ResolveAttachmentDescriptions[2] = {0};
-	ResolveAttachmentDescriptions[0].format = SwapChainFormat;
-	ResolveAttachmentDescriptions[0].samples = VK_SAMPLE_COUNT_1_BIT;
-	ResolveAttachmentDescriptions[0].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	ResolveAttachmentDescriptions[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	ResolveAttachmentDescriptions[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	ResolveAttachmentDescriptions[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	ResolveAttachmentDescriptions[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	ResolveAttachmentDescriptions[0].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+uint32_t GCRendererGraphicsPipeline_GetDepthAttachmentCount(const GCRendererGraphicsPipelineAttachment* const Attachments, const uint32_t AttachmentCount)
+{
+	uint32_t Count = 0;
+	for (uint32_t Counter = 0; Counter < AttachmentCount; Counter++)
+	{
+		if (Attachments[Counter].Type == GCRendererAttachmentType_DepthStencil)
+		{
+			Count++;
+		}
+	}
 
-	ResolveAttachmentDescriptions[1].format = VK_FORMAT_R32_SINT;
-	ResolveAttachmentDescriptions[1].samples = VK_SAMPLE_COUNT_1_BIT;
-	ResolveAttachmentDescriptions[1].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	ResolveAttachmentDescriptions[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	ResolveAttachmentDescriptions[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	ResolveAttachmentDescriptions[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	ResolveAttachmentDescriptions[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	ResolveAttachmentDescriptions[1].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-	VkAttachmentReference ColorAttachmentReferences[2] = {0};
-	ColorAttachmentReferences[0].attachment = 0;
-	ColorAttachmentReferences[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-	ColorAttachmentReferences[1].attachment = 1;
-	ColorAttachmentReferences[1].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-	VkAttachmentReference DepthAttachmentReference = { 0 };
-	DepthAttachmentReference.attachment = 2;
-	DepthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-	VkAttachmentReference ResolveAttachmentReferences[2] = {0};
-	ResolveAttachmentReferences[0].attachment = 3;
-	ResolveAttachmentReferences[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-	ResolveAttachmentReferences[1].attachment = 4;
-	ResolveAttachmentReferences[1].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-	VkSubpassDescription SubpassDescription = { 0 };
-	SubpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	SubpassDescription.colorAttachmentCount = 2;
-	SubpassDescription.pColorAttachments = ColorAttachmentReferences;
-	SubpassDescription.pDepthStencilAttachment = &DepthAttachmentReference;
-	SubpassDescription.pResolveAttachments = ResolveAttachmentReferences;
-
-	VkSubpassDependency SubpassDependency = { 0 };
-	SubpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-	SubpassDependency.dstSubpass = 0;
-	SubpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-	SubpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-	SubpassDependency.srcAccessMask = 0;
-	SubpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-	const VkAttachmentDescription AttachmentDescriptions[5] = { ColorAttachmentDescriptions[0], ColorAttachmentDescriptions[1], DepthAttachmentDescription, ResolveAttachmentDescriptions[0], ResolveAttachmentDescriptions[1] };
-
-	VkRenderPassCreateInfo RenderPassInformation = { 0 };
-	RenderPassInformation.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	RenderPassInformation.attachmentCount = 5;
-	RenderPassInformation.pAttachments = AttachmentDescriptions;
-	RenderPassInformation.subpassCount = 1;
-	RenderPassInformation.pSubpasses = &SubpassDescription;
-	RenderPassInformation.dependencyCount = 1;
-	RenderPassInformation.pDependencies = &SubpassDependency;
-
-	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(GraphicsPipeline->Device);
-
-	GC_VULKAN_VALIDATE(vkCreateRenderPass(DeviceHandle, &RenderPassInformation, NULL, &GraphicsPipeline->TextureRenderPassHandle), "Failed to create a Vulkan texture render pass");
+	return Count;
 }
 
 void GCRendererGraphicsPipeline_CreateSwapChainRenderPass(GCRendererGraphicsPipeline* const GraphicsPipeline)
@@ -274,6 +221,118 @@ void GCRendererGraphicsPipeline_CreateSwapChainRenderPass(GCRendererGraphicsPipe
 	GC_VULKAN_VALIDATE(vkCreateRenderPass(DeviceHandle, &RenderPassInformation, NULL, &GraphicsPipeline->SwapChainRenderPassHandle), "Failed to create a Vulkan swap chain render pass");
 }
 
+static void GCRendererGraphicsPipeline_CreateAttachmentRenderPass(GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererGraphicsPipelineAttachment* const Attachments, const uint32_t AttachmentCount)
+{
+	const uint32_t ColorAttachmentCount = GCRendererGraphicsPipeline_GetColorAttachmentCount(Attachments, AttachmentCount);
+	const uint32_t ColorResolveAttachmentCount = GCRendererGraphicsPipeline_GetColorResolveAttachmentCount(Attachments, AttachmentCount);
+	const uint32_t DepthAttachmentCount = GCRendererGraphicsPipeline_GetDepthAttachmentCount(Attachments, AttachmentCount);
+
+	VkAttachmentDescription* AttachmentDescriptions = (VkAttachmentDescription*)GCMemory_AllocateZero((ColorAttachmentCount + ColorResolveAttachmentCount + DepthAttachmentCount) * sizeof(VkAttachmentDescription));
+	VkAttachmentReference* ColorAttachmentReferences = (VkAttachmentReference*)GCMemory_AllocateZero(ColorAttachmentCount * sizeof(VkAttachmentReference));
+	VkAttachmentReference* ColorResolveAttachmentReferences = NULL;
+
+	if (ColorResolveAttachmentCount > 0)
+	{
+		ColorResolveAttachmentReferences = (VkAttachmentReference*)GCMemory_AllocateZero(ColorResolveAttachmentCount * sizeof(VkAttachmentReference));
+	}
+
+	VkAttachmentReference DepthAttachmentReference = { 0 };
+
+	uint32_t LastAttachmentIndex = 0;
+	for (uint32_t Counter = 0; Counter < AttachmentCount; Counter++, LastAttachmentIndex++)
+	{
+		const GCRendererGraphicsPipelineAttachment Attachment = Attachments[Counter];
+
+		AttachmentDescriptions[Counter].format = GCVulkanUtilities_ToVkFormat(GraphicsPipeline->Device, Attachment.Format);
+		AttachmentDescriptions[Counter].samples = GCVulkanUtilities_ToVkSampleCountFlagBits(GraphicsPipeline->Device, Attachment.SampleCount);
+		AttachmentDescriptions[Counter].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		AttachmentDescriptions[Counter].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		AttachmentDescriptions[Counter].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		AttachmentDescriptions[Counter].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		if (Attachment.Type == GCRendererAttachmentType_Color)
+		{
+			AttachmentDescriptions[Counter].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+			if (Attachment.SampleCount > GCRendererAttachmentSampleCount_1)
+			{
+				AttachmentDescriptions[Counter].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			}
+			else
+			{
+				AttachmentDescriptions[Counter].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			}
+
+			ColorAttachmentReferences[Counter].attachment = Counter;
+			ColorAttachmentReferences[Counter].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		}
+		else
+		{
+			AttachmentDescriptions[Counter].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			AttachmentDescriptions[Counter].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+			DepthAttachmentReference.attachment = Counter;
+			DepthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		}
+	}
+
+	for (uint32_t Counter = 0; Counter < AttachmentCount; Counter++, LastAttachmentIndex++)
+	{
+		const GCRendererGraphicsPipelineAttachment Attachment = Attachments[Counter];
+
+		if (Attachment.Type == GCRendererAttachmentType_Color && Attachment.SampleCount > GCRendererAttachmentSampleCount_1)
+		{
+			AttachmentDescriptions[LastAttachmentIndex].format = GCVulkanUtilities_ToVkFormat(GraphicsPipeline->Device, Attachment.Format);
+			AttachmentDescriptions[LastAttachmentIndex].samples = VK_SAMPLE_COUNT_1_BIT;
+			AttachmentDescriptions[LastAttachmentIndex].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			AttachmentDescriptions[LastAttachmentIndex].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+			AttachmentDescriptions[LastAttachmentIndex].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			AttachmentDescriptions[LastAttachmentIndex].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			AttachmentDescriptions[LastAttachmentIndex].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			AttachmentDescriptions[LastAttachmentIndex].finalLayout = AttachmentDescriptions[Counter].format != VK_FORMAT_R32_SINT ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+			ColorResolveAttachmentReferences[Counter].attachment = LastAttachmentIndex;
+			ColorResolveAttachmentReferences[Counter].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		}
+	}
+
+	VkSubpassDescription SubpassDescription = { 0 };
+	SubpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	SubpassDescription.colorAttachmentCount = ColorAttachmentCount;
+	SubpassDescription.pColorAttachments = ColorAttachmentReferences;
+	SubpassDescription.pDepthStencilAttachment = &DepthAttachmentReference;
+	SubpassDescription.pResolveAttachments = ColorResolveAttachmentReferences;
+
+	VkSubpassDependency SubpassDependency = { 0 };
+	SubpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	SubpassDependency.dstSubpass = 0;
+	SubpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+	SubpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+	SubpassDependency.srcAccessMask = 0;
+	SubpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+	VkRenderPassCreateInfo RenderPassInformation = { 0 };
+	RenderPassInformation.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	RenderPassInformation.attachmentCount = ColorAttachmentCount + ColorResolveAttachmentCount + DepthAttachmentCount;
+	RenderPassInformation.pAttachments = AttachmentDescriptions;
+	RenderPassInformation.subpassCount = 1;
+	RenderPassInformation.pSubpasses = &SubpassDescription;
+	RenderPassInformation.dependencyCount = 1;
+	RenderPassInformation.pDependencies = &SubpassDependency;
+
+	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(GraphicsPipeline->Device);
+
+	GC_VULKAN_VALIDATE(vkCreateRenderPass(DeviceHandle, &RenderPassInformation, NULL, &GraphicsPipeline->AttachmentRenderPassHandle), "Failed to create a Vulkan attachment render pass");
+
+	if (ColorResolveAttachmentCount > 0)
+	{
+		GCMemory_Free(ColorResolveAttachmentReferences);
+	}
+
+	GCMemory_Free(ColorAttachmentReferences);
+	GCMemory_Free(AttachmentDescriptions);
+}
+
 void GCRendererGraphicsPipeline_CreateDescriptorSetLayout(GCRendererGraphicsPipeline* const GraphicsPipeline)
 {
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(GraphicsPipeline->Device);
@@ -302,10 +361,9 @@ void GCRendererGraphicsPipeline_CreateDescriptorSetLayout(GCRendererGraphicsPipe
 	GCMemory_Free(DescriptorSetLayoutBindings);
 }
 
-void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererGraphicsPipelineVertexInput* const VertexInput)
+void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererGraphicsPipelineVertexInput* const VertexInput, const VkSampleCountFlagBits SampleCount)
 {
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(GraphicsPipeline->Device);
-	const VkSampleCountFlagBits SampleCount = GCRendererSwapChain_GetMaximumUsableSampleCount(GraphicsPipeline->SwapChain);
 
 	VkPipelineLayoutCreateInfo PipelineLayoutInformation = { 0 };
 	PipelineLayoutInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -380,7 +438,7 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
 
 	VkPipelineMultisampleStateCreateInfo PipelineMultisampleStateInformation = { 0 };
 	PipelineMultisampleStateInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-	PipelineMultisampleStateInformation.rasterizationSamples = SampleCount;
+	PipelineMultisampleStateInformation.rasterizationSamples = GCVulkanUtilities_ToVkSampleCountFlagBits(GraphicsPipeline->Device, SampleCount);
 	PipelineMultisampleStateInformation.sampleShadingEnable = VK_FALSE;
 	PipelineMultisampleStateInformation.minSampleShading = 1.0f;
 
@@ -441,7 +499,7 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
 	GraphicsPipelineInformation.pColorBlendState = &PipelineColorBlendStateInformation;
 	GraphicsPipelineInformation.pDynamicState = &PipelineDynamicStateInformation;
 	GraphicsPipelineInformation.layout = GraphicsPipeline->PipelineLayoutHandle;
-	GraphicsPipelineInformation.renderPass = GraphicsPipeline->TextureRenderPassHandle;
+	GraphicsPipelineInformation.renderPass = GraphicsPipeline->AttachmentRenderPassHandle;
 	GraphicsPipelineInformation.subpass = 0;
 
 	GC_VULKAN_VALIDATE(vkCreateGraphicsPipelines(DeviceHandle, VK_NULL_HANDLE, 1, &GraphicsPipelineInformation, NULL, &GraphicsPipeline->PipelineHandle), "Failed to create a Vulkan graphics pipeline");
@@ -549,7 +607,7 @@ void GCRendererGraphicsPipeline_DestroyObjects(GCRendererGraphicsPipeline* const
 	vkDestroyPipelineLayout(DeviceHandle, GraphicsPipeline->PipelineLayoutHandle, NULL);
 	vkDestroyDescriptorSetLayout(DeviceHandle, GraphicsPipeline->DescriptorSetLayoutHandle, NULL);
 	vkDestroyRenderPass(DeviceHandle, GraphicsPipeline->SwapChainRenderPassHandle, NULL);
-	vkDestroyRenderPass(DeviceHandle, GraphicsPipeline->TextureRenderPassHandle, NULL);
+	vkDestroyRenderPass(DeviceHandle, GraphicsPipeline->AttachmentRenderPassHandle, NULL);
 }
 
 VkFormat GCRendererGraphicsPipeline_ToVkFormat(const GCRendererGraphicsPipelineVertexInputAttributeFormat Format)

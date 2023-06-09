@@ -27,6 +27,7 @@
 #include "Renderer/RendererShader.h"
 #include "Renderer/RendererGraphicsPipeline.h"
 #include "Renderer/RendererFramebuffer.h"
+#include "Renderer/RendererEnums.h"
 #include "Core/Memory/Allocator.h"
 #include "ApplicationCore/GenericPlatform/Window.h"
 #include "ApplicationCore/Application.h"
@@ -73,7 +74,6 @@ typedef struct GCRendererUniformBufferData
 } GCRendererUniformBufferData;
 
 static void GCRenderer_ResizeSwapChainRenderer(void);
-static void GCRenderer_RecordCommands(const GCRendererCommandListRecordData* const RecordData);
 
 static GCRenderer* Renderer = NULL;
 
@@ -88,6 +88,7 @@ void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera)
 
 	GCRendererCommandListDescription CommandListDescription = { 0 };
 	CommandListDescription.Device = Renderer->Device;
+	CommandListDescription.SwapChain = Renderer->SwapChain;
 	Renderer->CommandList = GCRendererCommandList_Create(&CommandListDescription);
 
 	GCRendererUniformBufferDescription UniformBufferDescription = { 0 };
@@ -101,6 +102,17 @@ void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera)
 	ShaderDescription.VertexShaderPath = "Assets/Shaders/Basic/Basic.vertex.glsl";
 	ShaderDescription.FragmentShaderPath = "Assets/Shaders/Basic/Basic.fragment.glsl";
 	Renderer->BasicShader = GCRendererShader_Create(&ShaderDescription);
+
+	GCRendererGraphicsPipelineAttachment GraphicsPipelineAttachments[3] = { 0 };
+	GraphicsPipelineAttachments[0].Type = GCRendererAttachmentType_Color;
+	GraphicsPipelineAttachments[0].Format = GCRendererAttachmentFormat_SRGB;
+	GraphicsPipelineAttachments[0].SampleCount = GCRendererAttachmentSampleCount_2;
+	GraphicsPipelineAttachments[1].Type = GCRendererAttachmentType_Color;
+	GraphicsPipelineAttachments[1].Format = GCRendererAttachmentFormat_Integer;
+	GraphicsPipelineAttachments[1].SampleCount = GCRendererAttachmentSampleCount_2;
+	GraphicsPipelineAttachments[2].Type = GCRendererAttachmentType_DepthStencil;
+	GraphicsPipelineAttachments[2].Format = GCRendererAttachmentFormat_D32;
+	GraphicsPipelineAttachments[2].SampleCount = GCRendererAttachmentSampleCount_2;
 
 	GCRendererGraphicsPipelineVertexInputBinding GraphicsPipelineVertexInputBindings[1] = { 0 };
 	GraphicsPipelineVertexInputBindings[0].Binding = 0;
@@ -133,7 +145,10 @@ void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera)
 	GraphicsPipelineDescription.Device = Renderer->Device;
 	GraphicsPipelineDescription.SwapChain = Renderer->SwapChain;
 	GraphicsPipelineDescription.CommandList = Renderer->CommandList;
+	GraphicsPipelineDescription.Attachments = GraphicsPipelineAttachments;
+	GraphicsPipelineDescription.AttachmentCount = 3;
 	GraphicsPipelineDescription.VertexInput = &GraphicsPipelineVertexInput;
+	GraphicsPipelineDescription.SampleCount = GCRendererAttachmentSampleCount_2;
 	GraphicsPipelineDescription.UniformBuffer = Renderer->UniformBuffer;
 	GraphicsPipelineDescription.Texture2Ds = NULL;
 	GraphicsPipelineDescription.Texture2DCount = 0;
@@ -141,20 +156,20 @@ void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera)
 	Renderer->GraphicsPipeline = GCRendererGraphicsPipeline_Create(&GraphicsPipelineDescription);
 
 	GCRendererFramebufferAttachment FramebufferAttachments[3] = { 0 };
-	FramebufferAttachments[0].Type = GCRendererFramebufferAttachmentType_Color;
+	FramebufferAttachments[0].Type = GCRendererAttachmentType_Color;
 	FramebufferAttachments[0].Flags = GCRendererFramebufferAttachmentFlags_Sampled;
-	FramebufferAttachments[0].Format = GCRendererFramebufferAttachmentFormat_SRGB;
-	FramebufferAttachments[0].SampleCount = GCRendererFramebufferAttachmentSampleCount_MaximumUsable;
+	FramebufferAttachments[0].Format = GCRendererAttachmentFormat_SRGB;
+	FramebufferAttachments[0].SampleCount = GCRendererAttachmentSampleCount_2;
 
-	FramebufferAttachments[1].Type = GCRendererFramebufferAttachmentType_Color;
+	FramebufferAttachments[1].Type = GCRendererAttachmentType_Color;
 	FramebufferAttachments[1].Flags = GCRendererFramebufferAttachmentFlags_Mapped;
-	FramebufferAttachments[1].Format = GCRendererFramebufferAttachmentFormat_Integer;
-	FramebufferAttachments[1].SampleCount = GCRendererFramebufferAttachmentSampleCount_MaximumUsable;
+	FramebufferAttachments[1].Format = GCRendererAttachmentFormat_Integer;
+	FramebufferAttachments[1].SampleCount = GCRendererAttachmentSampleCount_2;
 
-	FramebufferAttachments[2].Type = GCRendererFramebufferAttachmentType_DepthStencil;
+	FramebufferAttachments[2].Type = GCRendererAttachmentType_DepthStencil;
 	FramebufferAttachments[2].Flags = GCRendererFramebufferAttachmentFlags_None;
-	FramebufferAttachments[2].Format = GCRendererFramebufferAttachmentFormat_D32;
-	FramebufferAttachments[2].SampleCount = GCRendererFramebufferAttachmentSampleCount_MaximumUsable;
+	FramebufferAttachments[2].Format = GCRendererAttachmentFormat_D32;
+	FramebufferAttachments[2].SampleCount = GCRendererAttachmentSampleCount_2;
 
 	uint32_t WindowWidth = 0, WindowHeight = 0;
 	GCWindow_GetWindowSize(GCApplication_GetWindow(), &WindowWidth, &WindowHeight);
@@ -179,6 +194,8 @@ void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera)
 void GCRenderer_Begin(void)
 {
 	Renderer->DrawDataCount = 0;
+
+	GCRendererCommandList_BeginRecord(Renderer->CommandList);
 }
 
 void GCRenderer_RenderEntity(const GCEntity Entity)
@@ -202,11 +219,40 @@ void GCRenderer_RenderEntity(const GCEntity Entity)
 
 void GCRenderer_End(void)
 {
+	const float ClearColorTexture[4] = { 0.729f, 0.901f, 0.992f, 1.0f };
+	GCRendererCommandList_BeginAttachmentRenderPass(Renderer->CommandList, Renderer->GraphicsPipeline, Renderer->Framebuffer, ClearColorTexture);
+
+	GCRendererUniformBufferData UniformBufferData = { 0 };
+	UniformBufferData.ViewProjectionMatrix = GCWorldCamera_GetViewProjectionMatrix(Renderer->WorldCamera);
+
+	GCRendererCommandList_UpdateUniformBuffer(Renderer->CommandList, Renderer->UniformBuffer, &UniformBufferData, sizeof(GCRendererUniformBufferData));
+	GCRendererCommandList_BindGraphicsPipeline(Renderer->CommandList, Renderer->GraphicsPipeline);
+	GCRendererCommandList_SetViewport(Renderer->CommandList, Renderer->Framebuffer);
+
+	for (uint32_t Counter = 0; Counter < Renderer->DrawDataCount; Counter++)
+	{
+		GCRendererCommandList_BindVertexBuffer(Renderer->CommandList, Renderer->DrawData[Counter].VertexBuffer);
+		GCRendererCommandList_BindIndexBuffer(Renderer->CommandList, Renderer->DrawData[Counter].IndexBuffer);
+		GCRendererCommandList_DrawIndexed(Renderer->CommandList, Renderer->DrawData[Counter].IndexCount, 0);
+	}
+
+	GCRendererCommandList_EndAttachmentRenderPass(Renderer->CommandList);
+
+	const float ClearColorSwapChain[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	GCRendererCommandList_BeginSwapChainRenderPass(Renderer->CommandList, Renderer->GraphicsPipeline, Renderer->Framebuffer, ClearColorSwapChain);
+	GCImGuiManager_Render();
+	GCRendererCommandList_EndSwapChainRenderPass(Renderer->CommandList);
+
+	GCRendererCommandList_EndRecord(Renderer->CommandList);
+
+	int32_t Pixel = GCRendererFramebuffer_GetPixel(Renderer->Framebuffer, Renderer->CommandList, 1, 0);
+
+	(void)Pixel;
 }
 
 void GCRenderer_Present(void)
 {
-	GCRendererCommandList_SubmitAndPresent(Renderer->CommandList, Renderer->SwapChain, GCRenderer_RecordCommands);
+	GCRendererCommandList_SubmitAndPresent(Renderer->CommandList);
 }
 
 void GCRenderer_ResizeSwapChain(void)
@@ -266,39 +312,4 @@ void GCRenderer_ResizeSwapChainRenderer(void)
 		GCRendererSwapChain_Recreate(Renderer->SwapChain);
 		GCRendererFramebuffer_RecreateSwapChainFramebuffer(Renderer->Framebuffer);
 	}
-}
-
-void GCRenderer_RecordCommands(const GCRendererCommandListRecordData* const RecordData)
-{
-	GCRendererCommandList_BeginRecord(Renderer->CommandList);
-
-	const float ClearColorTexture[4] = { 0.729f, 0.901f, 0.992f, 1.0f };
-	GCRendererCommandList_BeginTextureRenderPass(Renderer->CommandList, Renderer->GraphicsPipeline, Renderer->Framebuffer, ClearColorTexture);
-
-	GCRendererUniformBufferData UniformBufferData = { 0 };
-	UniformBufferData.ViewProjectionMatrix = GCWorldCamera_GetViewProjectionMatrix(Renderer->WorldCamera);
-
-	GCRendererCommandList_UpdateUniformBuffer(Renderer->CommandList, Renderer->UniformBuffer, RecordData, &UniformBufferData, sizeof(GCRendererUniformBufferData));
-	GCRendererCommandList_BindGraphicsPipeline(Renderer->CommandList, Renderer->GraphicsPipeline);
-	GCRendererCommandList_SetViewport(Renderer->CommandList, Renderer->Framebuffer);
-
-	for (uint32_t Counter = 0; Counter < Renderer->DrawDataCount; Counter++)
-	{
-		GCRendererCommandList_BindVertexBuffer(Renderer->CommandList, Renderer->DrawData[Counter].VertexBuffer);
-		GCRendererCommandList_BindIndexBuffer(Renderer->CommandList, Renderer->DrawData[Counter].IndexBuffer);
-		GCRendererCommandList_DrawIndexed(Renderer->CommandList, Renderer->DrawData[Counter].IndexCount, 0);
-	}
-
-	GCRendererCommandList_EndTextureRenderPass(Renderer->CommandList);
-
-	const float ClearColorSwapChain[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	GCRendererCommandList_BeginSwapChainRenderPass(Renderer->CommandList, Renderer->SwapChain, Renderer->GraphicsPipeline, Renderer->Framebuffer, RecordData, ClearColorSwapChain);
-	GCImGuiManager_Render();
-	GCRendererCommandList_EndSwapChainRenderPass(Renderer->CommandList);
-
-	GCRendererCommandList_EndRecord(Renderer->CommandList);
-
-	int32_t Pixel = GCRendererFramebuffer_GetPixel(Renderer->Framebuffer, Renderer->CommandList, 1, 0);
-
-	(void)Pixel;
 }

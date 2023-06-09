@@ -92,11 +92,10 @@ void GCApplication_Run(void)
 		GCRenderer_RenderEntity(BasicTerrainEntity);
 		GCRenderer_RenderEntity(SmallOfficeEntity);
 
-		GCRenderer_End();
-
 		GCImGuiManager_BeginFrame();
 		GCImGuiManager_EndFrame();
-		
+
+		GCRenderer_End();
 		GCRenderer_Present();
 
 		GCWindow_ProcessEvents(Application->Window);

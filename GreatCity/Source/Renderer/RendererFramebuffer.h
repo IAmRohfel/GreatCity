@@ -31,11 +31,9 @@ extern "C"
     typedef struct GCRendererCommandList GCRendererCommandList;
 	typedef struct GCRendererGraphicsPipeline GCRendererGraphicsPipeline;
 
-    typedef enum GCRendererFramebufferAttachmentType
-    {
-        GCRendererFramebufferAttachmentType_Color,
-        GCRendererFramebufferAttachmentType_DepthStencil
-    } GCRendererFramebufferAttachmentType;
+    typedef enum GCRendererAttachmentType GCRendererAttachmentType;
+    typedef enum GCRendererAttachmentFormat GCRendererAttachmentFormat;
+    typedef enum GCRendererAttachmentSampleCount GCRendererAttachmentSampleCount;
 
     typedef enum GCRendererFramebufferAttachmentFlags
     {
@@ -44,29 +42,12 @@ extern "C"
         GCRendererFramebufferAttachmentFlags_Mapped
     } GCRendererFramebufferAttachmentFlags;
 
-    typedef enum GCRendererFramebufferAttachmentFormat
-    {
-        GCRendererFramebufferAttachmentFormat_SRGB,
-        GCRendererFramebufferAttachmentFormat_Integer,
-        GCRendererFramebufferAttachmentFormat_D32
-    } GCRendererFramebufferAttachmentFormat;
-
-    typedef enum GCRendererFramebufferAttachmentSampleCount
-    {
-        GCRendererFramebufferAttachmentSampleCount_1,
-        GCRendererFramebufferAttachmentSampleCount_2,
-        GCRendererFramebufferAttachmentSampleCount_4,
-        GCRendererFramebufferAttachmentSampleCount_8,
-
-        GCRendererFramebufferAttachmentSampleCount_MaximumUsable
-    } GCRendererFramebufferAttachmentSampleCount;
-
     typedef struct GCRendererFramebufferAttachment
     {
-        GCRendererFramebufferAttachmentType Type;
+        GCRendererAttachmentType Type;
         GCRendererFramebufferAttachmentFlags Flags;
-        GCRendererFramebufferAttachmentFormat Format;
-        GCRendererFramebufferAttachmentSampleCount SampleCount;
+        GCRendererAttachmentFormat Format;
+        GCRendererAttachmentSampleCount SampleCount;
     } GCRendererFramebufferAttachment;
 
     typedef struct GCRendererFramebufferDescription

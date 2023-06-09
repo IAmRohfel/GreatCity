@@ -19,6 +19,7 @@
 #include "Renderer/Vulkan/VulkanRendererDevice.h"
 #include "Renderer/Vulkan/VulkanRendererCommandList.h"
 #include "Renderer/RendererDevice.h"
+#include "Renderer/RendererEnums.h"
 #include "Core/Log.h"
 #include "Core/Assert.h"
 
@@ -360,4 +361,109 @@ void GCVulkanUtilities_EndSingleTimeCommands(const GCRendererDevice* const Devic
 	vkQueueWaitIdle(GraphicsQueueHandle);
 
 	vkFreeCommandBuffers(DeviceHandle, TransientCommandPoolHandle, 1, &CommandBufferHandle);
+}
+
+VkSampleCountFlagBits GCVulkanUtilities_GetMaximumUsableSampleCount(const GCRendererDevice* const Device)
+{
+	VkPhysicalDeviceProperties PhysicalDeviceProperties = { 0 };
+	vkGetPhysicalDeviceProperties(GCRendererDevice_GetPhysicalDeviceHandle(Device), &PhysicalDeviceProperties);
+
+	const VkSampleCountFlags SampleCount = PhysicalDeviceProperties.limits.framebufferColorSampleCounts & PhysicalDeviceProperties.limits.framebufferDepthSampleCounts;
+
+	if (SampleCount & VK_SAMPLE_COUNT_64_BIT)
+	{
+		return VK_SAMPLE_COUNT_64_BIT;
+	}
+	else if (SampleCount & VK_SAMPLE_COUNT_32_BIT)
+	{
+		return VK_SAMPLE_COUNT_32_BIT;
+	}
+	else if (SampleCount & VK_SAMPLE_COUNT_16_BIT)
+	{
+		return VK_SAMPLE_COUNT_16_BIT;
+	}
+	else if (SampleCount & VK_SAMPLE_COUNT_8_BIT)
+	{
+		return VK_SAMPLE_COUNT_8_BIT;
+	}
+	else if (SampleCount & VK_SAMPLE_COUNT_4_BIT)
+	{
+		return VK_SAMPLE_COUNT_4_BIT;
+	}
+	else if (SampleCount & VK_SAMPLE_COUNT_2_BIT)
+	{
+		return VK_SAMPLE_COUNT_2_BIT;
+	}
+
+	return VK_SAMPLE_COUNT_1_BIT;
+}
+
+VkFormat GCVulkanUtilities_ToVkFormat(const GCRendererDevice* const Device, const GCRendererAttachmentFormat Format)
+{
+	(void)Device;
+
+	switch (Format)
+	{
+		case GCRendererAttachmentFormat_SRGB:
+		{
+			return VK_FORMAT_B8G8R8A8_SRGB;
+
+			break;
+		}
+		case GCRendererAttachmentFormat_Integer:
+		{
+			return VK_FORMAT_R32_SINT;
+
+			break;
+		}
+		case GCRendererAttachmentFormat_D32:
+		{
+			return VK_FORMAT_D32_SFLOAT;
+
+			break;
+		}
+	}
+
+	GC_ASSERT_WITH_MESSAGE(false, "'%d': Invalid GCRendererAttachmentFormat");
+	return VK_FORMAT_UNDEFINED;
+}
+
+VkSampleCountFlagBits GCVulkanUtilities_ToVkSampleCountFlagBits(const GCRendererDevice* const Device, const GCRendererAttachmentSampleCount SampleCount)
+{
+	switch (SampleCount)
+	{
+		case GCRendererAttachmentSampleCount_1:
+		{
+			return VK_SAMPLE_COUNT_1_BIT;
+
+			break;
+		}
+		case GCRendererAttachmentSampleCount_2:
+		{
+			return VK_SAMPLE_COUNT_2_BIT;
+
+			break;
+		}
+		case GCRendererAttachmentSampleCount_4:
+		{
+			return VK_SAMPLE_COUNT_4_BIT;
+
+			break;
+		}
+		case GCRendererAttachmentSampleCount_8:
+		{
+			return VK_SAMPLE_COUNT_8_BIT;
+
+			break;
+		}
+		case GCRendererAttachmentSampleCount_MaximumUsable:
+		{
+			return GCVulkanUtilities_GetMaximumUsableSampleCount(Device);
+
+			break;
+		}
+	}
+
+	GC_ASSERT_WITH_MESSAGE(false, "'%d': Invalid GCRendererAttachmentSampleCount");
+	return (VkSampleCountFlagBits)-1;
 }

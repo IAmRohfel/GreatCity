@@ -39,6 +39,7 @@
 typedef struct GCRendererCommandList
 {
 	const GCRendererDevice* Device;
+	const GCRendererSwapChain* SwapChain;
 
 	VkCommandPool CommandPoolHandle, TransientCommandPoolHandle;
 	VkCommandBuffer* CommandBufferHandles;
@@ -49,13 +50,8 @@ typedef struct GCRendererCommandList
 	GCRendererCommandListResizeCallbackFunction ResizeCallbackFunction;
 	bool IsResized;
 	uint32_t MaximumFramesInFlight;
-	uint32_t CurrentFrame;
+	uint32_t CurrentFrame, CurrentImageIndex;
 } GCRendererCommandList;
-
-typedef struct GCRendererCommandListRecordData
-{
-	uint32_t SwapChainImageIndex;
-} GCRendererCommandListRecordData;
 
 static void GCRendererCommandList_CreateCommandPool(GCRendererCommandList* const CommandList);
 static void GCRendererCommandList_CreateCommandBuffers(GCRendererCommandList* const CommandList);
@@ -67,6 +63,7 @@ GCRendererCommandList* GCRendererCommandList_Create(const GCRendererCommandListD
 {
 	GCRendererCommandList* CommandList = (GCRendererCommandList*)GCMemory_Allocate(sizeof(GCRendererCommandList));
 	CommandList->Device = Description->Device;
+	CommandList->SwapChain = Description->SwapChain;
 	CommandList->CommandPoolHandle = VK_NULL_HANDLE;
 	CommandList->TransientCommandPoolHandle = VK_NULL_HANDLE;
 	CommandList->CommandBufferHandles = NULL;
@@ -76,6 +73,7 @@ GCRendererCommandList* GCRendererCommandList_Create(const GCRendererCommandListD
 	CommandList->ResizeCallbackFunction = NULL;
 	CommandList->MaximumFramesInFlight = 2;
 	CommandList->CurrentFrame = 0;
+	CommandList->CurrentImageIndex = 0;
 	CommandList->IsResized = false;
 
 	GCRendererCommandList_CreateCommandPool(CommandList);
@@ -96,19 +94,53 @@ void GCRendererCommandList_SetResizeCallback(GCRendererCommandList* const Comman
 	CommandList->ResizeCallbackFunction = ResizeCallbackFunction;
 }
 
-void GCRendererCommandList_BeginRecord(const GCRendererCommandList* const CommandList)
+void GCRendererCommandList_BeginRecord(GCRendererCommandList* const CommandList)
 {
+	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(CommandList->Device);
+	const VkSwapchainKHR SwapChainHandle[1] = { GCRendererSwapChain_GetHandle(CommandList->SwapChain) };
+
+	vkWaitForFences(DeviceHandle, 1, &CommandList->InFlightFenceHandles[CommandList->CurrentFrame], VK_TRUE, UINT64_MAX);
+	VkResult SwapChainCheckResult = vkAcquireNextImageKHR(DeviceHandle, SwapChainHandle[0], UINT64_MAX, CommandList->ImageAvailableSemaphoreHandles[CommandList->CurrentFrame], VK_NULL_HANDLE, &CommandList->CurrentImageIndex);
+
+	if (SwapChainCheckResult == VK_ERROR_OUT_OF_DATE_KHR || SwapChainCheckResult == VK_SUBOPTIMAL_KHR)
+	{
+		CommandList->ResizeCallbackFunction();
+
+		return;
+	}
+
+	vkResetFences(DeviceHandle, 1, &CommandList->InFlightFenceHandles[CommandList->CurrentFrame]);
+	vkResetCommandBuffer(CommandList->CommandBufferHandles[CommandList->CurrentFrame], 0);
+
 	VkCommandBufferBeginInfo CommandBufferBeginInformation = { 0 };
 	CommandBufferBeginInformation.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
 	GC_VULKAN_VALIDATE(vkBeginCommandBuffer(CommandList->CommandBufferHandles[CommandList->CurrentFrame], &CommandBufferBeginInformation), "Failed to begin a Vulkan command buffer");
 }
 
-void GCRendererCommandList_BeginTextureRenderPass(const GCRendererCommandList* const CommandList, const GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererFramebuffer* const Framebuffer, const float* const ClearColor)
+void GCRendererCommandList_BeginSwapChainRenderPass(const GCRendererCommandList* const CommandList, const GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererFramebuffer* const Framebuffer, const float* const ClearColor)
 {
 	VkRenderPassBeginInfo RenderPassBeginInformation = { 0 };
 	RenderPassBeginInformation.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	RenderPassBeginInformation.renderPass = GCRendererGraphicsPipeline_GetTextureRenderPassHandle(GraphicsPipeline);
+	RenderPassBeginInformation.renderPass = GCRendererGraphicsPipeline_GetSwapChainRenderPassHandle(GraphicsPipeline);
+	RenderPassBeginInformation.framebuffer = GCRendererFramebuffer_GetSwapChainFramebufferHandles(Framebuffer)[CommandList->CurrentImageIndex];
+	RenderPassBeginInformation.renderArea.offset = (VkOffset2D){ 0, 0 };
+	RenderPassBeginInformation.renderArea.extent = GCRendererSwapChain_GetExtent(CommandList->SwapChain);
+
+	VkClearValue ClearValue = { 0 };
+	memcpy(ClearValue.color.float32, ClearColor, sizeof(ClearValue.color.float32));
+
+	RenderPassBeginInformation.clearValueCount = 1;
+	RenderPassBeginInformation.pClearValues = &ClearValue;
+
+	vkCmdBeginRenderPass(CommandList->CommandBufferHandles[CommandList->CurrentFrame], &RenderPassBeginInformation, VK_SUBPASS_CONTENTS_INLINE);
+}
+
+void GCRendererCommandList_BeginAttachmentRenderPass(const GCRendererCommandList* const CommandList, const GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererFramebuffer* const Framebuffer, const float* const ClearColor)
+{
+	VkRenderPassBeginInfo RenderPassBeginInformation = { 0 };
+	RenderPassBeginInformation.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	RenderPassBeginInformation.renderPass = GCRendererGraphicsPipeline_GetAttachmentRenderPassHandle(GraphicsPipeline);
 	RenderPassBeginInformation.framebuffer = GCRendererFramebuffer_GetAttachmentFramebufferHandle(Framebuffer);
 	RenderPassBeginInformation.renderArea.offset = (VkOffset2D){ 0, 0 };
 	RenderPassBeginInformation.renderArea.extent = GCRendererFramebuffer_GetFramebufferSize(Framebuffer);
@@ -128,24 +160,6 @@ void GCRendererCommandList_BeginTextureRenderPass(const GCRendererCommandList* c
 	vkCmdBeginRenderPass(CommandList->CommandBufferHandles[CommandList->CurrentFrame], &RenderPassBeginInformation, VK_SUBPASS_CONTENTS_INLINE);
 }
 
-void GCRendererCommandList_BeginSwapChainRenderPass(const GCRendererCommandList* const CommandList, const GCRendererSwapChain* const SwapChain, const GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererFramebuffer* const Framebuffer, const GCRendererCommandListRecordData* RecordData, const float* const ClearColor)
-{
-	VkRenderPassBeginInfo RenderPassBeginInformation = { 0 };
-	RenderPassBeginInformation.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	RenderPassBeginInformation.renderPass = GCRendererGraphicsPipeline_GetSwapChainRenderPassHandle(GraphicsPipeline);
-	RenderPassBeginInformation.framebuffer = GCRendererFramebuffer_GetSwapChainFramebufferHandles(Framebuffer)[RecordData->SwapChainImageIndex];
-	RenderPassBeginInformation.renderArea.offset = (VkOffset2D){ 0, 0 };
-	RenderPassBeginInformation.renderArea.extent = GCRendererSwapChain_GetExtent(SwapChain);
-
-	VkClearValue ClearValue = { 0 };
-	memcpy(ClearValue.color.float32, ClearColor, sizeof(ClearValue.color.float32));
-
-	RenderPassBeginInformation.clearValueCount = 1;
-	RenderPassBeginInformation.pClearValues = &ClearValue;
-
-	vkCmdBeginRenderPass(CommandList->CommandBufferHandles[CommandList->CurrentFrame], &RenderPassBeginInformation, VK_SUBPASS_CONTENTS_INLINE);
-}
-
 void GCRendererCommandList_BindVertexBuffer(const GCRendererCommandList* const CommandList, const GCRendererVertexBuffer* const VertexBuffer)
 {
 	const VkBuffer VertexBufferHandle[1] = { GCRendererVertexBuffer_GetHandle(VertexBuffer) };
@@ -159,13 +173,13 @@ void GCRendererCommandList_BindIndexBuffer(const GCRendererCommandList* const Co
 	vkCmdBindIndexBuffer(CommandList->CommandBufferHandles[CommandList->CurrentFrame], GCRendererIndexBuffer_GetHandle(IndexBuffer), 0, VK_INDEX_TYPE_UINT32);
 }
 
-void GCRendererCommandList_UpdateUniformBuffer(const GCRendererCommandList* const CommandList, const GCRendererUniformBuffer* const UniformBuffer, const GCRendererCommandListRecordData* RecordData, const void* const Data, const size_t DataSize)
+void GCRendererCommandList_UpdateUniformBuffer(const GCRendererCommandList* const CommandList, const GCRendererUniformBuffer* const UniformBuffer, const void* const Data, const size_t DataSize)
 {
 	(void)CommandList;
 
 	void** UniformBufferData = GCRendererUniformBuffer_GetData(UniformBuffer);
 
-	memcpy(UniformBufferData[RecordData->SwapChainImageIndex], Data, DataSize);
+	memcpy(UniformBufferData[CommandList->CurrentImageIndex], Data, DataSize);
 }
 
 void GCRendererCommandList_BindGraphicsPipeline(const GCRendererCommandList* const CommandList, const GCRendererGraphicsPipeline* const GraphicsPipeline)
@@ -207,12 +221,12 @@ void GCRendererCommandList_DrawIndexed(const GCRendererCommandList* const Comman
 	vkCmdDrawIndexed(CommandList->CommandBufferHandles[CommandList->CurrentFrame], IndexCount, 1, FirstIndex, 0, 0);
 }
 
-void GCRendererCommandList_EndTextureRenderPass(const GCRendererCommandList* const CommandList)
+void GCRendererCommandList_EndSwapChainRenderPass(const GCRendererCommandList* const CommandList)
 {
 	vkCmdEndRenderPass(CommandList->CommandBufferHandles[CommandList->CurrentFrame]);
 }
 
-void GCRendererCommandList_EndSwapChainRenderPass(const GCRendererCommandList* const CommandList)
+void GCRendererCommandList_EndAttachmentRenderPass(const GCRendererCommandList* const CommandList)
 {
 	vkCmdEndRenderPass(CommandList->CommandBufferHandles[CommandList->CurrentFrame]);
 }
@@ -222,33 +236,9 @@ void GCRendererCommandList_EndRecord(const GCRendererCommandList* const CommandL
 	GC_VULKAN_VALIDATE(vkEndCommandBuffer(CommandList->CommandBufferHandles[CommandList->CurrentFrame]), "Failed to end a Vulkan command buffer");
 }
 
-void GCRendererCommandList_SubmitAndPresent(GCRendererCommandList* const CommandList, const GCRendererSwapChain* const SwapChain, const GCRendererCommandListRecordFunction RecordFunction)
+void GCRendererCommandList_SubmitAndPresent(GCRendererCommandList* const CommandList)
 {
-	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(CommandList->Device);
-	const VkSwapchainKHR SwapChainHandle[1] = { GCRendererSwapChain_GetHandle(SwapChain) };
-
-	vkWaitForFences(DeviceHandle, 1, &CommandList->InFlightFenceHandles[CommandList->CurrentFrame], VK_TRUE, UINT64_MAX);
-
-	uint32_t SwapChainImageIndex = 0;
-	VkResult SwapChainCheckResult = vkAcquireNextImageKHR(DeviceHandle, SwapChainHandle[0], UINT64_MAX, CommandList->ImageAvailableSemaphoreHandles[CommandList->CurrentFrame], VK_NULL_HANDLE, &SwapChainImageIndex);
-
-	if (SwapChainCheckResult == VK_ERROR_OUT_OF_DATE_KHR || SwapChainCheckResult == VK_SUBOPTIMAL_KHR)
-	{
-		CommandList->ResizeCallbackFunction();
-
-		return;
-	}
-
-	vkResetFences(DeviceHandle, 1, &CommandList->InFlightFenceHandles[CommandList->CurrentFrame]);
-	vkResetCommandBuffer(CommandList->CommandBufferHandles[CommandList->CurrentFrame], 0);
-
-	GCRendererCommandListRecordData RecordData = { 0 };
-	RecordData.SwapChainImageIndex = SwapChainImageIndex;
-
-	if (RecordFunction)
-	{
-		RecordFunction(&RecordData);
-	}
+	const VkSwapchainKHR SwapChainHandle[1] = { GCRendererSwapChain_GetHandle(CommandList->SwapChain) };
 
 	VkSubmitInfo SubmitInformation = { 0 };
 	SubmitInformation.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -275,11 +265,11 @@ void GCRendererCommandList_SubmitAndPresent(GCRendererCommandList* const Command
 	PresentInformation.pWaitSemaphores = SignalSemaphoreHandle;
 	PresentInformation.swapchainCount = 1;
 	PresentInformation.pSwapchains = SwapChainHandle;
-	PresentInformation.pImageIndices = &SwapChainImageIndex;
+	PresentInformation.pImageIndices = &CommandList->CurrentImageIndex;
 
-	SwapChainCheckResult = vkQueuePresentKHR(GCRendererDevice_GetPresentQueueHandle(CommandList->Device), &PresentInformation);
+	VkResult PresentCheckResult = vkQueuePresentKHR(GCRendererDevice_GetPresentQueueHandle(CommandList->Device), &PresentInformation);
 
-	if (SwapChainCheckResult == VK_ERROR_OUT_OF_DATE_KHR || SwapChainCheckResult == VK_SUBOPTIMAL_KHR || CommandList->IsResized)
+	if (PresentCheckResult == VK_ERROR_OUT_OF_DATE_KHR || PresentCheckResult == VK_SUBOPTIMAL_KHR || CommandList->IsResized)
 	{
 		CommandList->IsResized = false;
 		CommandList->ResizeCallbackFunction();
