@@ -87,16 +87,24 @@ void GCApplication_Run(void)
 	{
 		GCWorldCamera_Update(Application->WorldCamera);
 
-		GCRenderer_Begin();
+		GCRenderer_BeginScene();
+		{
+			GCRenderer_RenderEntity(BasicTerrainEntity);
+			GCRenderer_RenderEntity(SmallOfficeEntity);
+		}
+		GCRenderer_EndScene();
+		
+		GCRenderer_BeginImGui();
+		{
+			GCImGuiManager_BeginFrame();
+			GCImGuiManager_EndFrame();
 
-		GCRenderer_RenderEntity(BasicTerrainEntity);
-		GCRenderer_RenderEntity(SmallOfficeEntity);
-
-		GCImGuiManager_BeginFrame();
-		GCImGuiManager_EndFrame();
-
-		GCRenderer_End();
+			GCImGuiManager_Render();
+		}
+		GCRenderer_EndImGui();
 		GCRenderer_Present();
+
+		GCImGuiManager_PostRender();
 
 		GCWindow_ProcessEvents(Application->Window);
 	}
@@ -149,7 +157,7 @@ bool GCApplication_OnWindowResized(GCEvent* const Event, void* CustomData)
 		return true;
 	}
 
-	GCRenderer_ResizeSwapChain();
+	GCRenderer_Resize();
 
 	return true;
 }

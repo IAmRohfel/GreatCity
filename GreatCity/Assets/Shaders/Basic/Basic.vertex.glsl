@@ -29,7 +29,7 @@ layout(binding = 0) uniform UniformBuffer
 
 layout(location = 0) out vec4 FragmentColor;
 layout(location = 1) out vec2 FragmentTextureCoordinate;
-layout(location = 2) out float FragmentEntityID;
+layout(location = 2) out int FragmentEntityID;
 
 void main()
 {

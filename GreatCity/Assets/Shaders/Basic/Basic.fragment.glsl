@@ -19,7 +19,7 @@
 
 layout(location = 0) in vec4 FragmentColor;
 layout(location = 1) in vec2 FragmentTextureCoordinate;
-layout(location = 2) in float FragmentEntityID;
+layout(location = 2) in flat int FragmentEntityID;
 
 layout(binding = 1) uniform sampler2D TextureSampler;
 

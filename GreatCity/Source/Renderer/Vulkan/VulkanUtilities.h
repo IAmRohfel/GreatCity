@@ -54,6 +54,7 @@ extern "C"
 	void GCVulkanUtilities_TransitionImageLayout(const VkCommandBuffer CommandBufferHandle, const VkImage ImageHandle, const uint32_t MipLevels, const VkImageLayout OldLayout, const VkImageLayout NewLayout);
 	void GCVulkanUtilities_GenerateMipmap(const GCRendererDevice* const Device, const VkCommandBuffer CommandBufferHandle, const VkImage ImageHandle, const uint32_t Width, const uint32_t Height, const uint32_t MipLevels, const VkFormat Format);
 	void GCVulkanUtilities_CopyImage(const VkCommandBuffer CommandBufferHandle, const VkImage SourceImageHandle, const VkImageLayout SourceImageLayout, const VkImage DestinationImageHandle, const VkImageLayout DestinationImageLayout, const uint32_t Width, const uint32_t Height);
+	void GCVulkanUtilities_CopyImageToBuffer(const VkCommandBuffer CommandBufferHandle, const VkImage SourceImageHandle, const VkImageLayout SourceImageLayout, const VkBuffer DestinationBufferHandle, const uint32_t Width, const uint32_t Height, const int32_t X, const int32_t Y);
 	void GCVulkanUtilities_CopyBuffer(const VkCommandBuffer CommandBufferHandle, const VkBuffer SourceBufferHandle, const VkBuffer DestinationBufferHandle, const VkDeviceSize Size);
 	void GCVulkanUtilities_CopyBufferToImage(const VkCommandBuffer CommandBufferHandle, const VkBuffer SourceBufferHandle, const VkImage DestinationImageHandle, const uint32_t Width, const uint32_t Height);
 

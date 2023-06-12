@@ -160,41 +160,87 @@ void GCVulkanUtilities_TransitionImageLayout(const VkCommandBuffer CommandBuffer
 
 	VkPipelineStageFlags SourceStage = VK_PIPELINE_STAGE_NONE, DestinationStage = VK_PIPELINE_STAGE_NONE;
 
-	if (OldLayout == VK_IMAGE_LAYOUT_UNDEFINED && NewLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+	switch (OldLayout)
 	{
-		ImageMemoryBarrier.srcAccessMask = 0;
-		ImageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		case VK_IMAGE_LAYOUT_UNDEFINED:
+		{
+			ImageMemoryBarrier.srcAccessMask = 0;
+			SourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
-		SourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-		DestinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-	}
-	else if (OldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && NewLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-	{
-		ImageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		ImageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			break;
+		}
+		case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+		{
+			ImageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			SourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 
-		SourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		DestinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-	}
-	else if (OldLayout == VK_IMAGE_LAYOUT_UNDEFINED && NewLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
-	{
-		ImageMemoryBarrier.srcAccessMask = 0;
-		ImageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			break;
+		}
+		case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+		{
+			ImageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			SourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 
-		SourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-		DestinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-	}
-	else if (OldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL && NewLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-	{
-		ImageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-		ImageMemoryBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			break;
+		}
+		case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+		{
+			ImageMemoryBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			SourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
-		SourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		DestinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			break;
+		}
+		default:
+		{
+			GC_ASSERT_WITH_MESSAGE(false, "Unsupported Vulkan image layout transition");
+
+			break;
+		}
 	}
-	else
+
+	switch (NewLayout)
 	{
-		GC_ASSERT_WITH_MESSAGE(false, "Unsupported Vulkan image layout transition");
+		case VK_IMAGE_LAYOUT_UNDEFINED:
+		{
+			ImageMemoryBarrier.dstAccessMask = 0;
+			DestinationStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+
+			break;
+		}
+		case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+		{
+			ImageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			DestinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+			break;
+		}
+		case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+		{
+			ImageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			DestinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+			break;
+		}
+		case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+		{
+			ImageMemoryBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			DestinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+			break;
+		}
+		case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+		{
+			ImageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			DestinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+			break;
+		}
+		default:
+		{
+			GC_ASSERT_WITH_MESSAGE(false, "Unsupported Vulkan image layout transition");
+
+			break;
+		}
 	}
 
 	vkCmdPipelineBarrier(CommandBufferHandle, SourceStage, DestinationStage, 0, 0, NULL, 0, NULL, 1, &ImageMemoryBarrier);
@@ -293,6 +339,22 @@ void GCVulkanUtilities_CopyImage(const VkCommandBuffer CommandBufferHandle, cons
 	ImageCopyRegion.extent.depth = 1;
 
 	vkCmdCopyImage(CommandBufferHandle, SourceImageHandle, SourceImageLayout, DestinationImageHandle, DestinationImageLayout, 1, &ImageCopyRegion);
+}
+
+void GCVulkanUtilities_CopyImageToBuffer(const VkCommandBuffer CommandBufferHandle, const VkImage SourceImageHandle, const VkImageLayout SourceImageLayout, const VkBuffer DestinationBufferHandle, const uint32_t Width, const uint32_t Height, const int32_t X, const int32_t Y)
+{
+	VkBufferImageCopy BufferImageCopyRegion = { 0 };
+	BufferImageCopyRegion.bufferOffset = 0;
+	BufferImageCopyRegion.bufferRowLength = 0;
+	BufferImageCopyRegion.bufferImageHeight = 0;
+	BufferImageCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	BufferImageCopyRegion.imageSubresource.mipLevel = 0;
+	BufferImageCopyRegion.imageSubresource.baseArrayLayer = 0;
+	BufferImageCopyRegion.imageSubresource.layerCount = 1;
+	BufferImageCopyRegion.imageOffset = (VkOffset3D){ X, Y, 0 };
+	BufferImageCopyRegion.imageExtent = (VkExtent3D){ Width, Height, 1 };
+
+	vkCmdCopyImageToBuffer(CommandBufferHandle, SourceImageHandle, SourceImageLayout, DestinationBufferHandle, 1, &BufferImageCopyRegion);
 }
 
 void GCVulkanUtilities_CopyBuffer(const VkCommandBuffer CommandBufferHandle, const VkBuffer SourceBufferHandle, const VkBuffer DestinationBufferHandle, const VkDeviceSize Size)

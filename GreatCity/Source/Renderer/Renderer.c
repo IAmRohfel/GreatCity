@@ -73,7 +73,7 @@ typedef struct GCRendererUniformBufferData
 	GCMatrix4x4 ViewProjectionMatrix;
 } GCRendererUniformBufferData;
 
-static void GCRenderer_ResizeSwapChainRenderer(void);
+static void GCRenderer_ResizeSwapChain(void);
 
 static GCRenderer* Renderer = NULL;
 
@@ -162,7 +162,7 @@ void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera)
 	FramebufferAttachments[0].SampleCount = GCRendererAttachmentSampleCount_2;
 
 	FramebufferAttachments[1].Type = GCRendererAttachmentType_Color;
-	FramebufferAttachments[1].Flags = GCRendererFramebufferAttachmentFlags_Mapped;
+	FramebufferAttachments[1].Flags = GCRendererFramebufferAttachmentFlags_None;
 	FramebufferAttachments[1].Format = GCRendererAttachmentFormat_Integer;
 	FramebufferAttachments[1].SampleCount = GCRendererAttachmentSampleCount_2;
 
@@ -188,14 +188,24 @@ void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera)
 	Renderer->DrawData = (GCRendererDrawData*)GCMemory_Allocate(Renderer->MaximumDrawDataCount * sizeof(GCRendererDrawData));
 	Renderer->DrawDataCount = 0;
 
-	GCRendererCommandList_SetResizeCallback(Renderer->CommandList, GCRenderer_ResizeSwapChainRenderer);
+	GCRendererCommandList_SetSwapChainResizeCallback(Renderer->CommandList, GCRenderer_ResizeSwapChain);
 }
 
-void GCRenderer_Begin(void)
+void GCRenderer_BeginScene(void)
 {
 	Renderer->DrawDataCount = 0;
 
 	GCRendererCommandList_BeginRecord(Renderer->CommandList);
+
+	const float ClearColorTexture[4] = { 0.729f, 0.901f, 0.992f, 1.0f };
+	GCRendererCommandList_BeginAttachmentRenderPass(Renderer->CommandList, Renderer->GraphicsPipeline, Renderer->Framebuffer, ClearColorTexture);
+
+	GCRendererUniformBufferData UniformBufferData = { 0 };
+	UniformBufferData.ViewProjectionMatrix = GCWorldCamera_GetViewProjectionMatrix(Renderer->WorldCamera);
+
+	GCRendererCommandList_UpdateUniformBuffer(Renderer->CommandList, Renderer->UniformBuffer, &UniformBufferData, sizeof(GCRendererUniformBufferData));
+	GCRendererCommandList_BindGraphicsPipeline(Renderer->CommandList, Renderer->GraphicsPipeline);
+	GCRendererCommandList_SetViewport(Renderer->CommandList, Renderer->Framebuffer);
 }
 
 void GCRenderer_RenderEntity(const GCEntity Entity)
@@ -217,18 +227,8 @@ void GCRenderer_RenderEntity(const GCEntity Entity)
 	Renderer->DrawDataCount++;
 }
 
-void GCRenderer_End(void)
+void GCRenderer_EndScene(void)
 {
-	const float ClearColorTexture[4] = { 0.729f, 0.901f, 0.992f, 1.0f };
-	GCRendererCommandList_BeginAttachmentRenderPass(Renderer->CommandList, Renderer->GraphicsPipeline, Renderer->Framebuffer, ClearColorTexture);
-
-	GCRendererUniformBufferData UniformBufferData = { 0 };
-	UniformBufferData.ViewProjectionMatrix = GCWorldCamera_GetViewProjectionMatrix(Renderer->WorldCamera);
-
-	GCRendererCommandList_UpdateUniformBuffer(Renderer->CommandList, Renderer->UniformBuffer, &UniformBufferData, sizeof(GCRendererUniformBufferData));
-	GCRendererCommandList_BindGraphicsPipeline(Renderer->CommandList, Renderer->GraphicsPipeline);
-	GCRendererCommandList_SetViewport(Renderer->CommandList, Renderer->Framebuffer);
-
 	for (uint32_t Counter = 0; Counter < Renderer->DrawDataCount; Counter++)
 	{
 		GCRendererCommandList_BindVertexBuffer(Renderer->CommandList, Renderer->DrawData[Counter].VertexBuffer);
@@ -236,30 +236,31 @@ void GCRenderer_End(void)
 		GCRendererCommandList_DrawIndexed(Renderer->CommandList, Renderer->DrawData[Counter].IndexCount, 0);
 	}
 
-	GCRendererCommandList_EndAttachmentRenderPass(Renderer->CommandList);
+	GCRendererCommandList_EndAttachmentRenderPass(Renderer->CommandList, Renderer->Framebuffer);
+}
 
+void GCRenderer_BeginImGui(void)
+{
 	const float ClearColorSwapChain[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	GCRendererCommandList_BeginSwapChainRenderPass(Renderer->CommandList, Renderer->GraphicsPipeline, Renderer->Framebuffer, ClearColorSwapChain);
-	GCImGuiManager_Render();
+}
+
+void GCRenderer_EndImGui(void)
+{
 	GCRendererCommandList_EndSwapChainRenderPass(Renderer->CommandList);
-
-	GCRendererCommandList_EndRecord(Renderer->CommandList);
-
-	int32_t Pixel = GCRendererFramebuffer_GetPixel(Renderer->Framebuffer, Renderer->CommandList, 1, 0);
-
-	(void)Pixel;
 }
 
 void GCRenderer_Present(void)
 {
+	GCRendererCommandList_EndRecord(Renderer->CommandList);
 	GCRendererCommandList_SubmitAndPresent(Renderer->CommandList);
 }
 
-void GCRenderer_ResizeSwapChain(void)
+void GCRenderer_Resize(void)
 {
 	if (Renderer)
 	{
-		GCRendererCommandList_SetResize(Renderer->CommandList, true);
+		GCRendererCommandList_ShouldSwapChainResize(Renderer->CommandList, true);
 	}
 }
 
@@ -302,7 +303,7 @@ GCRendererFramebuffer* const GCRenderer_GetFramebuffer(void)
 	return Renderer->Framebuffer;
 }
 
-void GCRenderer_ResizeSwapChainRenderer(void)
+void GCRenderer_ResizeSwapChain(void)
 {
 	uint32_t Width = 0, Height = 0;
 	GCWindow_GetWindowSize(GCApplication_GetWindow(), &Width, &Height);

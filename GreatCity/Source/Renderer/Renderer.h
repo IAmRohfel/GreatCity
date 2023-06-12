@@ -54,11 +54,13 @@ extern "C"
 	typedef struct GCRendererFramebuffer GCRendererFramebuffer;
 
 	void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera);
-	void GCRenderer_Begin(void);
+	void GCRenderer_BeginScene(void);
 	void GCRenderer_RenderEntity(const GCEntity Entity);
-	void GCRenderer_End(void);
+	void GCRenderer_EndScene(void);
+	void GCRenderer_BeginImGui(void);
+	void GCRenderer_EndImGui(void);
 	void GCRenderer_Present(void);
-	void GCRenderer_ResizeSwapChain(void);
+	void GCRenderer_Resize(void);
 	void GCRenderer_Terminate(void);
 
 	GCRendererDevice* const GCRenderer_GetDevice(void);

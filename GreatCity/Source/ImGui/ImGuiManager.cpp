@@ -20,8 +20,13 @@
 #include "ApplicationCore/Event/Event.h"
 #include "ApplicationCore/Application.h"
 #include "Renderer/Renderer.h"
+#include "Renderer/RendererCommandList.h"
 #include "Renderer/RendererFramebuffer.h"
 #include "Scene/Camera/WorldCamera.h"
+#include "Math/Vector2.h"
+#include "Core/Log.h"
+
+#include <cstdint>
 
 #include <imgui.h>
 
@@ -35,6 +40,10 @@ extern "C" void GCImGuiManager_RenderDrawData(void);
 extern "C" void GCImGuiManager_TerminateRenderer(void);
 
 static void GCImGuiManager_SetDarkTheme(void);
+static void GCImGuiManager_ResizeAttachment(void);
+
+static GCVector2 ViewportSize{};
+static GCVector2 ViewportBounds[2]{};
 
 extern "C" void GCImGuiManager_Initialize(void)
 {
@@ -51,6 +60,8 @@ extern "C" void GCImGuiManager_Initialize(void)
 
 	GCImGuiManager_InitializePlatform();
 	GCImGuiManager_InitializeRenderer();
+
+	GCRendererCommandList_SetAttachmentResizeCallback(GCRenderer_GetCommandList(), GCImGuiManager_ResizeAttachment);
 }
 
 extern "C" void GCImGuiManager_BeginFrame(void)
@@ -116,26 +127,32 @@ extern "C" void GCImGuiManager_EndFrame(void)
 {
 	const bool IsAltPressed = GCInput_IsKeyPressed(GCKeyCode_LeftAlt);
 
-	GCRendererFramebuffer* const RendererFramebuffer = GCRenderer_GetFramebuffer();
-	static ImVec2 ViewportSize = ImVec2{ 0.0f, 0.0f };
-
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0.0f, 0.0f });
 	ImGui::Begin("Viewport", nullptr, IsAltPressed ? ImGuiWindowFlags_NoMove : ImGuiWindowFlags_None);
+	
+	const ImVec2 ViewportOffset = ImGui::GetCursorPos();
+	
+	ImGui::Image(static_cast<ImTextureID>(GCImGuiManager_GetTexturePlatform()), ImVec2{ ViewportSize.X, ViewportSize.Y });
 
 	const ImVec2 CurrentViewportSize = ImGui::GetContentRegionAvail();
 
-	if (ViewportSize.x != CurrentViewportSize.x || ViewportSize.y != CurrentViewportSize.y)
+	if (ViewportSize.X != CurrentViewportSize.x || ViewportSize.Y != CurrentViewportSize.y)
 	{
-		ViewportSize = CurrentViewportSize;
-
-		if (ViewportSize.x > 0.0f && ViewportSize.y > 0.0f)
+		if (ViewportSize.X > 0.0f && ViewportSize.Y > 0.0f)
 		{
-			GCRendererFramebuffer_RecreateAttachmentFramebuffer(RendererFramebuffer, static_cast<uint32_t>(ViewportSize.x), static_cast<uint32_t>(ViewportSize.y));
-			GCWorldCamera_SetSize(GCApplication_GetWorldCamera(), static_cast<uint32_t>(ViewportSize.x), static_cast<uint32_t>(ViewportSize.y));
+			GCRendererCommandList_ShouldAttachmentResize(GCRenderer_GetCommandList(), true);
 		}
 	}
 
-	ImGui::Image(static_cast<ImTextureID>(GCImGuiManager_GetTexturePlatform()), ViewportSize);
+	const ImVec2 WindowSize{ ImGui::GetWindowSize() };
+	
+	ImVec2 MinimumBound{ ImGui::GetWindowPos() };
+	MinimumBound.x += ViewportOffset.x;
+	MinimumBound.y += ViewportOffset.y;
+
+	ImVec2 MaximumBound{ MinimumBound.x + WindowSize.x, MinimumBound.y + WindowSize.y };
+	ViewportBounds[0] = { MinimumBound.x, MinimumBound.y };
+	ViewportBounds[1] = { MaximumBound.x, MaximumBound.y };
 
 	ImGui::End();
 	ImGui::PopStyleVar();
@@ -145,6 +162,25 @@ extern "C" void GCImGuiManager_Render(void)
 {
 	ImGui::Render();
 	GCImGuiManager_RenderDrawData();
+}
+
+extern "C" void GCImGuiManager_PostRender(void)
+{
+	ImVec2 MousePosition{ ImGui::GetMousePos() };
+	MousePosition.x -= ViewportBounds[0].X;
+	MousePosition.y -= ViewportBounds[0].Y;
+
+	ViewportSize = GCVector2_Subtract(ViewportBounds[1], ViewportBounds[0]);
+
+	const std::int32_t MouseX = static_cast<std::int32_t>(MousePosition.x);
+	const std::int32_t MouseY = static_cast<std::int32_t>(MousePosition.y);
+
+	if (MouseX >= 0 && MouseY >= 0 && MouseX < static_cast<std::int32_t>(ViewportSize.X) && MouseY < static_cast<std::int32_t>(ViewportSize.Y))
+	{
+		const int32_t Pixel = GCRendererFramebuffer_GetPixel(GCRenderer_GetFramebuffer(), GCRenderer_GetCommandList(), 1, MouseX, MouseY);
+
+		(void)Pixel;
+	}
 }
 
 extern "C" void GCImGuiManager_Terminate(void)
@@ -182,4 +218,10 @@ void GCImGuiManager_SetDarkTheme(void)
 	Style.Colors[ImGuiCol_TitleBg] = ImVec4{ 0.121f, 0.160f, 0.215f, 1.0f };
 	Style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4{ 0.121f, 0.160f, 0.215f, 1.0f };
 	Style.Colors[ImGuiCol_TitleBgActive] = ImVec4{ 0.121f, 0.160f, 0.215f, 1.0f };
+}
+
+void GCImGuiManager_ResizeAttachment(void)
+{
+	GCRendererFramebuffer_RecreateAttachmentFramebuffer(GCRenderer_GetFramebuffer(), static_cast<uint32_t>(ViewportSize.X), static_cast<uint32_t>(ViewportSize.Y));
+	GCWorldCamera_SetSize(GCApplication_GetWorldCamera(), static_cast<uint32_t>(ViewportSize.X), static_cast<uint32_t>(ViewportSize.Y));
 }

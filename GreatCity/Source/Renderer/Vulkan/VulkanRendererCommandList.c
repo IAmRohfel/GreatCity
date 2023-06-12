@@ -47,8 +47,10 @@ typedef struct GCRendererCommandList
 	VkSemaphore* RenderFinishedSemaphoreHandles;
 	VkFence* InFlightFenceHandles;
 
-	GCRendererCommandListResizeCallbackFunction ResizeCallbackFunction;
-	bool IsResized;
+	GCRendererCommandListResizeCallbackFunction SwapChainResizeCallbackFunction;
+	GCRendererCommandListResizeCallbackFunction AttachmentResizeCallbackFunction;
+	bool ShouldSwapChainResize;
+	bool ShouldAttachmentResize;
 	uint32_t MaximumFramesInFlight;
 	uint32_t CurrentFrame, CurrentImageIndex;
 } GCRendererCommandList;
@@ -70,11 +72,13 @@ GCRendererCommandList* GCRendererCommandList_Create(const GCRendererCommandListD
 	CommandList->ImageAvailableSemaphoreHandles = NULL;
 	CommandList->RenderFinishedSemaphoreHandles = NULL;
 	CommandList->InFlightFenceHandles = NULL;
-	CommandList->ResizeCallbackFunction = NULL;
+	CommandList->SwapChainResizeCallbackFunction = NULL;
+	CommandList->AttachmentResizeCallbackFunction = NULL;
+	CommandList->ShouldSwapChainResize = false;
+	CommandList->ShouldAttachmentResize = false;
 	CommandList->MaximumFramesInFlight = 2;
 	CommandList->CurrentFrame = 0;
 	CommandList->CurrentImageIndex = 0;
-	CommandList->IsResized = false;
 
 	GCRendererCommandList_CreateCommandPool(CommandList);
 	GCRendererCommandList_CreateCommandBuffers(CommandList);
@@ -84,18 +88,34 @@ GCRendererCommandList* GCRendererCommandList_Create(const GCRendererCommandListD
 	return CommandList;
 }
 
-void GCRendererCommandList_SetResize(GCRendererCommandList* const CommandList, const bool IsResized)
+void GCRendererCommandList_ShouldSwapChainResize(GCRendererCommandList* const CommandList, const bool ShouldResize)
 {
-	CommandList->IsResized = IsResized;
+	CommandList->ShouldSwapChainResize = ShouldResize;
 }
 
-void GCRendererCommandList_SetResizeCallback(GCRendererCommandList* const CommandList, const GCRendererCommandListResizeCallbackFunction ResizeCallbackFunction)
+void GCRendererCommandList_ShouldAttachmentResize(GCRendererCommandList* const CommandList, const bool ShouldResize)
 {
-	CommandList->ResizeCallbackFunction = ResizeCallbackFunction;
+	CommandList->ShouldAttachmentResize = ShouldResize;
+}
+
+void GCRendererCommandList_SetSwapChainResizeCallback(GCRendererCommandList* const CommandList, const GCRendererCommandListResizeCallbackFunction ResizeCallbackFunction)
+{
+	CommandList->SwapChainResizeCallbackFunction = ResizeCallbackFunction;
+}
+
+void GCRendererCommandList_SetAttachmentResizeCallback(GCRendererCommandList* const CommandList, const GCRendererCommandListResizeCallbackFunction ResizeCallbackFunction)
+{
+	CommandList->AttachmentResizeCallbackFunction = ResizeCallbackFunction;
 }
 
 void GCRendererCommandList_BeginRecord(GCRendererCommandList* const CommandList)
 {
+	if (CommandList->ShouldAttachmentResize)
+	{
+		CommandList->AttachmentResizeCallbackFunction();
+		CommandList->ShouldAttachmentResize = false;
+	}
+
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(CommandList->Device);
 	const VkSwapchainKHR SwapChainHandle[1] = { GCRendererSwapChain_GetHandle(CommandList->SwapChain) };
 
@@ -104,7 +124,7 @@ void GCRendererCommandList_BeginRecord(GCRendererCommandList* const CommandList)
 
 	if (SwapChainCheckResult == VK_ERROR_OUT_OF_DATE_KHR || SwapChainCheckResult == VK_SUBOPTIMAL_KHR)
 	{
-		CommandList->ResizeCallbackFunction();
+		CommandList->SwapChainResizeCallbackFunction();
 
 		return;
 	}
@@ -226,9 +246,11 @@ void GCRendererCommandList_EndSwapChainRenderPass(const GCRendererCommandList* c
 	vkCmdEndRenderPass(CommandList->CommandBufferHandles[CommandList->CurrentFrame]);
 }
 
-void GCRendererCommandList_EndAttachmentRenderPass(const GCRendererCommandList* const CommandList)
+void GCRendererCommandList_EndAttachmentRenderPass(const GCRendererCommandList* const CommandList, const GCRendererFramebuffer* const Framebuffer)
 {
 	vkCmdEndRenderPass(CommandList->CommandBufferHandles[CommandList->CurrentFrame]);
+
+	GCVulkanUtilities_TransitionImageLayout(CommandList->CommandBufferHandles[CommandList->CurrentFrame], GCRendererFramebuffer_GetColorAttachmentImageHandle(Framebuffer, 1), 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 }
 
 void GCRendererCommandList_EndRecord(const GCRendererCommandList* const CommandList)
@@ -269,10 +291,10 @@ void GCRendererCommandList_SubmitAndPresent(GCRendererCommandList* const Command
 
 	VkResult PresentCheckResult = vkQueuePresentKHR(GCRendererDevice_GetPresentQueueHandle(CommandList->Device), &PresentInformation);
 
-	if (PresentCheckResult == VK_ERROR_OUT_OF_DATE_KHR || PresentCheckResult == VK_SUBOPTIMAL_KHR || CommandList->IsResized)
+	if (PresentCheckResult == VK_ERROR_OUT_OF_DATE_KHR || PresentCheckResult == VK_SUBOPTIMAL_KHR || CommandList->ShouldSwapChainResize)
 	{
-		CommandList->IsResized = false;
-		CommandList->ResizeCallbackFunction();
+		CommandList->SwapChainResizeCallbackFunction();
+		CommandList->ShouldSwapChainResize = false;
 
 		return;
 	}

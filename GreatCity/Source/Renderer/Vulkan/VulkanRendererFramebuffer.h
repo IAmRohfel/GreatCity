@@ -27,6 +27,7 @@ extern "C"
 
 	typedef struct GCRendererFramebuffer GCRendererFramebuffer;
 
+	VkImage GCRendererFramebuffer_GetColorAttachmentImageHandle(const GCRendererFramebuffer* const Framebuffer, const uint32_t AttachmentIndex);
 	VkImageView GCRendererFramebuffer_GetColorAttachmentImageViewHandle(const GCRendererFramebuffer* const Framebuffer, const uint32_t AttachmentIndex);
 	VkSampler GCRendererFramebuffer_GetColorAttachmentSampledSamplerHandle(const GCRendererFramebuffer* const Framebuffer, const uint32_t AttachmentIndex);
 	VkFramebuffer* GCRendererFramebuffer_GetSwapChainFramebufferHandles(const GCRendererFramebuffer* const Framebuffer);

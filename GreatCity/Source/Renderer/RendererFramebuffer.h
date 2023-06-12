@@ -38,8 +38,7 @@ extern "C"
     typedef enum GCRendererFramebufferAttachmentFlags
     {
         GCRendererFramebufferAttachmentFlags_None,
-        GCRendererFramebufferAttachmentFlags_Sampled,
-        GCRendererFramebufferAttachmentFlags_Mapped
+        GCRendererFramebufferAttachmentFlags_Sampled
     } GCRendererFramebufferAttachmentFlags;
 
     typedef struct GCRendererFramebufferAttachment
@@ -63,7 +62,7 @@ extern "C"
 	GCRendererFramebuffer* GCRendererFramebuffer_Create(const GCRendererFramebufferDescription* const Description);
     void GCRendererFramebuffer_RecreateSwapChainFramebuffer(GCRendererFramebuffer* const Framebuffer);
     void GCRendererFramebuffer_RecreateAttachmentFramebuffer(GCRendererFramebuffer* const Framebuffer, const uint32_t Width, const uint32_t Height);
-    int32_t GCRendererFramebuffer_GetPixel(const GCRendererFramebuffer* const Framebuffer, const GCRendererCommandList* const CommandList, const uint32_t ColorAttachmentIndex, const uint32_t ColorAttachmentMappedIndex);
+    int32_t GCRendererFramebuffer_GetPixel(const GCRendererFramebuffer* const Framebuffer, const GCRendererCommandList* const CommandList, const uint32_t AttachmentIndex, const int32_t X, const int32_t Y);
 	void GCRendererFramebuffer_Destroy(GCRendererFramebuffer* Framebuffer);
 
 #ifdef __cplusplus
