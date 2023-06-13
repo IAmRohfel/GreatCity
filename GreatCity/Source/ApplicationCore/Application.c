@@ -94,23 +94,22 @@ void GCApplication_Run(void)
 		GCWorldCamera_Update(Application->WorldCamera);
 
 		GCRenderer_BeginScene();
+		GCImGuiManager_BeginFrame();
 		{
 			GCRenderer_RenderEntity(BasicTerrainEntity);
 			GCRenderer_RenderEntity(SmallOfficeEntity);
 		}
+		GCImGuiManager_EndFrame();
 		GCRenderer_EndScene();
 		
 		GCRenderer_BeginImGui();
 		{
-			GCImGuiManager_BeginFrame();
-			GCImGuiManager_EndFrame();
-
 			GCImGuiManager_Render();
 		}
 		GCRenderer_EndImGui();
 		GCRenderer_Present();
 
-		GCImGuiManager_PostRender();
+		GCImGuiManager_Update();
 
 		GCWindow_ProcessEvents(Application->Window);
 	}

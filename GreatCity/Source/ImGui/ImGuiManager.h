@@ -27,7 +27,7 @@ extern "C"
 	void GCImGuiManager_BeginFrame(void);
 	void GCImGuiManager_EndFrame(void);
 	void GCImGuiManager_Render(void);
-	void GCImGuiManager_PostRender(void);
+	void GCImGuiManager_Update(void);
 	void GCImGuiManager_Terminate(void);
 
 #ifdef __cplusplus

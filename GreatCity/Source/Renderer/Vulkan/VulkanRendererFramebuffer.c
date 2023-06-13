@@ -180,6 +180,12 @@ void GCRendererFramebuffer_RecreateAttachmentFramebuffer(GCRendererFramebuffer* 
 	GCRendererFramebuffer_CreateAttachmentFramebuffer(Framebuffer);
 }
 
+void GCRendererFramebuffer_GetSize(const GCRendererFramebuffer* const Framebuffer, uint32_t* const Width, uint32_t* const Height)
+{
+	*Width = Framebuffer->Width;
+	*Height = Framebuffer->Height;
+}
+
 int32_t GCRendererFramebuffer_GetPixel(const GCRendererFramebuffer* const Framebuffer, const GCRendererCommandList* const CommandList, const uint32_t AttachmentIndex, const int32_t X, const int32_t Y)
 {
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Framebuffer->Device);

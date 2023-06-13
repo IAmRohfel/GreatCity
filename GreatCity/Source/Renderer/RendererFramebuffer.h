@@ -62,6 +62,7 @@ extern "C"
 	GCRendererFramebuffer* GCRendererFramebuffer_Create(const GCRendererFramebufferDescription* const Description);
     void GCRendererFramebuffer_RecreateSwapChainFramebuffer(GCRendererFramebuffer* const Framebuffer);
     void GCRendererFramebuffer_RecreateAttachmentFramebuffer(GCRendererFramebuffer* const Framebuffer, const uint32_t Width, const uint32_t Height);
+    void GCRendererFramebuffer_GetSize(const GCRendererFramebuffer* const Framebuffer, uint32_t* const Width, uint32_t* const Height);
     int32_t GCRendererFramebuffer_GetPixel(const GCRendererFramebuffer* const Framebuffer, const GCRendererCommandList* const CommandList, const uint32_t AttachmentIndex, const int32_t X, const int32_t Y);
 	void GCRendererFramebuffer_Destroy(GCRendererFramebuffer* Framebuffer);
 
