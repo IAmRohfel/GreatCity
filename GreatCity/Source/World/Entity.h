@@ -15,10 +15,10 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GC_SCENE_ENTITY_H
-#define GC_SCENE_ENTITY_H
+#ifndef GC_WORLD_ENTITY_H
+#define GC_WORLD_ENTITY_H
 
-#include "Scene/Components.h"
+#include "World/Components.h"
 
 #include <stdint.h>
 
@@ -29,9 +29,11 @@ extern "C"
 
 	typedef uint64_t GCEntity;
 
+	typedef struct GCRendererModel GCRendererModel;
+
 	GCTransformComponent* GCEntity_AddTransformComponent(const GCEntity Entity);
 	GCTransformComponent* GCEntity_GetTransformComponent(const GCEntity Entity);
-	GCMeshComponent* GCEntity_AddMeshComponent(const GCEntity Entity);
+	GCMeshComponent* GCEntity_AddMeshComponent(const GCEntity Entity, const GCRendererModel* const Model);
 	GCMeshComponent* GCEntity_GetMeshComponent(const GCEntity Entity);
 	void GCEntity_RemoveMeshComponent(const GCEntity Entity);
 

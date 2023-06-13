@@ -23,8 +23,7 @@
 #include "Renderer/Renderer.h"
 #include "Renderer/RendererModel.h"
 #include "Renderer/RendererMesh.h"
-#include "Scene/Scene.h"
-#include "Scene/Camera/WorldCamera.h"
+#include "World/World.h"
 #include "ImGui/ImGuiManager.h"
 #include "Math/Matrix4x4.h"
 #include "Math/Utilities.h"
@@ -34,15 +33,13 @@
 typedef struct GCApplication
 {
 	GCWindow* Window;
-	GCScene* Scene;
-	GCWorldCamera* WorldCamera;
+	GCWorld* World;
 
 	bool IsRunning;
 	bool IsMinimized;
 } GCApplication;
 
 static GCApplication* Application = NULL;
-static GCEntity BasicTerrainEntity = 0, SmallOfficeEntity = 0;
 
 static void GCApplication_OnEvent(GCWindow* const Window, GCEvent* const Event);
 static bool GCApplication_OnWindowResized(GCEvent* const Event, void* CustomData);
@@ -52,8 +49,7 @@ void GCApplication_Create(void)
 {
 	Application = (GCApplication*)GCMemory_Allocate(sizeof(GCApplication));
 	Application->Window = NULL;
-	Application->Scene = NULL;
-	Application->WorldCamera = NULL;
+	Application->World = NULL;
 	Application->IsRunning = true;
 	Application->IsMinimized = false;
 
@@ -64,53 +60,27 @@ void GCApplication_Create(void)
 	WindowProperties.EventCallback = GCApplication_OnEvent;
 
 	Application->Window = GCWindow_Create(&WindowProperties);
-	Application->Scene = GCScene_Create();
-	Application->WorldCamera = GCWorldCamera_Create(30.0f, 1280.0f / 720.0f, 0.1f, 1000.0f);
 
-	GCRenderer_Initialize(Application->WorldCamera);
+	GCRenderer_Initialize();
 	GCImGuiManager_Initialize();
 
-	{
-		BasicTerrainEntity = GCScene_CreateEntity(Application->Scene, "Basic Terrain");
-		GCMeshComponent* MeshComponent = GCEntity_AddMeshComponent(BasicTerrainEntity);
-		MeshComponent->Mesh = GCRendererMesh_Create(GCRendererModel_CreateFromFile("Assets/Models/Terrains/BasicTerrain.obj", "Assets/Models/Terrains"));
-	}
-
-	{
-		SmallOfficeEntity = GCScene_CreateEntity(Application->Scene, "Small Office");
-		GCTransformComponent* TransformComponent = GCEntity_GetTransformComponent(SmallOfficeEntity);
-		TransformComponent->Position = GCVector3_Create(0.0f, 2.0f, 0.0f);
-		TransformComponent->Scale = GCVector3_Create(2.0f, 2.0f, 2.0f);
-
-		GCMeshComponent* MeshComponent = GCEntity_AddMeshComponent(SmallOfficeEntity);
-		MeshComponent->Mesh = GCRendererMesh_Create(GCRendererModel_CreateFromFile("Assets/Models/Buildings/Offices/SmallOffice.obj", "Assets/Models/Buildings/Offices"));
-	}
+	Application->World = GCWorld_Create();
 }
 
 void GCApplication_Run(void)
 {
 	while (Application->IsRunning)
 	{
-		GCWorldCamera_Update(Application->WorldCamera);
-
-		GCRenderer_BeginScene();
-		GCImGuiManager_BeginFrame();
-		{
-			GCRenderer_RenderEntity(BasicTerrainEntity);
-			GCRenderer_RenderEntity(SmallOfficeEntity);
-		}
-		GCImGuiManager_EndFrame();
-		GCRenderer_EndScene();
+		GCWorld_OnUpdate(Application->World);
 		
 		GCRenderer_BeginImGui();
-		{
-			GCImGuiManager_Render();
-		}
+		GCImGuiManager_BeginFrame();
+		GCImGuiManager_EndFrame();
+		GCImGuiManager_Render();
 		GCRenderer_EndImGui();
+
 		GCRenderer_Present();
-
 		GCImGuiManager_Update();
-
 		GCWindow_ProcessEvents(Application->Window);
 	}
 }
@@ -120,22 +90,19 @@ GCWindow* const GCApplication_GetWindow(void)
 	return Application->Window;
 }
 
-GCWorldCamera* const GCApplication_GetWorldCamera(void)
+GCWorld* GCApplication_GetWorld(void)
 {
-	return Application->WorldCamera;
+	return Application->World;
 }
 
 void GCApplication_Destroy(void)
 {
-	GCEntity_RemoveMeshComponent(SmallOfficeEntity);
-	GCEntity_RemoveMeshComponent(BasicTerrainEntity);
-	GCScene_Destroy(Application->Scene);
+	GCWorld_Destroy(Application->World);
 
 	GCImGuiManager_Terminate();
 	GCRenderer_Terminate();
 	GCWindow_Destroy(Application->Window);
 
-	GCMemory_Free(Application->WorldCamera);
 	GCMemory_Free(Application);
 }
 
@@ -146,7 +113,12 @@ void GCApplication_OnEvent(GCWindow* const Window, GCEvent* const Event)
 	GCEvent_Dispatch(GCEventType_WindowResized, Event, GCApplication_OnWindowResized, NULL);
 	GCEvent_Dispatch(GCEventType_WindowClosed, Event, GCApplication_OnWindowClosed, NULL);
 
-	GCWorldCemera_OnEvent(Application->WorldCamera, Event);
+	if (Application->World)
+	{
+		GCWorld_OnEvent(Application->World, Event);
+	}
+
+	GCImGuiManager_OnEvent(Event);
 }
 
 bool GCApplication_OnWindowResized(GCEvent* const Event, void* CustomData)

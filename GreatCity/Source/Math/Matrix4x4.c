@@ -16,10 +16,12 @@
 */
 
 #include "Math/Matrix4x4.h"
+#include "Math/Quaternion.h"
 #include "Core/Memory/Allocator.h"
 
 #include <stdio.h>
 #include <math.h>
+#include <float.h>
 #include <stdint.h>
 
 GCMatrix4x4 GCMatrix4x4_Create(const float* const Data)
@@ -382,6 +384,64 @@ GCMatrix4x4 GCMatrix4x4_Transpose(const GCMatrix4x4* const Matrix)
 	Result.Data[3][3] = Matrix->Data[3][3];
 
 	return Result;
+}
+
+void GCMatrix4x4_Decompose(const GCMatrix4x4* const Matrix, GCVector3* const Translation, GCVector3* const Rotation, GCVector3* const Scale)
+{
+	GCMatrix4x4 TheMatrix = *Matrix;
+
+	if (fabsf(TheMatrix.Data[3][3] - 0.0f) < FLT_EPSILON)
+	{
+		return;
+	}
+
+	if (fabsf(TheMatrix.Data[0][3] - 0.0f) >= FLT_EPSILON ||
+		fabsf(TheMatrix.Data[1][3] - 0.0f) >= FLT_EPSILON ||
+		fabsf(TheMatrix.Data[2][3] - 0.0f) >= FLT_EPSILON)
+	{
+		TheMatrix.Data[0][3] = TheMatrix.Data[1][3] = TheMatrix.Data[2][3] = 0.0f;
+		TheMatrix.Data[3][3] = 1.0f;
+	}
+
+	*Translation = GCVector3_Create(TheMatrix.Data[3][0], TheMatrix.Data[3][1], TheMatrix.Data[3][2]);
+	TheMatrix.Data[3][0] = 0.0f;
+	TheMatrix.Data[3][1] = 0.0f;
+	TheMatrix.Data[3][2] = 0.0f;
+	TheMatrix.Data[3][3] = TheMatrix.Data[3][3];
+
+	float Row[3][3] = { 0 };
+
+	for (uint32_t Counter1 = 0; Counter1 < 3; Counter1++)
+	{
+		for (uint32_t Counter2 = 0; Counter2 < 3; Counter2++)
+		{
+			Row[Counter1][Counter2] = TheMatrix.Data[Counter1][Counter2];
+		}
+	}
+
+	GCVector3 RowVector[3] = { 0 };
+	RowVector[0] = GCVector3_Create(Row[0][0], Row[0][1], Row[0][2]);
+	RowVector[1] = GCVector3_Create(Row[1][0], Row[1][1], Row[1][2]);
+	RowVector[2] = GCVector3_Create(Row[2][0], Row[2][1], Row[2][2]);
+
+	Scale->X = GCVector3_Magnitude(RowVector[0]);
+	RowVector[0] = GCVector3_DivideByScalar(GCVector3_MultiplyByScalar(RowVector[0], 1.0f), GCVector3_Magnitude(RowVector[0]));
+	Scale->Y = GCVector3_Magnitude(RowVector[1]);
+	RowVector[1] = GCVector3_DivideByScalar(GCVector3_MultiplyByScalar(RowVector[1], 1.0f), GCVector3_Magnitude(RowVector[1]));
+	Scale->Z = GCVector3_Magnitude(RowVector[2]);
+	RowVector[2] = GCVector3_DivideByScalar(GCVector3_MultiplyByScalar(RowVector[2], 1.0f), GCVector3_Magnitude(RowVector[2]));
+
+	Rotation->Y = asinf(-RowVector[0].Z);
+	if (cosf(Rotation->Y) != 0.0f)
+	{
+		Rotation->X = atan2f(RowVector[1].Z, RowVector[2].Z);
+		Rotation->Z = atan2f(RowVector[0].Y, RowVector[0].X);
+	}
+	else
+	{
+		Rotation->X = atan2f(-RowVector[2].X, RowVector[1].Y);
+		Rotation->Z = 0.0f;
+	}
 }
 
 char* GCMatrix4x4_ToString(const GCMatrix4x4* const Matrix)

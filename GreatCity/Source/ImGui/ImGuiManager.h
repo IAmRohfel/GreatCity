@@ -23,10 +23,13 @@ extern "C"
 {
 #endif
 
+	typedef struct GCEvent GCEvent;
+
 	void GCImGuiManager_Initialize(void);
 	void GCImGuiManager_BeginFrame(void);
 	void GCImGuiManager_EndFrame(void);
 	void GCImGuiManager_Render(void);
+	void GCImGuiManager_OnEvent(GCEvent* const Event);
 	void GCImGuiManager_Update(void);
 	void GCImGuiManager_Terminate(void);
 

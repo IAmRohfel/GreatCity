@@ -17,18 +17,23 @@
 
 #include "ImGui/ImGuiManager.h"
 #include "ApplicationCore/GenericPlatform/Input.h"
+#include "ApplicationCore/GenericPlatform/KeyCode.h"
 #include "ApplicationCore/Event/Event.h"
+#include "ApplicationCore/Event/MouseEvent.h"
 #include "ApplicationCore/Application.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/RendererCommandList.h"
 #include "Renderer/RendererFramebuffer.h"
-#include "Scene/Camera/WorldCamera.h"
+#include "World/Camera/WorldCamera.h"
+#include "World/World.h"
+#include "World/Entity.h"
+#include "World/Components.h"
 #include "Math/Vector2.h"
-#include "Core/Log.h"
 
 #include <cstdint>
 
 #include <imgui.h>
+#include <ImGuizmo.h>
 
 extern "C" void GCImGuiManager_InitializePlatform(void);
 extern "C" void GCImGuiManager_TerminatePlatform(void);
@@ -42,8 +47,21 @@ extern "C" void GCImGuiManager_TerminateRenderer(void);
 static void GCImGuiManager_SetDarkTheme(void);
 static void GCImGuiManager_ResizeAttachment(void);
 
-static GCVector2 ViewportSize{};
-static GCVector2 ViewportBounds[2]{};
+struct GCImGuiManagerState
+{
+public:
+	GCVector2 ViewportSize{};
+	GCVector2 ViewportBounds[2]{};
+	GCEntity HoveredEntity{};
+	GCEntity SelectedEntity{};
+
+	bool IsViewportHovered{};
+	bool IsViewportFocused{};
+};
+
+static GCImGuiManagerState ImGuiManagerState{};
+
+static bool GCImGuiManager_OnMouseButtonPressed(GCEvent* const Event, void* CustomData);
 
 extern "C" void GCImGuiManager_Initialize(void)
 {
@@ -62,6 +80,13 @@ extern "C" void GCImGuiManager_Initialize(void)
 	GCImGuiManager_InitializeRenderer();
 
 	GCRendererCommandList_SetAttachmentResizeCallback(GCRenderer_GetCommandList(), GCImGuiManager_ResizeAttachment);
+
+	ImGuizmo::Style& ImGuizmoStyle = ImGuizmo::GetStyle();
+
+	ImGuizmoStyle.TranslationLineThickness = 5.0f;
+	ImGuizmoStyle.ScaleLineThickness = 5.0f;
+	ImGuizmoStyle.RotationLineThickness = 5.0f;
+	ImGuizmoStyle.RotationOuterLineThickness = 5.0f;
 }
 
 extern "C" void GCImGuiManager_BeginFrame(void)
@@ -70,11 +95,12 @@ extern "C" void GCImGuiManager_BeginFrame(void)
 	GCImGuiManager_BeginFramePlatform();
 
 	ImGui::NewFrame();
+	ImGuizmo::BeginFrame();
 
 	uint32_t FramebufferWidth = 0, FramebufferHeight = 0;
 	GCRendererFramebuffer_GetSize(GCRenderer_GetFramebuffer(), &FramebufferWidth, &FramebufferHeight);
 
-	if (ViewportSize.X > 0.0f && ViewportSize.Y > 0.0f && (ViewportSize.X != FramebufferWidth || ViewportSize.Y != FramebufferHeight))
+	if (ImGuiManagerState.ViewportSize.X > 0.0f && ImGuiManagerState.ViewportSize.Y > 0.0f && (ImGuiManagerState.ViewportSize.X != FramebufferWidth || ImGuiManagerState.ViewportSize.Y != FramebufferHeight))
 	{
 		GCRendererCommandList_ShouldAttachmentResize(GCRenderer_GetCommandList(), true);
 	}
@@ -142,10 +168,44 @@ extern "C" void GCImGuiManager_EndFrame(void)
 	const ImVec2 ViewportMaximumRegion = ImGui::GetWindowContentRegionMax();
 	const ImVec2 ViewportOffset = ImGui::GetWindowPos();
 
-	ViewportBounds[0] = { ViewportMinimumRegion.x + ViewportOffset.x, ViewportMinimumRegion.y + ViewportOffset.y };
-	ViewportBounds[1] = { ViewportMaximumRegion.x + ViewportOffset.x, ViewportMaximumRegion.y + ViewportOffset.y };
+	ImGuiManagerState.ViewportBounds[0] = { ViewportMinimumRegion.x + ViewportOffset.x, ViewportMinimumRegion.y + ViewportOffset.y };
+	ImGuiManagerState.ViewportBounds[1] = { ViewportMaximumRegion.x + ViewportOffset.x, ViewportMaximumRegion.y + ViewportOffset.y };
 	
-	ImGui::Image(static_cast<ImTextureID>(GCImGuiManager_GetTexturePlatform()), ImVec2{ ViewportSize.X, ViewportSize.Y });
+	ImGuiManagerState.IsViewportHovered = ImGui::IsWindowHovered();
+	ImGuiManagerState.IsViewportFocused = ImGui::IsWindowFocused();
+
+	ImGui::Image(static_cast<ImTextureID>(GCImGuiManager_GetTexturePlatform()), ImVec2{ ImGuiManagerState.ViewportSize.X, ImGuiManagerState.ViewportSize.Y });
+
+	if (ImGuiManagerState.SelectedEntity != 0)
+	{
+		ImGuizmo::SetOrthographic(false);
+		ImGuizmo::SetDrawlist();
+		ImGuizmo::SetRect(ImGuiManagerState.ViewportBounds[0].X, ImGuiManagerState.ViewportBounds[0].Y, ImGuiManagerState.ViewportBounds[1].X - ImGuiManagerState.ViewportBounds[0].X, ImGuiManagerState.ViewportBounds[1].Y - ImGuiManagerState.ViewportBounds[0].Y);
+
+		const GCWorldCamera* const WorldCamera = GCWorld_GetCamera(GCApplication_GetWorld());
+		const GCMatrix4x4* const WorldCameraViewMatrix = GCWorldCamera_GetViewMatrix(WorldCamera);
+		const GCMatrix4x4* const OriginalWorldCameraProjectionMatrix = GCWorldCamera_GetProjectionMatrix(WorldCamera);
+		
+		GCMatrix4x4 WorldCameraProjectionMatrix = *OriginalWorldCameraProjectionMatrix;
+		WorldCameraProjectionMatrix.Data[1][1] *= -1.0f;
+
+		GCTransformComponent* const EntityTransformComponent = GCEntity_GetTransformComponent(ImGuiManagerState.SelectedEntity);
+		GCMatrix4x4 EntityTransform = GCTransformComponent_GetTransform(EntityTransformComponent);
+
+		ImGuizmo::Manipulate(&WorldCameraViewMatrix->Data[0][0], &WorldCameraProjectionMatrix.Data[0][0], ImGuizmo::OPERATION::TRANSLATE | ImGuizmo::OPERATION::ROTATE_Y, ImGuizmo::MODE::LOCAL, &EntityTransform.Data[0][0]);
+
+		if (ImGuizmo::IsUsing())
+		{
+			GCVector3 EntityTranslation{}, EntityRotation{}, EntityScale{};
+			GCMatrix4x4_Decompose(&EntityTransform, &EntityTranslation, &EntityRotation, &EntityScale);
+
+			GCVector3 DeltaRotation = GCVector3_Subtract(EntityRotation, EntityTransformComponent->Rotation);
+
+			EntityTransformComponent->Translation = EntityTranslation;
+			EntityTransformComponent->Rotation = GCVector3_Add(EntityTransformComponent->Rotation, DeltaRotation);
+			EntityTransformComponent->Scale = EntityScale;
+		}
+	}
 
 	ImGui::End();
 	ImGui::PopStyleVar();
@@ -157,13 +217,23 @@ extern "C" void GCImGuiManager_Render(void)
 	GCImGuiManager_RenderDrawData();
 }
 
+void GCImGuiManager_OnEvent(GCEvent* const Event)
+{
+	GCEvent_Dispatch(GCEventType_MouseButtonPressed, Event, GCImGuiManager_OnMouseButtonPressed, NULL);
+}
+
 extern "C" void GCImGuiManager_Update(void)
 {
-	ImVec2 MousePosition{ ImGui::GetMousePos() };
-	MousePosition.x -= ViewportBounds[0].X;
-	MousePosition.y -= ViewportBounds[0].Y;
+	if (ImGuiManagerState.IsViewportFocused)
+	{
+		GCWorldCamera_Update(GCWorld_GetCamera(GCApplication_GetWorld()));
+	}
 
-	ViewportSize = GCVector2_Subtract(ViewportBounds[1], ViewportBounds[0]);
+	ImVec2 MousePosition{ ImGui::GetMousePos() };
+	MousePosition.x -= ImGuiManagerState.ViewportBounds[0].X;
+	MousePosition.y -= ImGuiManagerState.ViewportBounds[0].Y;
+
+	ImGuiManagerState.ViewportSize = GCVector2_Subtract(ImGuiManagerState.ViewportBounds[1], ImGuiManagerState.ViewportBounds[0]);
 
 	const std::int32_t MouseX = static_cast<std::int32_t>(MousePosition.x);
 	const std::int32_t MouseY = static_cast<std::int32_t>(MousePosition.y);
@@ -171,13 +241,13 @@ extern "C" void GCImGuiManager_Update(void)
 	uint32_t FramebufferWidth = 0, FramebufferHeight = 0;
 	GCRendererFramebuffer_GetSize(GCRenderer_GetFramebuffer(), &FramebufferWidth, &FramebufferHeight);
 
-	if (ViewportSize.X == FramebufferWidth && ViewportSize.Y == FramebufferHeight)
+	if (ImGuiManagerState.ViewportSize.X == FramebufferWidth && ImGuiManagerState.ViewportSize.Y == FramebufferHeight)
 	{
-		if (MouseX >= 0 && MouseY >= 0 && MouseX < static_cast<std::int32_t>(ViewportSize.X) && MouseY < static_cast<std::int32_t>(ViewportSize.Y))
+		if (MouseX >= 0 && MouseY >= 0 && MouseX < static_cast<std::int32_t>(ImGuiManagerState.ViewportSize.X) && MouseY < static_cast<std::int32_t>(ImGuiManagerState.ViewportSize.Y))
 		{
-			const int32_t Pixel = GCRendererFramebuffer_GetPixel(GCRenderer_GetFramebuffer(), GCRenderer_GetCommandList(), 1, MouseX, MouseY);
+			const int32_t EntityID = GCRendererFramebuffer_GetPixel(GCRenderer_GetFramebuffer(), GCRenderer_GetCommandList(), 1, MouseX, MouseY);
 
-			(void)Pixel;
+			ImGuiManagerState.HoveredEntity = EntityID == -1 ? GCEntity{} : GCEntity{ static_cast<uint64_t>(EntityID) };
 		}
 	}
 }
@@ -221,6 +291,23 @@ void GCImGuiManager_SetDarkTheme(void)
 
 void GCImGuiManager_ResizeAttachment(void)
 {
-	GCRendererFramebuffer_RecreateAttachmentFramebuffer(GCRenderer_GetFramebuffer(), static_cast<uint32_t>(ViewportSize.X), static_cast<uint32_t>(ViewportSize.Y));
-	GCWorldCamera_SetSize(GCApplication_GetWorldCamera(), static_cast<uint32_t>(ViewportSize.X), static_cast<uint32_t>(ViewportSize.Y));
+	GCRendererFramebuffer_RecreateAttachmentFramebuffer(GCRenderer_GetFramebuffer(), static_cast<uint32_t>(ImGuiManagerState.ViewportSize.X), static_cast<uint32_t>(ImGuiManagerState.ViewportSize.Y));
+	GCWorldCamera_SetSize(GCWorld_GetCamera(GCApplication_GetWorld()), static_cast<uint32_t>(ImGuiManagerState.ViewportSize.X), static_cast<uint32_t>(ImGuiManagerState.ViewportSize.Y));
+}
+
+bool GCImGuiManager_OnMouseButtonPressed(GCEvent* const Event, void* CustomData)
+{
+	(void)CustomData;
+
+	const GCMouseButtonPressedEvent* const EventDetail = (const GCMouseButtonPressedEvent* const)Event->EventDetail;
+
+	if (EventDetail->MouseButtonCode == GCMouseButtonCode_Left)
+	{
+		if (ImGuiManagerState.IsViewportHovered && !ImGuizmo::IsOver() && !GCInput_IsKeyPressed(GCKeyCode_LeftAlt))
+		{
+			ImGuiManagerState.SelectedEntity = ImGuiManagerState.HoveredEntity;
+		}
+	}
+
+	return false;
 }

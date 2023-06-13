@@ -15,10 +15,9 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GC_SCENE_COMPONENTS_H
-#define GC_SCENE_COMPONENTS_H
+#ifndef GC_WORLD_COMPONENTS_H
+#define GC_WORLD_COMPONENTS_H
 
-#include "Renderer/RendererMesh.h"
 #include "Math/Vector3.h"
 #include "Math/Matrix4x4.h"
 
@@ -27,9 +26,11 @@ extern "C"
 {
 #endif
 
+	typedef struct GCRendererMesh GCRendererMesh;
+
 	typedef struct GCTransformComponent
 	{
-		GCVector3 Position;
+		GCVector3 Translation;
 		GCVector3 Rotation;
 		GCVector3 Scale;
 	} GCTransformComponent;

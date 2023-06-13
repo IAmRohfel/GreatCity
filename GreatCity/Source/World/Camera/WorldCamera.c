@@ -15,7 +15,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "Scene/Camera/WorldCamera.h"
+#include "World/Camera/WorldCamera.h"
 #include "Math/Vector2.h"
 #include "Math/Vector3.h"
 #include "Math/Matrix4x4.h"
@@ -124,6 +124,16 @@ void GCWorldCamera_SetSize(GCWorldCamera* const WorldCamera, const uint32_t Widt
 	WorldCamera->Height = (float)Height;
 
 	GCWorldCamera_UpdateProjection(WorldCamera);
+}
+
+const GCMatrix4x4* const GCWorldCamera_GetViewMatrix(const GCWorldCamera* const WorldCamera)
+{
+	return &WorldCamera->ViewMatrix;
+}
+
+const GCMatrix4x4* const GCWorldCamera_GetProjectionMatrix(const GCWorldCamera* const WorldCamera)
+{
+	return &WorldCamera->ProjectionMatrix;
 }
 
 GCMatrix4x4 GCWorldCamera_GetViewProjectionMatrix(const GCWorldCamera* const WorldCamera)

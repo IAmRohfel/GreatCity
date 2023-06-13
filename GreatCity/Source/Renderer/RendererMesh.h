@@ -18,7 +18,7 @@
 #ifndef GC_RENDERER_RENDERER_MESH_H
 #define GC_RENDERER_RENDERER_MESH_H
 
-#include "Math/Matrix4x4.h"
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -29,13 +29,15 @@ extern "C"
 	typedef struct GCRendererIndexBuffer GCRendererIndexBuffer;
 	typedef struct GCRendererModel GCRendererModel;
 
+	typedef struct GCMatrix4x4 GCMatrix4x4;
+
 	typedef struct GCRendererMesh
 	{
 		GCRendererVertexBuffer* VertexBuffer;
 		GCRendererIndexBuffer* IndexBuffer;
 	} GCRendererMesh;
 
-	GCRendererMesh* GCRendererMesh_Create(const GCRendererModel Model);
+	GCRendererMesh* GCRendererMesh_Create(const uint64_t EntityID, const GCRendererModel* const Model);
 	void GCRendererMesh_ApplyTransform(GCRendererMesh* const Mesh, const GCMatrix4x4* const Transform);
 	void GCRendererMesh_Destroy(GCRendererMesh* Mesh);
 

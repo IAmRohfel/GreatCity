@@ -38,6 +38,7 @@ extern "C"
 	GCVector3 GCVector3_Multiply(const GCVector3 Vector1, const GCVector3 Vector2);
 	GCVector3 GCVector3_MultiplyByScalar(const GCVector3 Vector, const float Scalar);
 	GCVector3 GCVector3_Divide(const GCVector3 Vector1, const GCVector3 Vector2);
+	GCVector3 GCVector3_DivideByScalar(const GCVector3 Vector1, const float Scalar);
 
 	float GCVector3_Dot(const GCVector3 Vector1, const GCVector3 Vector2);
 	GCVector3 GCVector3_Cross(const GCVector3 Vector1, const GCVector3 Vector2);

@@ -49,6 +49,8 @@ extern "C"
 	GCMatrix4x4 GCMatrix4x4_Inverse(const GCMatrix4x4* const Matrix);
 	GCMatrix4x4 GCMatrix4x4_Transpose(const GCMatrix4x4* const Matrix);
 
+	void GCMatrix4x4_Decompose(const GCMatrix4x4* const Matrix, GCVector3* const Translation, GCVector3* const Rotation, GCVector3* const Scale);
+
 	char* GCMatrix4x4_ToString(const GCMatrix4x4* const Matrix);
 
 #ifdef __cplusplus

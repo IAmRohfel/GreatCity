@@ -15,21 +15,26 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GC_SCENE_SCENE_H
-#define GC_SCENE_SCENE_H
+#ifndef GC_WORLD_WORLD_H
+#define GC_WORLD_WORLD_H
 
-#include "Scene/Entity.h"
+#include "World/Entity.h"
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-	typedef struct GCScene GCScene;
+	typedef struct GCWorld GCWorld;
+	typedef struct GCWorldCamera GCWorldCamera;
+	typedef struct GCEvent GCEvent;
 
-	GCScene* GCScene_Create(void);
-	GCEntity GCScene_CreateEntity(GCScene* const Scene, const char* const Name);
-	void GCScene_Destroy(GCScene* Scene);
+	GCWorld* GCWorld_Create(void);
+	GCEntity GCWorld_CreateEntity(GCWorld* const World, const char* const Name);
+	void GCWorld_OnUpdate(GCWorld* const World);
+	void GCWorld_OnEvent(GCWorld* const World, GCEvent* const Event);
+	GCWorldCamera* GCWorld_GetCamera(const GCWorld* const World);
+	void GCWorld_Destroy(GCWorld* World);
 
 #ifdef __cplusplus
 }

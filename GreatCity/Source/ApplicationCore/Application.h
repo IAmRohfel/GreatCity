@@ -24,12 +24,12 @@ extern "C"
 #endif
 
     typedef struct GCPlatformWindow GCWindow;
-    typedef struct GCWorldCamera GCWorldCamera;
+    typedef struct GCWorld GCWorld;
 
 	void GCApplication_Create(void);
 	void GCApplication_Run(void);
     GCWindow* const GCApplication_GetWindow(void);
-    GCWorldCamera* const GCApplication_GetWorldCamera(void);
+    GCWorld* GCApplication_GetWorld(void);
 	void GCApplication_Destroy(void);
 
 #ifdef __cplusplus

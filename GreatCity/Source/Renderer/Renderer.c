@@ -31,9 +31,9 @@
 #include "Core/Memory/Allocator.h"
 #include "ApplicationCore/GenericPlatform/Window.h"
 #include "ApplicationCore/Application.h"
-#include "Scene/Camera/WorldCamera.h"
-#include "Scene/Entity.h"
-#include "Scene/Components.h"
+#include "World/Camera/WorldCamera.h"
+#include "World/Entity.h"
+#include "World/Components.h"
 #include "ImGui/ImGuiManager.h"
 #include "Math/Vector2.h"
 #include "Math/Vector3.h"
@@ -63,8 +63,6 @@ typedef struct GCRenderer
 	GCRendererGraphicsPipeline* GraphicsPipeline;
 	GCRendererFramebuffer* Framebuffer;
 
-	const GCWorldCamera* WorldCamera;
-
 	uint32_t MaximumDrawDataCount;
 	GCRendererDrawData* DrawData;
 	uint32_t DrawDataCount;
@@ -79,7 +77,7 @@ static void GCRenderer_ResizeSwapChain(void);
 
 static GCRenderer* Renderer = NULL;
 
-void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera)
+void GCRenderer_Initialize(void)
 {
 	Renderer = (GCRenderer*)GCMemory_Allocate(sizeof(GCRenderer));
 	Renderer->Device = GCRendererDevice_Create();
@@ -185,7 +183,6 @@ void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera)
 	FramebufferDescription.Attachments = FramebufferAttachments;
 	FramebufferDescription.AttachmentCount = 3;
 	Renderer->Framebuffer = GCRendererFramebuffer_Create(&FramebufferDescription);
-	Renderer->WorldCamera = WorldCamera;
 	Renderer->MaximumDrawDataCount = 100;
 	Renderer->DrawData = (GCRendererDrawData*)GCMemory_Allocate(Renderer->MaximumDrawDataCount * sizeof(GCRendererDrawData));
 	Renderer->DrawDataCount = 0;
@@ -193,7 +190,7 @@ void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera)
 	GCRendererCommandList_SetSwapChainResizeCallback(Renderer->CommandList, GCRenderer_ResizeSwapChain);
 }
 
-void GCRenderer_BeginScene(void)
+void GCRenderer_BeginWorld(const GCWorldCamera* const WorldCamera)
 {
 	Renderer->DrawDataCount = 0;
 
@@ -203,7 +200,7 @@ void GCRenderer_BeginScene(void)
 	GCRendererCommandList_BeginAttachmentRenderPass(Renderer->CommandList, Renderer->GraphicsPipeline, Renderer->Framebuffer, ClearColorTexture);
 
 	GCRendererUniformBufferData UniformBufferData = { 0 };
-	UniformBufferData.ViewProjectionMatrix = GCWorldCamera_GetViewProjectionMatrix(Renderer->WorldCamera);
+	UniformBufferData.ViewProjectionMatrix = GCWorldCamera_GetViewProjectionMatrix(WorldCamera);
 
 	GCRendererCommandList_UpdateUniformBuffer(Renderer->CommandList, Renderer->UniformBuffer, &UniformBufferData, sizeof(GCRendererUniformBufferData));
 	GCRendererCommandList_BindGraphicsPipeline(Renderer->CommandList, Renderer->GraphicsPipeline);
@@ -234,7 +231,7 @@ void GCRenderer_RenderEntity(const GCEntity Entity)
 	Renderer->DrawDataCount++;
 }
 
-void GCRenderer_EndScene(void)
+void GCRenderer_EndWorld(void)
 {
 	for (uint32_t Counter = 0; Counter < Renderer->DrawDataCount; Counter++)
 	{

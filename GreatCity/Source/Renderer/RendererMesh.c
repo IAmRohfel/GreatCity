@@ -22,11 +22,12 @@
 #include "Renderer/RendererIndexBuffer.h"
 #include "Renderer/RendererModel.h"
 #include "Core/Memory/Allocator.h"
+#include "World/Entity.h"
 
 #include <string.h>
 #include <stdint.h>
 
-GCRendererMesh* GCRendererMesh_Create(const GCRendererModel Model)
+GCRendererMesh* GCRendererMesh_Create(const GCEntity Entity, const GCRendererModel* const Model)
 {
 	GCRendererMesh* Mesh = (GCRendererMesh*)GCMemory_Allocate(sizeof(GCRendererMesh));
 	Mesh->VertexBuffer = NULL;
@@ -35,32 +36,35 @@ GCRendererMesh* GCRendererMesh_Create(const GCRendererModel Model)
 	const GCRendererDevice* const Device = GCRenderer_GetDevice();
 	const GCRendererCommandList* const CommandList = GCRenderer_GetCommandList();
 
+	for (uint32_t Counter = 0; Counter < Model->VertexCount; Counter++)
+	{
+		Model->Vertices[Counter].EntityID = (uint64_t)Entity;
+	}
+
 	GCRendererVertexBufferDescription VertexBufferDescription = { 0 };
 	VertexBufferDescription.Device = Device;
 	VertexBufferDescription.CommandList = CommandList;
-	VertexBufferDescription.Vertices = Model.Vertices;
-	VertexBufferDescription.VertexCount = Model.VertexCount;
-	VertexBufferDescription.VertexSize = Model.VertexCount * sizeof(GCRendererVertex);
+	VertexBufferDescription.Vertices = Model->Vertices;
+	VertexBufferDescription.VertexCount = Model->VertexCount;
+	VertexBufferDescription.VertexSize = Model->VertexCount * sizeof(GCRendererVertex);
 
 	Mesh->VertexBuffer = GCRendererVertexBuffer_CreateDynamic(&VertexBufferDescription);
 
 	GCRendererIndexBufferDescription IndexBufferDescription = { 0 };
 	IndexBufferDescription.Device = Device;
 	IndexBufferDescription.CommandList = CommandList;
-	IndexBufferDescription.Indices = Model.Indices;
-	IndexBufferDescription.IndexCount = Model.IndexCount;
-	IndexBufferDescription.IndexSize = Model.IndexCount * sizeof(uint32_t);
+	IndexBufferDescription.Indices = Model->Indices;
+	IndexBufferDescription.IndexCount = Model->IndexCount;
+	IndexBufferDescription.IndexSize = Model->IndexCount * sizeof(uint32_t);
 
 	Mesh->IndexBuffer = GCRendererIndexBuffer_Create(&IndexBufferDescription);
-
-	GCRendererModel_Destroy(Model);
 
 	return Mesh;
 }
 
 void GCRendererMesh_ApplyTransform(GCRendererMesh* const Mesh, const GCMatrix4x4* const Transform)
 {
-	const GCRendererVertex* const OriginalVertices = (GCRendererVertex* const)GCRendererVertexBuffer_GetVertices(Mesh->VertexBuffer);
+	const GCRendererVertex* const OriginalVertices = (const GCRendererVertex* const)GCRendererVertexBuffer_GetVertices(Mesh->VertexBuffer);
 	const uint32_t VertexCount = GCRendererVertexBuffer_GetVertexCount(Mesh->VertexBuffer);
 
 	GCRendererVertex* Vertices = (GCRendererVertex*)GCMemory_Allocate(VertexCount * sizeof(GCRendererVertex));

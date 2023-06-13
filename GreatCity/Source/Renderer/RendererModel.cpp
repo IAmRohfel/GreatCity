@@ -57,7 +57,7 @@ namespace std
 	};
 }
 
-GCRendererModel GCRendererModel_CreateFromFile(const char* const ModelPath, const char* const MaterialPath)
+GCRendererModel* GCRendererModel_CreateFromFile(const char* const ModelPath, const char* const MaterialPath)
 {
 	const char* const ModelPaths[1] = { ModelPath };
 	const char* const MaterialPaths[1] = { MaterialPath };
@@ -65,9 +65,9 @@ GCRendererModel GCRendererModel_CreateFromFile(const char* const ModelPath, cons
 	return GCRendererModel_CreateFromFiles(ModelPaths, MaterialPaths, 1);
 }
 
-GCRendererModel GCRendererModel_CreateFromFiles(const char* const* const ModelPaths, const char* const* const MaterialPaths, const uint32_t ModelCount)
+GCRendererModel* GCRendererModel_CreateFromFiles(const char* const* const ModelPaths, const char* const* const MaterialPaths, const uint32_t ModelCount)
 {
-	GCRendererModel Model{};
+	GCRendererModel* Model = static_cast<GCRendererModel*>(GCMemory_Allocate(sizeof(GCRendererModel)));
 
 	std::vector<GCRendererVertex> Vertices{};
 	std::vector<uint32_t> Indices{};
@@ -146,19 +146,21 @@ GCRendererModel GCRendererModel_CreateFromFiles(const char* const* const ModelPa
 		}
 	}
 
-	Model.Vertices = static_cast<GCRendererVertex*>(GCMemory_Allocate(Vertices.size() * sizeof(GCRendererVertex)));
-	memcpy(Model.Vertices, Vertices.data(), Vertices.size() * sizeof(GCRendererVertex));
-	Model.VertexCount = static_cast<uint32_t>(Vertices.size());
+	Model->Vertices = static_cast<GCRendererVertex*>(GCMemory_Allocate(Vertices.size() * sizeof(GCRendererVertex)));
+	memcpy(Model->Vertices, Vertices.data(), Vertices.size() * sizeof(GCRendererVertex));
+	Model->VertexCount = static_cast<uint32_t>(Vertices.size());
 
-	Model.Indices = static_cast<uint32_t*>(GCMemory_Allocate(Indices.size() * sizeof(uint32_t)));
-	memcpy(Model.Indices, Indices.data(), Indices.size() * sizeof(uint32_t));
-	Model.IndexCount = static_cast<uint32_t>(Indices.size());
+	Model->Indices = static_cast<uint32_t*>(GCMemory_Allocate(Indices.size() * sizeof(uint32_t)));
+	memcpy(Model->Indices, Indices.data(), Indices.size() * sizeof(uint32_t));
+	Model->IndexCount = static_cast<uint32_t>(Indices.size());
 
 	return Model;
 }
 
-void GCRendererModel_Destroy(const GCRendererModel Model)
+void GCRendererModel_Destroy(GCRendererModel* Model)
 {
-	GCMemory_Free(Model.Indices);
-	GCMemory_Free(Model.Vertices);
+	GCMemory_Free(Model->Indices);
+	GCMemory_Free(Model->Vertices);
+
+	GCMemory_Free(Model);
 }

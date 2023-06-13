@@ -28,7 +28,6 @@ layout(location = 1) out int EntityID;
 
 void main()
 {
-	//Color = texture(TextureSampler, FragmentTextureCoordinate);
 	Color = FragmentColor;
-    EntityID = 50;
+    EntityID = FragmentEntityID;
 }

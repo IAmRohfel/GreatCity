@@ -41,7 +41,8 @@ project "GreatCity"
         "%{wks.location}/GreatCity/Source/ThirdParty/stb/Include",
         "%{wks.location}/GreatCity/Source/ThirdParty/TinyObjLoader/Include",
         "%{wks.location}/GreatCity/Source/ThirdParty/Flecs/Include",
-        "%{wks.location}/GreatCity/Source/ThirdParty/ImGui/Include"
+        "%{wks.location}/GreatCity/Source/ThirdParty/ImGui/Include",
+        "%{wks.location}/GreatCity/Source/ThirdParty/ImGuizmo/Include",
     }
 
     libdirs
@@ -54,7 +55,8 @@ project "GreatCity"
         "vulkan-1",
 
         "Flecs",
-        "ImGui"
+        "ImGui",
+        "ImGuizmo"
     }
 
     flags "FatalWarnings"
@@ -113,3 +115,4 @@ project "GreatCity"
 group "Dependencies"
     include "GreatCity/Source/ThirdParty/Flecs/Flecs.build.lua"
     include "GreatCity/Source/ThirdParty/ImGui/ImGui.build.lua"
+    include "GreatCity/Source/ThirdParty/ImGuizmo/ImGuizmo.build.lua"

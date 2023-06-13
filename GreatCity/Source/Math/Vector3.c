@@ -93,6 +93,16 @@ GCVector3 GCVector3_Divide(const GCVector3 Vector1, const GCVector3 Vector2)
 	return Result;
 }
 
+GCVector3 GCVector3_DivideByScalar(const GCVector3 Vector1, const float Scalar)
+{
+	GCVector3 Result;
+	Result.X = Vector1.X / Scalar;
+	Result.Y = Vector1.Y / Scalar;
+	Result.Z = Vector1.Z / Scalar;
+
+	return Result;
+}
+
 float GCVector3_Dot(const GCVector3 Vector1, const GCVector3 Vector2)
 {
 	return Vector1.X * Vector2.X + Vector1.Y * Vector2.Y + Vector1.Z * Vector2.Z;

@@ -15,23 +15,23 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "Scene/Entity.h"
-#include "Scene/Components.h"
-#include "Renderer/RendererModel.h"
+#include "World/Entity.h"
+#include "World/Components.h"
+#include "Renderer/RendererMesh.h"
 #include "Math/Vector3.h"
 
 #include <flecs.h>
 
-extern ecs_world_t* GSceneECSWorld;
+extern ecs_world_t* GWorldECSWorld;
 extern ECS_COMPONENT_DECLARE(GCTransformComponent);
 extern ECS_COMPONENT_DECLARE(GCMeshComponent);
 
 GCTransformComponent* GCEntity_AddTransformComponent(const GCEntity Entity)
 {
-	ecs_add(GSceneECSWorld, (ecs_entity_t)Entity, GCTransformComponent);
+	ecs_add(GWorldECSWorld, (ecs_entity_t)Entity, GCTransformComponent);
 
-	GCTransformComponent* TransformComponent = ecs_get_mut(GSceneECSWorld, (ecs_entity_t)Entity, GCTransformComponent);
-	TransformComponent->Position = GCVector3_CreateZero();
+	GCTransformComponent* TransformComponent = ecs_get_mut(GWorldECSWorld, (ecs_entity_t)Entity, GCTransformComponent);
+	TransformComponent->Translation = GCVector3_CreateZero();
 	TransformComponent->Rotation = GCVector3_CreateZero();
 	TransformComponent->Scale = GCVector3_Create(1.0f, 1.0f, 1.0f);
 
@@ -40,25 +40,28 @@ GCTransformComponent* GCEntity_AddTransformComponent(const GCEntity Entity)
 
 GCTransformComponent* GCEntity_GetTransformComponent(const GCEntity Entity)
 {
-	return ecs_get_mut(GSceneECSWorld, (ecs_entity_t)Entity, GCTransformComponent);
+	return ecs_get_mut(GWorldECSWorld, (ecs_entity_t)Entity, GCTransformComponent);
 }
 
-GCMeshComponent* GCEntity_AddMeshComponent(const GCEntity Entity)
+GCMeshComponent* GCEntity_AddMeshComponent(const GCEntity Entity, const GCRendererModel* const Model)
 {
-	ecs_add(GSceneECSWorld, (ecs_entity_t)Entity, GCMeshComponent);
+	ecs_add(GWorldECSWorld, (ecs_entity_t)Entity, GCMeshComponent);
 
-	return ecs_get_mut(GSceneECSWorld, (ecs_entity_t)Entity, GCMeshComponent);
+	GCMeshComponent* MeshComponent = ecs_get_mut(GWorldECSWorld, (ecs_entity_t)Entity, GCMeshComponent);
+	MeshComponent->Mesh = GCRendererMesh_Create(Entity, Model);
+
+	return MeshComponent;
 }
 
 GCMeshComponent* GCEntity_GetMeshComponent(const GCEntity Entity)
 {
-	return ecs_get_mut(GSceneECSWorld, (ecs_entity_t)Entity, GCMeshComponent);
+	return ecs_get_mut(GWorldECSWorld, (ecs_entity_t)Entity, GCMeshComponent);
 }
 
 void GCEntity_RemoveMeshComponent(const GCEntity Entity)
 {
-	GCMeshComponent* MeshComponent = ecs_get_mut(GSceneECSWorld, (ecs_entity_t)Entity, GCMeshComponent);
+	GCMeshComponent* MeshComponent = ecs_get_mut(GWorldECSWorld, (ecs_entity_t)Entity, GCMeshComponent);
 	GCRendererMesh_Destroy(MeshComponent->Mesh);
 
-	ecs_remove(GSceneECSWorld, (ecs_entity_t)Entity, GCMeshComponent);
+	ecs_remove(GWorldECSWorld, (ecs_entity_t)Entity, GCMeshComponent);
 }

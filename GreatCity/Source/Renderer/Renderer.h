@@ -18,7 +18,7 @@
 #ifndef GC_RENDERER_RENDERER_H
 #define GC_RENDERER_RENDERER_H
 
-#include "Scene/Entity.h"
+#include "World/Entity.h"
 #include "Math/Vector2.h"
 #include "Math/Vector3.h"
 #include "Math/Vector4.h"
@@ -35,7 +35,7 @@ extern "C"
 		GCVector3 Position;
 		GCVector4 Color;
 		GCVector2 TextureCoordinate;
-		int32_t EntityID;
+		uint64_t EntityID;
 
 #ifdef __cplusplus
 		bool operator==(const GCRendererVertex& OtherVertex) const noexcept
@@ -53,10 +53,10 @@ extern "C"
 	typedef struct GCRendererGraphicsPipeline GCRendererGraphicsPipeline;
 	typedef struct GCRendererFramebuffer GCRendererFramebuffer;
 
-	void GCRenderer_Initialize(const GCWorldCamera* const WorldCamera);
-	void GCRenderer_BeginScene(void);
+	void GCRenderer_Initialize(void);
+	void GCRenderer_BeginWorld(const GCWorldCamera* const WorldCamera);
 	void GCRenderer_RenderEntity(const GCEntity Entity);
-	void GCRenderer_EndScene(void);
+	void GCRenderer_EndWorld(void);
 	void GCRenderer_BeginImGui(void);
 	void GCRenderer_EndImGui(void);
 	void GCRenderer_Present(void);
