@@ -15,20 +15,31 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GC_SCENE_COMPONENTS_MESH_COMPONENT_H
-#define GC_SCENE_COMPONENTS_MESH_COMPONENT_H
+#ifndef GC_SCENE_COMPONENTS_H
+#define GC_SCENE_COMPONENTS_H
+
+#include "Renderer/RendererMesh.h"
+#include "Math/Vector3.h"
+#include "Math/Matrix4x4.h"
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-	typedef struct GCRendererModel GCRendererModel;
+	typedef struct GCTransformComponent
+	{
+		GCVector3 Position;
+		GCVector3 Rotation;
+		GCVector3 Scale;
+	} GCTransformComponent;
 
 	typedef struct GCMeshComponent
 	{
-		GCRendererModel* Model;
+		GCRendererMesh* Mesh;
 	} GCMeshComponent;
+
+	GCMatrix4x4 GCTransformComponent_GetTransform(const GCTransformComponent* const TransformComponent);
 
 #ifdef __cplusplus
 }

@@ -37,12 +37,12 @@ extern "C"
 		GCVector2 TextureCoordinate;
 		int32_t EntityID;
 
-	#ifdef __cplusplus
+#ifdef __cplusplus
 		bool operator==(const GCRendererVertex& OtherVertex) const noexcept
 		{
 			return GCVector3_IsEqual(Position, OtherVertex.Position) && GCVector4_IsEqual(Color, OtherVertex.Color) && GCVector2_IsEqual(TextureCoordinate, OtherVertex.TextureCoordinate);
 		}
-	#endif
+#endif
 	} GCRendererVertex;
 
 	typedef struct GCWorldCamera GCWorldCamera;

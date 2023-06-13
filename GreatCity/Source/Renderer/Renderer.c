@@ -16,7 +16,6 @@
 */
 
 #include "Renderer/Renderer.h"
-#include "Renderer/RendererModel.h"
 #include "Renderer/RendererDevice.h"
 #include "Renderer/RendererSwapChain.h"
 #include "Renderer/RendererCommandList.h"
@@ -28,16 +27,19 @@
 #include "Renderer/RendererGraphicsPipeline.h"
 #include "Renderer/RendererFramebuffer.h"
 #include "Renderer/RendererEnums.h"
+#include "Renderer/RendererMesh.h"
 #include "Core/Memory/Allocator.h"
 #include "ApplicationCore/GenericPlatform/Window.h"
 #include "ApplicationCore/Application.h"
-#include "Scene/Entity.h"
 #include "Scene/Camera/WorldCamera.h"
+#include "Scene/Entity.h"
+#include "Scene/Components.h"
 #include "ImGui/ImGuiManager.h"
 #include "Math/Vector2.h"
 #include "Math/Vector3.h"
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
+#include "Math/Quaternion.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -210,8 +212,11 @@ void GCRenderer_BeginScene(void)
 
 void GCRenderer_RenderEntity(const GCEntity Entity)
 {
+	const GCTransformComponent* const TransformComponent = GCEntity_GetTransformComponent(Entity);
 	const GCMeshComponent* const MeshComponent = GCEntity_GetMeshComponent(Entity);
-	const GCRendererModel* const Model = MeshComponent->Model;
+
+	const GCMatrix4x4 Transform = GCTransformComponent_GetTransform(TransformComponent);
+	GCRendererMesh* const Mesh = MeshComponent->Mesh;
 
 	if (Renderer->DrawDataCount >= Renderer->MaximumDrawDataCount)
 	{
@@ -219,10 +224,12 @@ void GCRenderer_RenderEntity(const GCEntity Entity)
 		Renderer->DrawData = (GCRendererDrawData*)GCMemory_Reallocate(Renderer->DrawData, Renderer->MaximumDrawDataCount * sizeof(GCRendererDrawData));
 	}
 
-	Renderer->DrawData[Renderer->DrawDataCount].VertexBuffer = Model->VertexBuffer;
-	Renderer->DrawData[Renderer->DrawDataCount].VertexCount = Model->VertexCount;
-	Renderer->DrawData[Renderer->DrawDataCount].IndexBuffer = Model->IndexBuffer;
-	Renderer->DrawData[Renderer->DrawDataCount].IndexCount = Model->IndexCount;
+	GCRendererMesh_ApplyTransform(Mesh, &Transform);
+
+	Renderer->DrawData[Renderer->DrawDataCount].VertexBuffer = Mesh->VertexBuffer;
+	Renderer->DrawData[Renderer->DrawDataCount].VertexCount = GCRendererVertexBuffer_GetVertexCount(Mesh->VertexBuffer);
+	Renderer->DrawData[Renderer->DrawDataCount].IndexBuffer = Mesh->IndexBuffer;
+	Renderer->DrawData[Renderer->DrawDataCount].IndexCount = GCRendererIndexBuffer_GetIndexCount(Mesh->IndexBuffer);
 
 	Renderer->DrawDataCount++;
 }

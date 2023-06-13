@@ -17,13 +17,9 @@
 
 #include "Renderer/RendererModel.h"
 #include "Renderer/Renderer.h"
-#include "Renderer/RendererDevice.h"
-#include "Renderer/RendererVertexBuffer.h"
-#include "Renderer/RendererIndexBuffer.h"
 #include "Core/Memory/Allocator.h"
 #include "Core/Log.h"
 #include "Core/Assert.h"
-#include "Math/Matrix4x4.h"
 
 #include <vector>
 #include <unordered_map>
@@ -61,7 +57,7 @@ namespace std
 	};
 }
 
-GCRendererModel* GCRendererModel_CreateFromFile(const char* const ModelPath, const char* const MaterialPath)
+GCRendererModel GCRendererModel_CreateFromFile(const char* const ModelPath, const char* const MaterialPath)
 {
 	const char* const ModelPaths[1] = { ModelPath };
 	const char* const MaterialPaths[1] = { MaterialPath };
@@ -69,13 +65,9 @@ GCRendererModel* GCRendererModel_CreateFromFile(const char* const ModelPath, con
 	return GCRendererModel_CreateFromFiles(ModelPaths, MaterialPaths, 1);
 }
 
-GCRendererModel* GCRendererModel_CreateFromFiles(const char* const* const ModelPaths, const char* const* const MaterialPaths, const uint32_t ModelCount)
+GCRendererModel GCRendererModel_CreateFromFiles(const char* const* const ModelPaths, const char* const* const MaterialPaths, const uint32_t ModelCount)
 {
-	GCRendererModel* Model = (GCRendererModel*)GCMemory_Allocate(sizeof(GCRendererModel));
-	Model->VertexBuffer = NULL;
-	Model->VertexCount = 0;
-	Model->IndexBuffer = NULL;
-	Model->IndexCount = 0;
+	GCRendererModel Model{};
 
 	std::vector<GCRendererVertex> Vertices{};
 	std::vector<uint32_t> Indices{};
@@ -154,54 +146,19 @@ GCRendererModel* GCRendererModel_CreateFromFiles(const char* const* const ModelP
 		}
 	}
 
-	const GCRendererDevice* const Device = GCRenderer_GetDevice();
-	const GCRendererCommandList* const CommandList = GCRenderer_GetCommandList();
+	Model.Vertices = static_cast<GCRendererVertex*>(GCMemory_Allocate(Vertices.size() * sizeof(GCRendererVertex)));
+	memcpy(Model.Vertices, Vertices.data(), Vertices.size() * sizeof(GCRendererVertex));
+	Model.VertexCount = static_cast<uint32_t>(Vertices.size());
 
-	GCRendererVertexBufferDescription VertexBufferDescription = { 0 };
-	VertexBufferDescription.Device = Device;
-	VertexBufferDescription.CommandList = CommandList;
-	VertexBufferDescription.Vertices = NULL;
-	VertexBufferDescription.VertexSize = Vertices.size() * sizeof(GCRendererVertex);
-
-	Model->VertexBuffer = GCRendererVertexBuffer_Create(&VertexBufferDescription);
-	GCRendererVertexBuffer_SetVertices(Model->VertexBuffer, Vertices.data(), Vertices.size() * sizeof(GCRendererVertex));
-
-	Model->Vertices = static_cast<GCRendererVertex*>(GCMemory_Allocate(Vertices.size() * sizeof(GCRendererVertex)));
-	memcpy(Model->Vertices, Vertices.data(), Vertices.size() * sizeof(GCRendererVertex));
-	Model->VertexCount = static_cast<uint32_t>(Vertices.size());
-
-	GCRendererIndexBufferDescription IndexBufferDescription = { 0 };
-	IndexBufferDescription.Device = Device;
-	IndexBufferDescription.CommandList = CommandList;
-	IndexBufferDescription.Indices = Indices.data();
-	IndexBufferDescription.IndexSize = Indices.size() * sizeof(uint32_t);
-
-	Model->IndexBuffer = GCRendererIndexBuffer_Create(&IndexBufferDescription);
-	Model->IndexCount = static_cast<uint32_t>(Indices.size());
+	Model.Indices = static_cast<uint32_t*>(GCMemory_Allocate(Indices.size() * sizeof(uint32_t)));
+	memcpy(Model.Indices, Indices.data(), Indices.size() * sizeof(uint32_t));
+	Model.IndexCount = static_cast<uint32_t>(Indices.size());
 
 	return Model;
 }
 
-void GCRendererModel_SetTransform(GCRendererModel* const Model, const GCMatrix4x4* const Transform)
+void GCRendererModel_Destroy(const GCRendererModel Model)
 {
-	for (uint32_t Counter = 0; Counter < Model->VertexCount; Counter++)
-	{
-		const GCVector3 Position = Model->Vertices[Counter].Position;
-		const GCVector4 TransformVector = GCMatrix4x4_MultiplyByVector(Transform, GCVector4_Create(Position.X, Position.Y, Position.Z, 1.0f));
-
-		Model->Vertices[Counter].Position = GCVector3_Create(TransformVector.X, TransformVector.Y, TransformVector.Z);
-	}
-
-	GCRendererVertexBuffer_SetVertices(Model->VertexBuffer, Model->Vertices, Model->VertexCount * sizeof(GCRendererVertex));
-}
-
-void GCRendererModel_Destroy(GCRendererModel* Model)
-{
-	GCRendererDevice_WaitIdle(GCRenderer_GetDevice());
-
-	GCRendererIndexBuffer_Destroy(Model->IndexBuffer);
-	GCRendererVertexBuffer_Destroy(Model->VertexBuffer);
-
-	GCMemory_Free(Model->Vertices);
-	GCMemory_Free(Model);
+	GCMemory_Free(Model.Indices);
+	GCMemory_Free(Model.Vertices);
 }

@@ -16,7 +16,7 @@
 */
 
 #include "Scene/Scene.h"
-#include "Scene/Components/MeshComponent.h"
+#include "Scene/Components.h"
 #include "Core/Memory/Allocator.h"
 
 #include <flecs.h>
@@ -28,6 +28,7 @@ typedef struct GCScene
 
 ecs_world_t* GSceneECSWorld = NULL;
 
+ECS_COMPONENT_DECLARE(GCTransformComponent);
 ECS_COMPONENT_DECLARE(GCMeshComponent);
 
 GCScene* GCScene_Create(void)
@@ -37,6 +38,7 @@ GCScene* GCScene_Create(void)
 
 	GSceneECSWorld = Scene->World;
 
+	ECS_COMPONENT_DEFINE(Scene->World, GCTransformComponent);
 	ECS_COMPONENT_DEFINE(Scene->World, GCMeshComponent);
 
 	return Scene;
@@ -46,6 +48,8 @@ GCEntity GCScene_CreateEntity(GCScene* const Scene, const char* const Name)
 {
 	ecs_entity_t Entity = ecs_new_id(Scene->World);
 	ecs_set_name(Scene->World, Entity, Name);
+
+	GCEntity_AddTransformComponent((GCEntity)Entity);
 
 	return (GCEntity)Entity;
 }

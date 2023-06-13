@@ -15,10 +15,10 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GC_RENDERER_RENDERER_MODEL_H
-#define GC_RENDERER_RENDERER_MODEL_H
+#ifndef GC_RENDERER_RENDERER_MESH_H
+#define GC_RENDERER_RENDERER_MESH_H
 
-#include <stdint.h>
+#include "Math/Matrix4x4.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -27,21 +27,17 @@ extern "C"
 
 	typedef struct GCRendererVertexBuffer GCRendererVertexBuffer;
 	typedef struct GCRendererIndexBuffer GCRendererIndexBuffer;
+	typedef struct GCRendererModel GCRendererModel;
 
-	typedef struct GCRendererVertex GCRendererVertex;
-
-	typedef struct GCRendererModel
+	typedef struct GCRendererMesh
 	{
-		GCRendererVertex* Vertices;
-		uint32_t VertexCount;
+		GCRendererVertexBuffer* VertexBuffer;
+		GCRendererIndexBuffer* IndexBuffer;
+	} GCRendererMesh;
 
-		uint32_t* Indices;
-		uint32_t IndexCount;
-	} GCRendererModel;
-
-	GCRendererModel GCRendererModel_CreateFromFile(const char* const ModelPath, const char* const MaterialPath);
-	GCRendererModel GCRendererModel_CreateFromFiles(const char* const* const ModelPaths, const char* const* const MaterialPaths, const uint32_t ModelCount);
-	void GCRendererModel_Destroy(const GCRendererModel Model);
+	GCRendererMesh* GCRendererMesh_Create(const GCRendererModel Model);
+	void GCRendererMesh_ApplyTransform(GCRendererMesh* const Mesh, const GCMatrix4x4* const Transform);
+	void GCRendererMesh_Destroy(GCRendererMesh* Mesh);
 
 #ifdef __cplusplus
 }

@@ -34,11 +34,13 @@ extern "C"
         const GCRendererDevice* Device;
         const GCRendererCommandList* CommandList;
 
-        const uint32_t* Indices;
+        uint32_t* Indices;
+        uint32_t IndexCount;
         size_t IndexSize;
     } GCRendererIndexBufferDescription;
 
 	GCRendererIndexBuffer* GCRendererIndexBuffer_Create(const GCRendererIndexBufferDescription* const Description);
+    uint32_t GCRendererIndexBuffer_GetIndexCount(const GCRendererIndexBuffer* const indexBuffer);
 	void GCRendererIndexBuffer_Destroy(GCRendererIndexBuffer* IndexBuffer);
 
 #ifdef __cplusplus

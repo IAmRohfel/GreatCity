@@ -18,7 +18,7 @@
 #ifndef GC_SCENE_ENTITY_H
 #define GC_SCENE_ENTITY_H
 
-#include "Scene/Components/MeshComponent.h"
+#include "Scene/Components.h"
 
 #include <stdint.h>
 
@@ -29,6 +29,8 @@ extern "C"
 
 	typedef uint64_t GCEntity;
 
+	GCTransformComponent* GCEntity_AddTransformComponent(const GCEntity Entity);
+	GCTransformComponent* GCEntity_GetTransformComponent(const GCEntity Entity);
 	GCMeshComponent* GCEntity_AddMeshComponent(const GCEntity Entity);
 	GCMeshComponent* GCEntity_GetMeshComponent(const GCEntity Entity);
 	void GCEntity_RemoveMeshComponent(const GCEntity Entity);

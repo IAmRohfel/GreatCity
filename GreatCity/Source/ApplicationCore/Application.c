@@ -22,6 +22,7 @@
 #include "Core/Memory/Allocator.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/RendererModel.h"
+#include "Renderer/RendererMesh.h"
 #include "Scene/Scene.h"
 #include "Scene/Camera/WorldCamera.h"
 #include "ImGui/ImGuiManager.h"
@@ -69,16 +70,21 @@ void GCApplication_Create(void)
 	GCRenderer_Initialize(Application->WorldCamera);
 	GCImGuiManager_Initialize();
 
-	BasicTerrainEntity = GCScene_CreateEntity(Application->Scene, "Basic Terrain");
-	GCMeshComponent* BasicTerrainEntityMeshComponent = GCEntity_AddMeshComponent(BasicTerrainEntity);
-	BasicTerrainEntityMeshComponent->Model = GCRendererModel_CreateFromFile("Assets/Models/Terrains/BasicTerrain.obj", "Assets/Models/Terrains");
+	{
+		BasicTerrainEntity = GCScene_CreateEntity(Application->Scene, "Basic Terrain");
+		GCMeshComponent* MeshComponent = GCEntity_AddMeshComponent(BasicTerrainEntity);
+		MeshComponent->Mesh = GCRendererMesh_Create(GCRendererModel_CreateFromFile("Assets/Models/Terrains/BasicTerrain.obj", "Assets/Models/Terrains"));
+	}
 
-	SmallOfficeEntity = GCScene_CreateEntity(Application->Scene, "Small Office");
-	GCMeshComponent* SmallOfficeEntityMeshComponent = GCEntity_AddMeshComponent(SmallOfficeEntity);
-	SmallOfficeEntityMeshComponent->Model = GCRendererModel_CreateFromFile("Assets/Models/Buildings/Offices/SmallOffice.obj", "Assets/Models/Buildings/Offices");
+	{
+		SmallOfficeEntity = GCScene_CreateEntity(Application->Scene, "Small Office");
+		GCTransformComponent* TransformComponent = GCEntity_GetTransformComponent(SmallOfficeEntity);
+		TransformComponent->Position = GCVector3_Create(0.0f, 2.0f, 0.0f);
+		TransformComponent->Scale = GCVector3_Create(2.0f, 2.0f, 2.0f);
 
-	GCMatrix4x4 Transform = GCMatrix4x4_CreateTranslation(GCVector3_Create(0.0f, 0.5f, 0.0f));
-	GCRendererModel_SetTransform(BasicTerrainEntityMeshComponent->Model, &Transform);
+		GCMeshComponent* MeshComponent = GCEntity_AddMeshComponent(SmallOfficeEntity);
+		MeshComponent->Mesh = GCRendererMesh_Create(GCRendererModel_CreateFromFile("Assets/Models/Buildings/Offices/SmallOffice.obj", "Assets/Models/Buildings/Offices"));
+	}
 }
 
 void GCApplication_Run(void)

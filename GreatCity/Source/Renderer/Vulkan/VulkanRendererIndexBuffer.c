@@ -37,7 +37,8 @@ typedef struct GCRendererIndexBuffer
 	VkBuffer IndexBufferHandle;
 	VkDeviceMemory IndexBufferMemoryHandle;
 
-	const uint32_t* Indices;
+	uint32_t* Indices;
+	uint32_t IndexCount;
 	size_t IndexSize;
 } GCRendererIndexBuffer;
 
@@ -52,11 +53,17 @@ GCRendererIndexBuffer* GCRendererIndexBuffer_Create(const GCRendererIndexBufferD
 	IndexBuffer->IndexBufferHandle = VK_NULL_HANDLE;
 	IndexBuffer->IndexBufferMemoryHandle = VK_NULL_HANDLE;
 	IndexBuffer->Indices = Description->Indices;
+	IndexBuffer->IndexCount = Description->IndexCount;
 	IndexBuffer->IndexSize = Description->IndexSize;
 
 	GCRendererIndexBuffer_CreateIndexBuffer(IndexBuffer);
 
 	return IndexBuffer;
+}
+
+uint32_t GCRendererIndexBuffer_GetIndexCount(const GCRendererIndexBuffer* const indexBuffer)
+{
+	return indexBuffer->IndexCount;
 }
 
 void GCRendererIndexBuffer_Destroy(GCRendererIndexBuffer* IndexBuffer)
