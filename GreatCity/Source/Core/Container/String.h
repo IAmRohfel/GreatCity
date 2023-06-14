@@ -25,8 +25,8 @@ extern "C"
 {
 #endif
 
-	wchar_t* GCString_UTF8ToUTF16(const char* const UTF8String);
-	char* GCString_UTF16ToUTF8(const wchar_t* const UTF16String);
+    wchar_t *GCString_UTF8ToUTF16(const char *const UTF8String);
+    char *GCString_UTF16ToUTF8(const wchar_t *const UTF16String);
 
 #ifdef __cplusplus
 }

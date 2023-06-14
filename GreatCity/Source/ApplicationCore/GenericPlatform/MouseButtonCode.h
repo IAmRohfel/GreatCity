@@ -23,14 +23,14 @@ extern "C"
 {
 #endif
 
-	typedef enum GCMouseButtonCode
-	{
+    typedef enum GCMouseButtonCode
+    {
 #ifdef GC_PLATFORM_WINDOWS
-		GCMouseButtonCode_Left = 0x01,
-		GCMouseButtonCode_Right = 0x02,
-		GCMouseButtonCode_Middle = 0x04
+        GCMouseButtonCode_Left = 0x01,
+        GCMouseButtonCode_Right = 0x02,
+        GCMouseButtonCode_Middle = 0x04
 #endif
-	} GCMouseButtonCode;
+    } GCMouseButtonCode;
 
 #ifdef __cplusplus
 }

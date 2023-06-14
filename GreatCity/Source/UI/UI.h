@@ -23,13 +23,13 @@ extern "C"
 {
 #endif
 
-	typedef struct GCEvent GCEvent;
+    typedef struct GCEvent GCEvent;
 
-	void GCUI_Initialize(void);
-	void GCUI_Render(void);
-	void GCUI_OnUpdate(void);
-	void GCUI_OnEvent(GCEvent* const Event);
-	void GCUI_Terminate(void);
+    void GCUI_Initialize(void);
+    void GCUI_Render(void);
+    void GCUI_OnUpdate(void);
+    void GCUI_OnEvent(GCEvent *const Event);
+    void GCUI_Terminate(void);
 
 #ifdef __cplusplus
 }

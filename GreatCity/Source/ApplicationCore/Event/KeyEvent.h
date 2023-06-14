@@ -23,17 +23,17 @@ extern "C"
 {
 #endif
 
-	typedef enum GCEventType GCEventType;
-	typedef enum GCKeyCode GCKeyCode;
+    typedef enum GCEventType GCEventType;
+    typedef enum GCKeyCode GCKeyCode;
 
-	typedef struct GCKeyEvent
-	{
-		GCEventType EventType;
-		GCKeyCode KeyCode;
-	} GCKeyPressedEvent, GCKeyReleasedEvent;
+    typedef struct GCKeyEvent
+    {
+        GCEventType EventType;
+        GCKeyCode KeyCode;
+    } GCKeyPressedEvent, GCKeyReleasedEvent;
 
-	GCKeyPressedEvent GCKeyPressedEvent_Create(const GCKeyCode KeyCode);
-	GCKeyReleasedEvent GCKeyReleasedEvent_Create(const GCKeyCode KeyCode);
+    GCKeyPressedEvent GCKeyPressedEvent_Create(const GCKeyCode KeyCode);
+    GCKeyReleasedEvent GCKeyReleasedEvent_Create(const GCKeyCode KeyCode);
 
 #ifdef __cplusplus
 }

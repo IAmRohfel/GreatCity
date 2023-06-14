@@ -20,18 +20,18 @@
 
 GCWindowClosedEvent GCWindowClosedEvent_Create(void)
 {
-	GCWindowClosedEvent Event;
-	Event.EventType = GCEventType_WindowClosed;
+    GCWindowClosedEvent Event;
+    Event.EventType = GCEventType_WindowClosed;
 
-	return Event;
+    return Event;
 }
 
 GCWindowResizedEvent GCWindowResizedEvent_Create(const uint32_t Width, const uint32_t Height)
 {
-	GCWindowResizedEvent Event;
-	Event.EventType = GCEventType_WindowResized;
-	Event.Width = Width;
-	Event.Height = Height;
+    GCWindowResizedEvent Event;
+    Event.EventType = GCEventType_WindowResized;
+    Event.Width = Width;
+    Event.Height = Height;
 
-	return Event;
+    return Event;
 }

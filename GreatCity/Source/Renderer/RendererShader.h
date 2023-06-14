@@ -23,18 +23,18 @@ extern "C"
 {
 #endif
 
-	typedef struct GCRendererShader GCRendererShader;
-	typedef struct GCRendererDevice GCRendererDevice;
+    typedef struct GCRendererShader GCRendererShader;
+    typedef struct GCRendererDevice GCRendererDevice;
 
     typedef struct GCRendererShaderDescription
     {
-        const GCRendererDevice* Device;
-        const char* VertexShaderPath;
-        const char* FragmentShaderPath;
+        const GCRendererDevice *Device;
+        const char *VertexShaderPath;
+        const char *FragmentShaderPath;
     } GCRendererShaderDescription;
 
-	GCRendererShader* GCRendererShader_Create(const GCRendererShaderDescription* const Description);
-	void GCRendererShader_Destroy(GCRendererShader* Shader);
+    GCRendererShader *GCRendererShader_Create(const GCRendererShaderDescription *const Description);
+    void GCRendererShader_Destroy(GCRendererShader *Shader);
 
 #ifdef __cplusplus
 }

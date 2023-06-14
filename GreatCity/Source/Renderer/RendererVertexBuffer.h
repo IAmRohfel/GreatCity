@@ -25,26 +25,28 @@ extern "C"
 {
 #endif
 
-	typedef struct GCRendererVertexBuffer GCRendererVertexBuffer;
-	typedef struct GCRendererDevice GCRendererDevice;
-	typedef struct GCRendererCommandList GCRendererCommandList;
+    typedef struct GCRendererVertexBuffer GCRendererVertexBuffer;
+    typedef struct GCRendererDevice GCRendererDevice;
+    typedef struct GCRendererCommandList GCRendererCommandList;
 
     typedef struct GCRendererVertexBufferDescription
     {
-        const GCRendererDevice* Device;
-        const GCRendererCommandList* CommandList;
+        const GCRendererDevice *Device;
+        const GCRendererCommandList *CommandList;
 
-        void* Vertices;
+        void *Vertices;
         uint32_t VertexCount;
         size_t VertexSize;
     } GCRendererVertexBufferDescription;
 
-    GCRendererVertexBuffer* GCRendererVertexBuffer_Create(const GCRendererVertexBufferDescription* const Description);
-    GCRendererVertexBuffer* GCRendererVertexBuffer_CreateDynamic(const GCRendererVertexBufferDescription* const Description);
-	void GCRendererVertexBuffer_SetVertices(GCRendererVertexBuffer* const VertexBuffer, const void* const Vertices, const size_t VertexSize);
-    void* GCRendererVertexBuffer_GetVertices(const GCRendererVertexBuffer* const VertexBuffer);
-    uint32_t GCRendererVertexBuffer_GetVertexCount(const GCRendererVertexBuffer* const VertexBuffer);
-	void GCRendererVertexBuffer_Destroy(GCRendererVertexBuffer* VertexBuffer);
+    GCRendererVertexBuffer *GCRendererVertexBuffer_Create(const GCRendererVertexBufferDescription *const Description);
+    GCRendererVertexBuffer *GCRendererVertexBuffer_CreateDynamic(
+        const GCRendererVertexBufferDescription *const Description);
+    void GCRendererVertexBuffer_SetVertices(GCRendererVertexBuffer *const VertexBuffer, const void *const Vertices,
+                                            const size_t VertexSize);
+    void *GCRendererVertexBuffer_GetVertices(const GCRendererVertexBuffer *const VertexBuffer);
+    uint32_t GCRendererVertexBuffer_GetVertexCount(const GCRendererVertexBuffer *const VertexBuffer);
+    void GCRendererVertexBuffer_Destroy(GCRendererVertexBuffer *VertexBuffer);
 
 #ifdef __cplusplus
 }

@@ -18,8 +18,8 @@
 #ifndef GC_WORLD_CAMERA_WORLD_CAMERA_H
 #define GC_WORLD_CAMERA_WORLD_CAMERA_H
 
-#include "Math/Vector3.h"
 #include "Math/Matrix4x4.h"
+#include "Math/Vector3.h"
 
 #include <stdint.h>
 
@@ -28,18 +28,18 @@ extern "C"
 {
 #endif
 
-	typedef struct GCWorldCamera GCWorldCamera;
-	typedef struct GCEvent GCEvent;
+    typedef struct GCWorldCamera GCWorldCamera;
+    typedef struct GCEvent GCEvent;
 
-	GCWorldCamera* GCWorldCamera_Create(const float FoV, const float AspectRatio, const float Near, const float Far);
-	void GCWorldCamera_Update(GCWorldCamera* const WorldCamera);
-	void GCWorldCemera_OnEvent(GCWorldCamera* const WorldCamera, GCEvent* const Event);
-	void GCWorldCamera_SetSize(GCWorldCamera* const WorldCamera, const uint32_t Width, const uint32_t Height);
+    GCWorldCamera *GCWorldCamera_Create(const float FoV, const float AspectRatio, const float Near, const float Far);
+    void GCWorldCamera_Update(GCWorldCamera *const WorldCamera);
+    void GCWorldCemera_OnEvent(GCWorldCamera *const WorldCamera, GCEvent *const Event);
+    void GCWorldCamera_SetSize(GCWorldCamera *const WorldCamera, const uint32_t Width, const uint32_t Height);
 
-    GCVector3 GCWorldCamera_GetPosition(const GCWorldCamera* const WorldCamera);
-    const GCMatrix4x4* const GCWorldCamera_GetViewMatrix(const GCWorldCamera* const WorldCamera);
-    const GCMatrix4x4* const GCWorldCamera_GetProjectionMatrix(const GCWorldCamera* const WorldCamera);
-    GCMatrix4x4 GCWorldCamera_GetViewProjectionMatrix(const GCWorldCamera* const WorldCamera);
+    GCVector3 GCWorldCamera_GetPosition(const GCWorldCamera *const WorldCamera);
+    const GCMatrix4x4 *const GCWorldCamera_GetViewMatrix(const GCWorldCamera *const WorldCamera);
+    const GCMatrix4x4 *const GCWorldCamera_GetProjectionMatrix(const GCWorldCamera *const WorldCamera);
+    GCMatrix4x4 GCWorldCamera_GetViewProjectionMatrix(const GCWorldCamera *const WorldCamera);
 
 #ifdef __cplusplus
 }

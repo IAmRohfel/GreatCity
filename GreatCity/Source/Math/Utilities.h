@@ -23,8 +23,8 @@ extern "C"
 {
 #endif
 
-	float GCMathUtilities_DegreesToRadians(const float Degrees);
-	float GCMathUtilities_RadiansToDegrees(const float Radians);
+    float GCMathUtilities_DegreesToRadians(const float Degrees);
+    float GCMathUtilities_RadiansToDegrees(const float Radians);
 
 #ifdef __cplusplus
 }

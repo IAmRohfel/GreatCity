@@ -29,9 +29,9 @@ extern "C"
 {
 #endif
 
-	bool GCInput_IsKeyPressed(const GCKeyCode KeyCode);
-	bool GCInput_IsMouseButtonPressed(const GCMouseButtonCode MouseButtonCode);
-	GCVector2 GCInput_GetMousePosition(void);
+    bool GCInput_IsKeyPressed(const GCKeyCode KeyCode);
+    bool GCInput_IsMouseButtonPressed(const GCMouseButtonCode MouseButtonCode);
+    GCVector2 GCInput_GetMousePosition(void);
 
 #ifdef __cplusplus
 }

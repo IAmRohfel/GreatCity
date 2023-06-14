@@ -26,11 +26,11 @@ extern "C"
     typedef struct GCPlatformWindow GCWindow;
     typedef struct GCWorld GCWorld;
 
-	void GCApplication_Create(void);
-	void GCApplication_Run(void);
-    GCWindow* const GCApplication_GetWindow(void);
-    GCWorld* GCApplication_GetWorld(void);
-	void GCApplication_Destroy(void);
+    void GCApplication_Create(void);
+    void GCApplication_Run(void);
+    GCWindow *const GCApplication_GetWindow(void);
+    GCWorld *GCApplication_GetWorld(void);
+    void GCApplication_Destroy(void);
 
 #ifdef __cplusplus
 }
