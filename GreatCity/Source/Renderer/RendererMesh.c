@@ -62,27 +62,6 @@ GCRendererMesh* GCRendererMesh_Create(const GCEntity Entity, const GCRendererMod
 	return Mesh;
 }
 
-void GCRendererMesh_ApplyTransform(GCRendererMesh* const Mesh, const GCMatrix4x4* const Transform)
-{
-	const GCRendererVertex* const OriginalVertices = (const GCRendererVertex* const)GCRendererVertexBuffer_GetVertices(Mesh->VertexBuffer);
-	const uint32_t VertexCount = GCRendererVertexBuffer_GetVertexCount(Mesh->VertexBuffer);
-
-	GCRendererVertex* Vertices = (GCRendererVertex*)GCMemory_Allocate(VertexCount * sizeof(GCRendererVertex));
-	memcpy(Vertices, OriginalVertices, VertexCount * sizeof(GCRendererVertex));
-
-	for (uint32_t Counter = 0; Counter < VertexCount; Counter++)
-	{
-		const GCVector3 Position = Vertices[Counter].Position;
-		const GCVector4 TransformVector = GCMatrix4x4_MultiplyByVector(Transform, GCVector4_Create(Position.X, Position.Y, Position.Z, 1.0f));
-	
-		Vertices[Counter].Position = GCVector3_Create(TransformVector.X, TransformVector.Y, TransformVector.Z);
-	}
-
-	GCRendererVertexBuffer_SetVertices(Mesh->VertexBuffer, Vertices, VertexCount * sizeof(GCRendererVertex));
-
-	GCMemory_Free(Vertices);
-}
-
 void GCRendererMesh_Destroy(GCRendererMesh* Mesh)
 {
 	GCRendererDevice_WaitIdle(GCRenderer_GetDevice());

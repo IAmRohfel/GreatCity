@@ -50,10 +50,14 @@ extern "C"
 	typedef struct GCRendererDevice GCRendererDevice;
 	typedef struct GCRendererSwapChain GCRendererSwapChain;
 	typedef struct GCRendererCommandList GCRendererCommandList;
+	typedef struct GCRendererTexture2D GCRendererTexture2D;
 	typedef struct GCRendererGraphicsPipeline GCRendererGraphicsPipeline;
 	typedef struct GCRendererFramebuffer GCRendererFramebuffer;
 
+	void GCRenderer_PreInitialize(void);
 	void GCRenderer_Initialize(void);
+	void GCRenderer_SetTexture2Ds(GCRendererTexture2D** const Texture2Ds, const uint32_t Texture2DCount);
+
 	void GCRenderer_BeginWorld(const GCWorldCamera* const WorldCamera);
 	void GCRenderer_RenderEntity(const GCEntity Entity);
 	void GCRenderer_EndWorld(void);

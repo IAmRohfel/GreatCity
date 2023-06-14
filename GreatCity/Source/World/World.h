@@ -34,6 +34,8 @@ extern "C"
 	void GCWorld_OnUpdate(GCWorld* const World);
 	void GCWorld_OnEvent(GCWorld* const World, GCEvent* const Event);
 	GCWorldCamera* GCWorld_GetCamera(const GCWorld* const World);
+
+	GCEntity GCWorld_GetTerrainEntity(const GCWorld* const World);
 	void GCWorld_Destroy(GCWorld* World);
 
 #ifdef __cplusplus

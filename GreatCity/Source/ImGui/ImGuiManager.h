@@ -27,6 +27,7 @@ extern "C"
 
 	void GCImGuiManager_Initialize(void);
 	void GCImGuiManager_BeginFrame(void);
+	void GCImGuiManager_RenderUI(void);
 	void GCImGuiManager_EndFrame(void);
 	void GCImGuiManager_Render(void);
 	void GCImGuiManager_OnEvent(GCEvent* const Event);

@@ -31,7 +31,7 @@ extern "C"
 	VkRenderPass GCRendererGraphicsPipeline_GetAttachmentRenderPassHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
 	VkPipelineLayout GCRendererGraphicsPipeline_GetPipelineLayoutHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
 	VkPipeline GCRendererGraphicsPipeline_GetPipelineHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
-	VkDescriptorSet* GCRendererGraphicsPipeline_GetDescriptorSetHandles(const GCRendererGraphicsPipeline* const GraphicsPipeline);
+	VkDescriptorSet GCRendererGraphicsPipeline_GetDescriptorSetHandle(const GCRendererGraphicsPipeline* const GraphicsPipeline);
 
 #ifdef __cplusplus
 }

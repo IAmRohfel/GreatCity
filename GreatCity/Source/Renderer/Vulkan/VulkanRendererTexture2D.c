@@ -41,6 +41,8 @@ typedef struct GCRendererTexture2D
 	VkDeviceMemory ImageMemoryHandle;
 	VkImageView ImageViewHandle;
 	VkSampler ImageSamplerHandle;
+
+	VkDescriptorSet DescriptorSetHandle;
 } GCRendererTexture2D;
 
 static uint8_t* GCRendererTexture2D_LoadImage(const char* const TexturePath, uint32_t* const Width, uint32_t* const Height, uint32_t* const Channels);
@@ -56,6 +58,7 @@ GCRendererTexture2D* GCRendererTexture2D_Create(const GCRendererTexture2DDescrip
 	Texture2D->ImageMemoryHandle = VK_NULL_HANDLE;
 	Texture2D->ImageViewHandle = VK_NULL_HANDLE;
 	Texture2D->ImageSamplerHandle = VK_NULL_HANDLE;
+	Texture2D->DescriptorSetHandle = VK_NULL_HANDLE;
 
 	GCRendererTexture2D_CreateTexture(Texture2D, Description->TexturePath);
 

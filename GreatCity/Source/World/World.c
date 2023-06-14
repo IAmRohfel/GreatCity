@@ -27,6 +27,7 @@
 typedef struct GCWorld
 {
 	GCWorldCamera* WorldCamera;
+	GCEntity TerrainEntity;
 
 	ecs_world_t* World;
 } GCWorld;
@@ -35,8 +36,6 @@ ecs_world_t* GWorldECSWorld = NULL;
 
 ECS_COMPONENT_DECLARE(GCTransformComponent);
 ECS_COMPONENT_DECLARE(GCMeshComponent);
-
-static GCEntity BasicTerrainEntity = 0, SmallOfficeEntity = 0;
 
 GCWorld* GCWorld_Create(void)
 {
@@ -50,23 +49,14 @@ GCWorld* GCWorld_Create(void)
 	ECS_COMPONENT_DEFINE(World->World, GCMeshComponent);
 
 	{
-		BasicTerrainEntity = GCWorld_CreateEntity(World, "Basic Terrain");
+		World->TerrainEntity = GCWorld_CreateEntity(World, "Basic Terrain");
 		GCRendererModel* BasicTerrainModel = GCRendererModel_CreateFromFile("Assets/Models/Terrains/BasicTerrain.obj", "Assets/Models/Terrains");
-		GCEntity_AddMeshComponent(BasicTerrainEntity, BasicTerrainModel);
 
+		GCTransformComponent* const TransformComponent = GCEntity_GetTransformComponent(World->TerrainEntity);
+		TransformComponent->Scale = GCVector3_Create(50.0f, 50.0f, 50.0f);
+
+		GCEntity_AddMeshComponent(World->TerrainEntity, BasicTerrainModel);
 		GCRendererModel_Destroy(BasicTerrainModel);
-	}
-
-	{
-		SmallOfficeEntity = GCWorld_CreateEntity(World, "Small Office");
-		GCRendererModel* SmallOfficeModel = GCRendererModel_CreateFromFile("Assets/Models/Buildings/Offices/SmallOffice.obj", "Assets/Models/Buildings/Offices");
-
-		GCTransformComponent* TransformComponent = GCEntity_GetTransformComponent(SmallOfficeEntity);
-		TransformComponent->Translation = GCVector3_Create(0.0f, 2.0f, 0.0f);
-		TransformComponent->Scale = GCVector3_Create(2.0f, 2.0f, 2.0f);
-		GCEntity_AddMeshComponent(SmallOfficeEntity, SmallOfficeModel);
-
-		GCRendererModel_Destroy(SmallOfficeModel);
 	}
 
 	return World;
@@ -86,8 +76,23 @@ void GCWorld_OnUpdate(GCWorld* const World)
 {
 	GCRenderer_BeginWorld(World->WorldCamera);
 	{
-		GCRenderer_RenderEntity(BasicTerrainEntity);
-		GCRenderer_RenderEntity(SmallOfficeEntity);
+		ecs_filter_desc_t FilterDescriptions[2] = { 0 };
+		FilterDescriptions[0].terms->id = ecs_id(GCTransformComponent);
+		FilterDescriptions[1].terms->id = ecs_id(GCMeshComponent);
+
+		ecs_filter_t* Filter = ecs_filter_init(World->World, FilterDescriptions);
+		ecs_iter_t FilterIterator = ecs_filter_iter(World->World, Filter);
+
+		while (ecs_filter_next(&FilterIterator))
+		{
+			for (int32_t Counter = 0; Counter < FilterIterator.count; Counter++)
+			{
+				GCRenderer_RenderEntity(FilterIterator.entities[Counter]);
+			}
+		}
+
+		ecs_iter_fini(&FilterIterator);
+		ecs_filter_fini(Filter);
 	}
 	GCRenderer_EndWorld();
 }
@@ -104,11 +109,29 @@ GCWorldCamera* GCWorld_GetCamera(const GCWorld* const World)
 	return World->WorldCamera;
 }
 
+GCEntity GCWorld_GetTerrainEntity(const GCWorld* const World)
+{
+	return World->TerrainEntity;
+}
+
 void GCWorld_Destroy(GCWorld* World)
 {
-	GCEntity_RemoveMeshComponent(SmallOfficeEntity);
-	GCEntity_RemoveMeshComponent(BasicTerrainEntity);
+	ecs_filter_desc_t FilterDescription = { 0 };
+	FilterDescription.terms->id = ecs_id(GCMeshComponent);
 
+	ecs_filter_t* Filter = ecs_filter_init(World->World, &FilterDescription);
+	ecs_iter_t FilterIterator = ecs_filter_iter(World->World, Filter);
+
+	while (ecs_filter_next(&FilterIterator))
+	{
+		for (int32_t Counter = 0; Counter < FilterIterator.count; Counter++)
+		{
+			GCEntity_RemoveMeshComponent(FilterIterator.entities[Counter]);
+		}
+	}
+
+	ecs_iter_fini(&FilterIterator);
+	ecs_filter_fini(Filter);
 	ecs_fini(World->World);
 
 	GCMemory_Free(World->WorldCamera);

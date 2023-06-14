@@ -193,20 +193,11 @@ void GCRendererCommandList_BindIndexBuffer(const GCRendererCommandList* const Co
 	vkCmdBindIndexBuffer(CommandList->CommandBufferHandles[CommandList->CurrentFrame], GCRendererIndexBuffer_GetHandle(IndexBuffer), 0, VK_INDEX_TYPE_UINT32);
 }
 
-void GCRendererCommandList_UpdateUniformBuffer(const GCRendererCommandList* const CommandList, const GCRendererUniformBuffer* const UniformBuffer, const void* const Data, const size_t DataSize)
-{
-	(void)CommandList;
-
-	void** UniformBufferData = GCRendererUniformBuffer_GetData(UniformBuffer);
-
-	memcpy(UniformBufferData[CommandList->CurrentImageIndex], Data, DataSize);
-}
-
 void GCRendererCommandList_BindGraphicsPipeline(const GCRendererCommandList* const CommandList, const GCRendererGraphicsPipeline* const GraphicsPipeline)
 {
 	vkCmdBindPipeline(CommandList->CommandBufferHandles[CommandList->CurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, GCRendererGraphicsPipeline_GetPipelineHandle(GraphicsPipeline));
 
-	const VkDescriptorSet DescriptorSetHandle = GCRendererGraphicsPipeline_GetDescriptorSetHandles(GraphicsPipeline)[CommandList->CurrentFrame];
+	const VkDescriptorSet DescriptorSetHandle = GCRendererGraphicsPipeline_GetDescriptorSetHandle(GraphicsPipeline);
 	vkCmdBindDescriptorSets(CommandList->CommandBufferHandles[CommandList->CurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, GCRendererGraphicsPipeline_GetPipelineLayoutHandle(GraphicsPipeline), 0, 1, &DescriptorSetHandle, 0, NULL);
 }
 

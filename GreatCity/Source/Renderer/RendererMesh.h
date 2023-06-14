@@ -38,7 +38,6 @@ extern "C"
 	} GCRendererMesh;
 
 	GCRendererMesh* GCRendererMesh_Create(const uint64_t EntityID, const GCRendererModel* const Model);
-	void GCRendererMesh_ApplyTransform(GCRendererMesh* const Mesh, const GCMatrix4x4* const Transform);
 	void GCRendererMesh_Destroy(GCRendererMesh* Mesh);
 
 #ifdef __cplusplus

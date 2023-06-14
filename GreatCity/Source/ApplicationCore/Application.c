@@ -61,6 +61,7 @@ void GCApplication_Create(void)
 
 	Application->Window = GCWindow_Create(&WindowProperties);
 
+	GCRenderer_PreInitialize();
 	GCRenderer_Initialize();
 	GCImGuiManager_Initialize();
 
@@ -75,6 +76,7 @@ void GCApplication_Run(void)
 		
 		GCRenderer_BeginImGui();
 		GCImGuiManager_BeginFrame();
+		GCImGuiManager_RenderUI();
 		GCImGuiManager_EndFrame();
 		GCImGuiManager_Render();
 		GCRenderer_EndImGui();

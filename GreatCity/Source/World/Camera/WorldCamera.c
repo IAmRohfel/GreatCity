@@ -79,10 +79,10 @@ GCWorldCamera* GCWorldCamera_Create(const float FoV, const float AspectRatio, co
 	WorldCamera->FocalPoint = GCVector3_CreateZero();
 	WorldCamera->FoV = 45.0f;
 	WorldCamera->AspectRatio = (float)WindowWidth / (float)WindowHeight;
-	WorldCamera->Distance = 10.0f;
+	WorldCamera->Distance = 15.0f;
 	WorldCamera->Near = 0.1f;
 	WorldCamera->Far = 1000.0f;
-	WorldCamera->Pitch = 0.0f;
+	WorldCamera->Pitch = GCMathUtilities_DegreesToRadians(-25.0f);
 	WorldCamera->Yaw = 0.0f;
 	WorldCamera->Width = (float)WindowWidth;
 	WorldCamera->Height = (float)WindowHeight;

@@ -25,6 +25,7 @@
 #include "Core/Log.h"
 #include "Core/Assert.h"
 
+#include <string.h>
 #include <stdbool.h>
 
 #include <vulkan/vulkan.h>
@@ -34,10 +35,10 @@ typedef struct GCRendererUniformBuffer
 	const GCRendererDevice* Device;
 	const GCRendererCommandList* CommandList;
 
-	VkBuffer* UniformBufferHandles;
-	VkDeviceMemory* UniformBufferMemoryHandles;
+	VkBuffer UniformBufferHandle;
+	VkDeviceMemory UniformBufferMemoryHandle;
 
-	void** Data;
+	void* Data;
 	size_t DataSize;
 } GCRendererUniformBuffer;
 
@@ -49,8 +50,8 @@ GCRendererUniformBuffer* GCRendererUniformBuffer_Create(const GCRendererUniformB
 	GCRendererUniformBuffer* UniformBuffer = (GCRendererUniformBuffer*)GCMemory_Allocate(sizeof(GCRendererUniformBuffer));
 	UniformBuffer->Device = Description->Device;
 	UniformBuffer->CommandList = Description->CommandList;
-	UniformBuffer->UniformBufferHandles = NULL;
-	UniformBuffer->UniformBufferMemoryHandles = NULL;
+	UniformBuffer->UniformBufferHandle = VK_NULL_HANDLE;
+	UniformBuffer->UniformBufferMemoryHandle = VK_NULL_HANDLE;
 	UniformBuffer->Data = NULL;
 	UniformBuffer->DataSize = Description->DataSize;
 
@@ -59,24 +60,26 @@ GCRendererUniformBuffer* GCRendererUniformBuffer_Create(const GCRendererUniformB
 	return UniformBuffer;
 }
 
+void GCRendererUniformBuffer_UpdateUniformBuffer(const GCRendererUniformBuffer* const UniformBuffer, const void* const Data, const size_t DataSize)
+{
+	memcpy(UniformBuffer->Data, Data, DataSize);
+}
+
 void GCRendererUniformBuffer_Destroy(GCRendererUniformBuffer* UniformBuffer)
 {
 	GCRendererDevice_WaitIdle(UniformBuffer->Device);
 
 	GCRendererUniformBuffer_DestroyObjects(UniformBuffer);
 
-	GCMemory_Free(UniformBuffer->Data);
-	GCMemory_Free(UniformBuffer->UniformBufferMemoryHandles);
-	GCMemory_Free(UniformBuffer->UniformBufferHandles);
 	GCMemory_Free(UniformBuffer);
 }
 
-VkBuffer* GCRendererUniformBuffer_GetBufferHandles(const GCRendererUniformBuffer* const UniformBuffer)
+VkBuffer GCRendererUniformBuffer_GetBufferHandle(const GCRendererUniformBuffer* const UniformBuffer)
 {
-	return UniformBuffer->UniformBufferHandles;
+	return UniformBuffer->UniformBufferHandle;
 }
 
-void** GCRendererUniformBuffer_GetData(const GCRendererUniformBuffer* const UniformBuffer)
+void* GCRendererUniformBuffer_GetData(const GCRendererUniformBuffer* const UniformBuffer)
 {
 	return UniformBuffer->Data;
 }
@@ -90,28 +93,15 @@ void GCRendererUniformBuffer_CreateUniformBuffer(GCRendererUniformBuffer* const 
 {
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(UniformBuffer->Device);
 
-	const uint32_t MaximumFramesInFlight = GCRendererCommandList_GetMaximumFramesInFlight(UniformBuffer->CommandList);
+	GCVulkanUtilities_CreateBuffer(UniformBuffer->Device, UniformBuffer->DataSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &UniformBuffer->UniformBufferHandle, &UniformBuffer->UniformBufferMemoryHandle);
 
-	UniformBuffer->UniformBufferHandles = (VkBuffer*)GCMemory_Allocate(MaximumFramesInFlight * sizeof(VkBuffer));
-	UniformBuffer->UniformBufferMemoryHandles = (VkDeviceMemory*)GCMemory_Allocate(MaximumFramesInFlight * sizeof(VkDeviceMemory));
-	UniformBuffer->Data = (void**)GCMemory_Allocate(MaximumFramesInFlight * sizeof(void*));
-
-	for (uint32_t Counter = 0; Counter < MaximumFramesInFlight; Counter++)
-	{
-		GCVulkanUtilities_CreateBuffer(UniformBuffer->Device, UniformBuffer->DataSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &UniformBuffer->UniformBufferHandles[Counter], &UniformBuffer->UniformBufferMemoryHandles[Counter]);
-
-		vkMapMemory(DeviceHandle, UniformBuffer->UniformBufferMemoryHandles[Counter], 0, UniformBuffer->DataSize, 0, &UniformBuffer->Data[Counter]);
-	}
+	vkMapMemory(DeviceHandle, UniformBuffer->UniformBufferMemoryHandle, 0, UniformBuffer->DataSize, 0, &UniformBuffer->Data);
 }
 
 void GCRendererUniformBuffer_DestroyObjects(GCRendererUniformBuffer* const UniformBuffer)
 {
 	const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(UniformBuffer->Device);
-	const uint32_t MaximumFramesInFlight = GCRendererCommandList_GetMaximumFramesInFlight(UniformBuffer->CommandList);
 
-	for (uint32_t Counter = 0; Counter < MaximumFramesInFlight; Counter++)
-	{
-		vkFreeMemory(DeviceHandle, UniformBuffer->UniformBufferMemoryHandles[Counter], NULL);
-		vkDestroyBuffer(DeviceHandle, UniformBuffer->UniformBufferHandles[Counter], NULL);
-	}
+	vkFreeMemory(DeviceHandle, UniformBuffer->UniformBufferMemoryHandle, NULL);
+	vkDestroyBuffer(DeviceHandle, UniformBuffer->UniformBufferHandle, NULL);
 }

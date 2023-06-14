@@ -41,6 +41,7 @@
 #include "Math/Matrix4x4.h"
 #include "Math/Quaternion.h"
 
+#include <string.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -60,6 +61,8 @@ typedef struct GCRenderer
 	GCRendererCommandList* CommandList;
 	GCRendererUniformBuffer* UniformBuffer;
 	GCRendererShader* BasicShader;
+	GCRendererTexture2D** Texture2Ds;
+	uint32_t Texture2DCount;
 	GCRendererGraphicsPipeline* GraphicsPipeline;
 	GCRendererFramebuffer* Framebuffer;
 
@@ -77,7 +80,7 @@ static void GCRenderer_ResizeSwapChain(void);
 
 static GCRenderer* Renderer = NULL;
 
-void GCRenderer_Initialize(void)
+void GCRenderer_PreInitialize(void)
 {
 	Renderer = (GCRenderer*)GCMemory_Allocate(sizeof(GCRenderer));
 	Renderer->Device = GCRendererDevice_Create();
@@ -103,6 +106,14 @@ void GCRenderer_Initialize(void)
 	ShaderDescription.FragmentShaderPath = "Assets/Shaders/Basic/Basic.fragment.glsl";
 	Renderer->BasicShader = GCRendererShader_Create(&ShaderDescription);
 
+	Renderer->Texture2Ds = NULL;
+	Renderer->Texture2DCount = 0;
+
+	GCRendererCommandList_SetSwapChainResizeCallback(Renderer->CommandList, GCRenderer_ResizeSwapChain);
+}
+
+void GCRenderer_Initialize(void)
+{
 	GCRendererGraphicsPipelineAttachment GraphicsPipelineAttachments[3] = { 0 };
 	GraphicsPipelineAttachments[0].Type = GCRendererAttachmentType_Color;
 	GraphicsPipelineAttachments[0].Format = GCRendererAttachmentFormat_SRGB;
@@ -150,8 +161,8 @@ void GCRenderer_Initialize(void)
 	GraphicsPipelineDescription.VertexInput = &GraphicsPipelineVertexInput;
 	GraphicsPipelineDescription.SampleCount = GCRendererAttachmentSampleCount_2;
 	GraphicsPipelineDescription.UniformBuffer = Renderer->UniformBuffer;
-	GraphicsPipelineDescription.Texture2Ds = NULL;
-	GraphicsPipelineDescription.Texture2DCount = 0;
+	GraphicsPipelineDescription.Texture2Ds = Renderer->Texture2Ds;
+	GraphicsPipelineDescription.Texture2DCount = Renderer->Texture2DCount;
 	GraphicsPipelineDescription.Shader = Renderer->BasicShader;
 	Renderer->GraphicsPipeline = GCRendererGraphicsPipeline_Create(&GraphicsPipelineDescription);
 
@@ -183,11 +194,17 @@ void GCRenderer_Initialize(void)
 	FramebufferDescription.Attachments = FramebufferAttachments;
 	FramebufferDescription.AttachmentCount = 3;
 	Renderer->Framebuffer = GCRendererFramebuffer_Create(&FramebufferDescription);
+
 	Renderer->MaximumDrawDataCount = 100;
 	Renderer->DrawData = (GCRendererDrawData*)GCMemory_Allocate(Renderer->MaximumDrawDataCount * sizeof(GCRendererDrawData));
 	Renderer->DrawDataCount = 0;
+}
 
-	GCRendererCommandList_SetSwapChainResizeCallback(Renderer->CommandList, GCRenderer_ResizeSwapChain);
+void GCRenderer_SetTexture2Ds(GCRendererTexture2D** const Texture2Ds, const uint32_t Texture2DCount)
+{
+	Renderer->Texture2Ds = (GCRendererTexture2D**)GCMemory_Allocate(Texture2DCount * sizeof(GCRendererTexture2D*));
+	memcpy(Renderer->Texture2Ds, Texture2Ds, Texture2DCount * sizeof(GCRendererTexture2D*));
+	Renderer->Texture2DCount = Texture2DCount;
 }
 
 void GCRenderer_BeginWorld(const GCWorldCamera* const WorldCamera)
@@ -202,7 +219,7 @@ void GCRenderer_BeginWorld(const GCWorldCamera* const WorldCamera)
 	GCRendererUniformBufferData UniformBufferData = { 0 };
 	UniformBufferData.ViewProjectionMatrix = GCWorldCamera_GetViewProjectionMatrix(WorldCamera);
 
-	GCRendererCommandList_UpdateUniformBuffer(Renderer->CommandList, Renderer->UniformBuffer, &UniformBufferData, sizeof(GCRendererUniformBufferData));
+	GCRendererUniformBuffer_UpdateUniformBuffer(Renderer->UniformBuffer, &UniformBufferData, sizeof(GCRendererUniformBufferData));
 	GCRendererCommandList_BindGraphicsPipeline(Renderer->CommandList, Renderer->GraphicsPipeline);
 	GCRendererCommandList_SetViewport(Renderer->CommandList, Renderer->Framebuffer);
 }
@@ -221,7 +238,23 @@ void GCRenderer_RenderEntity(const GCEntity Entity)
 		Renderer->DrawData = (GCRendererDrawData*)GCMemory_Reallocate(Renderer->DrawData, Renderer->MaximumDrawDataCount * sizeof(GCRendererDrawData));
 	}
 
-	GCRendererMesh_ApplyTransform(Mesh, &Transform);
+	const GCRendererVertex* const OriginalVertices = (const GCRendererVertex* const)GCRendererVertexBuffer_GetVertices(Mesh->VertexBuffer);
+	const uint32_t VertexCount = GCRendererVertexBuffer_GetVertexCount(Mesh->VertexBuffer);
+
+	GCRendererVertex* Vertices = (GCRendererVertex*)GCMemory_Allocate(VertexCount * sizeof(GCRendererVertex));
+	memcpy(Vertices, OriginalVertices, VertexCount * sizeof(GCRendererVertex));
+
+	for (uint32_t Counter = 0; Counter < VertexCount; Counter++)
+	{
+		const GCVector3 Position = Vertices[Counter].Position;
+		const GCVector4 TransformVector = GCMatrix4x4_MultiplyByVector(&Transform, GCVector4_Create(Position.X, Position.Y, Position.Z, 1.0f));
+	
+		Vertices[Counter].Position = GCVector3_Create(TransformVector.X, TransformVector.Y, TransformVector.Z);
+	}
+
+	GCRendererVertexBuffer_SetVertices(Mesh->VertexBuffer, Vertices, VertexCount * sizeof(GCRendererVertex));
+
+	GCMemory_Free(Vertices);
 
 	Renderer->DrawData[Renderer->DrawDataCount].VertexBuffer = Mesh->VertexBuffer;
 	Renderer->DrawData[Renderer->DrawDataCount].VertexCount = GCRendererVertexBuffer_GetVertexCount(Mesh->VertexBuffer);
@@ -272,6 +305,12 @@ void GCRenderer_Terminate(void)
 {
 	GCRendererFramebuffer_Destroy(Renderer->Framebuffer);
 	GCRendererGraphicsPipeline_Destroy(Renderer->GraphicsPipeline);
+	
+	for (uint32_t Counter = 0; Counter < Renderer->Texture2DCount; Counter++)
+	{
+		GCRendererTexture2D_Destroy(Renderer->Texture2Ds[Counter]);
+	}
+
 	GCRendererShader_Destroy(Renderer->BasicShader);
 	GCRendererUniformBuffer_Destroy(Renderer->UniformBuffer);
 	GCRendererCommandList_Destroy(Renderer->CommandList);
@@ -279,6 +318,7 @@ void GCRenderer_Terminate(void)
 	GCRendererDevice_Destroy(Renderer->Device);
 
 	GCMemory_Free(Renderer->DrawData);
+	GCMemory_Free(Renderer->Texture2Ds);
 	GCMemory_Free(Renderer);
 }
 

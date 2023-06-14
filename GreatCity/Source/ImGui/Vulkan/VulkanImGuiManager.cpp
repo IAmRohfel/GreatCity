@@ -19,6 +19,7 @@
 #include "Renderer/Vulkan/VulkanRendererDevice.h"
 #include "Renderer/Vulkan/VulkanRendererSwapChain.h"
 #include "Renderer/Vulkan/VulkanRendererCommandList.h"
+#include "Renderer/Vulkan/VulkanRendererTexture2D.h"
 #include "Renderer/Vulkan/VulkanRendererGraphicsPipeline.h"
 #include "Renderer/Vulkan/VulkanRendererFramebuffer.h"
 #include "Renderer/Renderer.h"
@@ -39,7 +40,7 @@ static void GCImGuiManager_CreateDescriptorPool(void);
 static void GCImGuiManager_UpdateDescriptorSet(void);
 static void GCImGuiManager_CheckVulkanResult(VkResult Result);
 
-extern "C" void GCImGuiManager_InitializeRenderer(void)
+extern "C" void GCImGuiManager_InitializeRenderer(const GCRendererTexture2D* const* const Texture2Ds, void** const Texture2DData, const uint32_t Texture2DCount)
 {
 	const GCRendererDevice* const RendererDevice = GCRenderer_GetDevice();
 	const GCRendererSwapChain* const RendererSwapChain = GCRenderer_GetSwapChain();
@@ -73,6 +74,11 @@ extern "C" void GCImGuiManager_InitializeRenderer(void)
 	ImGui_ImplVulkan_DestroyFontUploadObjects();
 
 	ImGuiDescriptorSetHandle = ImGui_ImplVulkan_AddTexture(GCRendererFramebuffer_GetColorAttachmentSampledSamplerHandle(RendererFramebuffer, 0), GCRendererFramebuffer_GetColorAttachmentImageViewHandle(RendererFramebuffer, 0), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+	for (uint32_t Counter = 0; Counter < Texture2DCount; Counter++)
+	{
+		Texture2DData[Counter] = ImGui_ImplVulkan_AddTexture(GCRendererTexture2D_GetSamplerHandle(Texture2Ds[Counter]), GCRendererTexture2D_GetImageViewHandle(Texture2Ds[Counter]), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	}
 }
 
 extern "C" void GCImGuiManager_BeginFrameRenderer(void)

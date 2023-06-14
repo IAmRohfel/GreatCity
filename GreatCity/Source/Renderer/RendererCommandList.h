@@ -53,7 +53,6 @@ extern "C"
 	void GCRendererCommandList_BeginAttachmentRenderPass(const GCRendererCommandList* const CommandList, const GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererFramebuffer* const Framebuffer, const float* const ClearColor);
 	void GCRendererCommandList_BindVertexBuffer(const GCRendererCommandList* const CommandList, const GCRendererVertexBuffer* const VertexBuffer);
 	void GCRendererCommandList_BindIndexBuffer(const GCRendererCommandList* const CommandList, const GCRendererIndexBuffer* const IndexBuffer);
-	void GCRendererCommandList_UpdateUniformBuffer(const GCRendererCommandList* const CommandList, const GCRendererUniformBuffer* const UniformBuffer, const void* const Data, const size_t DataSize);
 	void GCRendererCommandList_BindGraphicsPipeline(const GCRendererCommandList* const CommandList, const GCRendererGraphicsPipeline* const GraphicsPipeline);
 	void GCRendererCommandList_SetViewport(const GCRendererCommandList* const CommandList, const GCRendererFramebuffer* const Framebuffer);
 	void GCRendererCommandList_Draw(const GCRendererCommandList* const CommandList, const uint32_t VertexCount, const uint32_t FirstVertex);

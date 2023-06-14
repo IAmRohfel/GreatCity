@@ -38,6 +38,7 @@ extern "C"
     } GCRendererUniformBufferDescription;
 
 	GCRendererUniformBuffer* GCRendererUniformBuffer_Create(const GCRendererUniformBufferDescription* const Description);
+	void GCRendererUniformBuffer_UpdateUniformBuffer(const GCRendererUniformBuffer* const UniformBuffer, const void* const Data, const size_t DataSize);
 	void GCRendererUniformBuffer_Destroy(GCRendererUniformBuffer* UniformBuffer);
 
 #ifdef __cplusplus
