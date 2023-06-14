@@ -18,21 +18,26 @@
 #ifndef GC_IMGUI_IMGUI_MANAGER_H
 #define GC_IMGUI_IMGUI_MANAGER_H
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-	typedef struct GCEvent GCEvent;
+	typedef struct GCRendererTexture2D GCRendererTexture2D;
 
 	void GCImGuiManager_Initialize(void);
-	void GCImGuiManager_BeginFrame(void);
-	void GCImGuiManager_RenderUI(void);
-	void GCImGuiManager_EndFrame(void);
 	void GCImGuiManager_Render(void);
-	void GCImGuiManager_OnEvent(GCEvent* const Event);
-	void GCImGuiManager_Update(void);
 	void GCImGuiManager_Terminate(void);
+
+	void GCImGuiManager_InitializePlatform(void);
+	void GCImGuiManager_TerminatePlatform(void);
+	void GCImGuiManager_InitializeRenderer(const GCRendererTexture2D* const* const Texture2Ds, void** const Texture2DData, const uint32_t Texture2DCount);
+	void GCImGuiManager_BeginFramePlatform(void);
+	void GCImGuiManager_BeginFrameRenderer(void);
+	void* GCImGuiManager_GetTexturePlatform(void);
+	void GCImGuiManager_TerminateRenderer(void);
 
 #ifdef __cplusplus
 }

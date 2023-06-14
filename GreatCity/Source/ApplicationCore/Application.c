@@ -24,7 +24,7 @@
 #include "Renderer/RendererModel.h"
 #include "Renderer/RendererMesh.h"
 #include "World/World.h"
-#include "ImGui/ImGuiManager.h"
+#include "UI/UI.h"
 #include "Math/Matrix4x4.h"
 #include "Math/Utilities.h"
 
@@ -63,7 +63,7 @@ void GCApplication_Create(void)
 
 	GCRenderer_PreInitialize();
 	GCRenderer_Initialize();
-	GCImGuiManager_Initialize();
+	GCUI_Initialize();
 
 	Application->World = GCWorld_Create();
 }
@@ -73,16 +73,11 @@ void GCApplication_Run(void)
 	while (Application->IsRunning)
 	{
 		GCWorld_OnUpdate(Application->World);
-		
-		GCRenderer_BeginImGui();
-		GCImGuiManager_BeginFrame();
-		GCImGuiManager_RenderUI();
-		GCImGuiManager_EndFrame();
-		GCImGuiManager_Render();
-		GCRenderer_EndImGui();
 
+		GCUI_Render();
 		GCRenderer_Present();
-		GCImGuiManager_Update();
+		GCUI_OnUpdate();
+
 		GCWindow_ProcessEvents(Application->Window);
 	}
 }
@@ -101,7 +96,7 @@ void GCApplication_Destroy(void)
 {
 	GCWorld_Destroy(Application->World);
 
-	GCImGuiManager_Terminate();
+	GCUI_Terminate();
 	GCRenderer_Terminate();
 	GCWindow_Destroy(Application->Window);
 
@@ -120,7 +115,7 @@ void GCApplication_OnEvent(GCWindow* const Window, GCEvent* const Event)
 		GCWorld_OnEvent(Application->World, Event);
 	}
 
-	GCImGuiManager_OnEvent(Event);
+	GCUI_OnEvent(Event);
 }
 
 bool GCApplication_OnWindowResized(GCEvent* const Event, void* CustomData)
