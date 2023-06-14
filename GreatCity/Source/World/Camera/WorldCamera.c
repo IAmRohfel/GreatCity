@@ -126,6 +126,11 @@ void GCWorldCamera_SetSize(GCWorldCamera* const WorldCamera, const uint32_t Widt
 	GCWorldCamera_UpdateProjection(WorldCamera);
 }
 
+GCVector3 GCWorldCamera_GetPosition(const GCWorldCamera* const WorldCamera)
+{
+	return WorldCamera->Position;
+}
+
 const GCMatrix4x4* const GCWorldCamera_GetViewMatrix(const GCWorldCamera* const WorldCamera)
 {
 	return &WorldCamera->ViewMatrix;

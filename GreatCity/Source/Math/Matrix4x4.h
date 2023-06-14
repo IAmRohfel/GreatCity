@@ -21,6 +21,8 @@
 #include "Math/Vector3.h"
 #include "Math/Vector4.h"
 
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -50,6 +52,8 @@ extern "C"
 	GCMatrix4x4 GCMatrix4x4_Transpose(const GCMatrix4x4* const Matrix);
 
 	void GCMatrix4x4_Decompose(const GCMatrix4x4* const Matrix, GCVector3* const Translation, GCVector3* const Rotation, GCVector3* const Scale);
+
+	bool GCMatrix4x4_IsEqual(const GCMatrix4x4* const Matrix1, const GCMatrix4x4* const Matrix2);
 
 	char* GCMatrix4x4_ToString(const GCMatrix4x4* const Matrix);
 

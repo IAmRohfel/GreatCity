@@ -22,6 +22,8 @@
 #include "Renderer/Renderer.h"
 #include "Renderer/RendererModel.h"
 
+#include <stdbool.h>
+
 #include <flecs.h>
 
 typedef struct GCWorld
@@ -70,6 +72,45 @@ GCEntity GCWorld_CreateEntity(GCWorld* const World, const char* const Name)
 	GCEntity_AddTransformComponent((GCEntity)Entity);
 
 	return (GCEntity)Entity;
+}
+
+bool GCWorld_CheckCollision(const GCWorld* const World, const GCEntity Entity)
+{
+	const GCTransformComponent* const TransformComponent = GCEntity_GetTransformComponent(Entity);
+
+	ecs_filter_desc_t FilterDescription = { 0 };
+	FilterDescription.terms->id = ecs_id(GCTransformComponent);
+
+	ecs_filter_t* Filter = ecs_filter_init(World->World, &FilterDescription);
+	ecs_iter_t FilterIterator = ecs_filter_iter(World->World, Filter);
+
+	bool IsColliding = false;
+
+	while (ecs_filter_next(&FilterIterator))
+	{
+		for (int32_t Counter = 0; Counter < FilterIterator.count; Counter++)
+		{
+			if (FilterIterator.entities[Counter] != Entity)
+			{
+				const GCTransformComponent* const OtherTransformComponent = GCEntity_GetTransformComponent(FilterIterator.entities[Counter]);
+
+				if (TransformComponent->Translation.X < OtherTransformComponent->Translation.X + 1.0f &&
+					TransformComponent->Translation.X + 1.0f > OtherTransformComponent->Translation.X &&
+					TransformComponent->Translation.Y < OtherTransformComponent->Translation.Y + 1.0f &&
+					TransformComponent->Translation.Y + 1.0f > OtherTransformComponent->Translation.Y &&
+					TransformComponent->Translation.Z < OtherTransformComponent->Translation.Z + 1.0f &&
+					TransformComponent->Translation.Z + 1.0f > OtherTransformComponent->Translation.Z)
+				{
+					IsColliding = true;
+				}
+			}
+		}
+	}
+
+	ecs_iter_fini(&FilterIterator);
+	ecs_filter_fini(Filter);
+
+	return IsColliding;
 }
 
 void GCWorld_OnUpdate(GCWorld* const World)

@@ -20,6 +20,8 @@
 
 #include "World/Entity.h"
 
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -31,6 +33,7 @@ extern "C"
 
 	GCWorld* GCWorld_Create(void);
 	GCEntity GCWorld_CreateEntity(GCWorld* const World, const char* const Name);
+	bool GCWorld_CheckCollision(const GCWorld* const World, const GCEntity Entity);
 	void GCWorld_OnUpdate(GCWorld* const World);
 	void GCWorld_OnEvent(GCWorld* const World, GCEvent* const Event);
 	GCWorldCamera* GCWorld_GetCamera(const GCWorld* const World);

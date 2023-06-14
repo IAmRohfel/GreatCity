@@ -48,6 +48,7 @@ namespace std
 			size_t Seed = 0;
 			GCRendererModel_HashCombine(Seed,
 				Vertex.Position.X, Vertex.Position.Y, Vertex.Position.Z,
+				Vertex.Normal.X, Vertex.Normal.Y, Vertex.Normal.Z,
 				Vertex.Color.X, Vertex.Color.Y, Vertex.Color.Z, Vertex.Color.W,
 				Vertex.TextureCoordinate.X, Vertex.TextureCoordinate.Y
 			);
@@ -118,6 +119,15 @@ GCRendererModel* GCRendererModel_CreateFromFiles(const char* const* const ModelP
 							Attribute.vertices[3 * Index.vertex_index + 0],
 							Attribute.vertices[3 * Index.vertex_index + 1],
 							Attribute.vertices[3 * Index.vertex_index + 2]
+						);
+					}
+
+					if (Index.normal_index >= 0)
+					{
+						Vertex.Normal = GCVector3_Create(
+							Attribute.normals[3 * Index.normal_index + 0],
+							Attribute.normals[3 * Index.normal_index + 1],
+							Attribute.normals[3 * Index.normal_index + 2]
 						);
 					}
 

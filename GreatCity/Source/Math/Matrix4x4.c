@@ -444,6 +444,15 @@ void GCMatrix4x4_Decompose(const GCMatrix4x4* const Matrix, GCVector3* const Tra
 	}
 }
 
+bool GCMatrix4x4_IsEqual(const GCMatrix4x4* const Matrix1, const GCMatrix4x4* const Matrix2)
+{
+	return
+		Matrix1->Data[0][0] == Matrix2->Data[0][0] && Matrix1->Data[0][1] == Matrix2->Data[0][1] && Matrix1->Data[0][2] == Matrix2->Data[0][2] && Matrix1->Data[0][3] == Matrix2->Data[0][3] &&
+		Matrix1->Data[1][0] == Matrix2->Data[1][0] && Matrix1->Data[1][1] == Matrix2->Data[1][1] && Matrix1->Data[1][2] == Matrix2->Data[1][2] && Matrix1->Data[1][3] == Matrix2->Data[1][3] &&
+		Matrix1->Data[2][0] == Matrix2->Data[2][0] && Matrix1->Data[2][1] == Matrix2->Data[2][1] && Matrix1->Data[2][2] == Matrix2->Data[2][2] && Matrix1->Data[2][3] == Matrix2->Data[2][3] &&
+		Matrix1->Data[3][0] == Matrix2->Data[3][0] && Matrix1->Data[3][1] == Matrix2->Data[3][1] && Matrix1->Data[3][2] == Matrix2->Data[3][2] && Matrix1->Data[3][3] == Matrix2->Data[3][3];
+}
+
 char* GCMatrix4x4_ToString(const GCMatrix4x4* const Matrix)
 {
 	const int32_t Length = snprintf(NULL, 0, "(%f, %f, %f, %f)\n(%f, %f, %f, %f)\n(%f, %f, %f, %f)\n(%f, %f, %f, %f)",

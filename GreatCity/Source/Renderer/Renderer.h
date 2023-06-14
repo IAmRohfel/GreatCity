@@ -33,6 +33,7 @@ extern "C"
 	typedef struct GCRendererVertex
 	{
 		GCVector3 Position;
+		GCVector3 Normal;
 		GCVector4 Color;
 		GCVector2 TextureCoordinate;
 		uint64_t EntityID;
@@ -40,7 +41,7 @@ extern "C"
 #ifdef __cplusplus
 		bool operator==(const GCRendererVertex& OtherVertex) const noexcept
 		{
-			return GCVector3_IsEqual(Position, OtherVertex.Position) && GCVector4_IsEqual(Color, OtherVertex.Color) && GCVector2_IsEqual(TextureCoordinate, OtherVertex.TextureCoordinate);
+			return GCVector3_IsEqual(Position, OtherVertex.Position) && GCVector3_IsEqual(Normal, OtherVertex.Normal) && GCVector4_IsEqual(Color, OtherVertex.Color) && GCVector2_IsEqual(TextureCoordinate, OtherVertex.TextureCoordinate);
 		}
 #endif
 	} GCRendererVertex;

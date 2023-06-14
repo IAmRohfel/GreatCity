@@ -43,6 +43,7 @@
 
 #include <string.h>
 #include <stddef.h>
+#include <stdalign.h>
 #include <stdint.h>
 
 typedef struct GCRendererDrawData
@@ -73,7 +74,7 @@ typedef struct GCRenderer
 
 typedef struct GCRendererUniformBufferData
 {
-	GCMatrix4x4 ViewProjectionMatrix;
+	alignas(16) GCMatrix4x4 ViewProjectionMatrix;
 } GCRendererUniformBufferData;
 
 static void GCRenderer_ResizeSwapChain(void);
@@ -129,22 +130,26 @@ void GCRenderer_Initialize(void)
 	GraphicsPipelineVertexInputBindings[0].Binding = 0;
 	GraphicsPipelineVertexInputBindings[0].Stride = sizeof(GCRendererVertex);
 
-	GCRendererGraphicsPipelineVertexInputAttribute GraphicsPipelineVertexInputAttributes[4] = { 0 };
+	GCRendererGraphicsPipelineVertexInputAttribute GraphicsPipelineVertexInputAttributes[5] = { 0 };
 	GraphicsPipelineVertexInputAttributes[0].Location = 0;
 	GraphicsPipelineVertexInputAttributes[0].Format = GCRendererGraphicsPipelineVertexInputAttributeFormat_Vector3;
 	GraphicsPipelineVertexInputAttributes[0].Offset = offsetof(GCRendererVertex, Position);
 
 	GraphicsPipelineVertexInputAttributes[1].Location = 1;
-	GraphicsPipelineVertexInputAttributes[1].Format = GCRendererGraphicsPipelineVertexInputAttributeFormat_Vector4;
-	GraphicsPipelineVertexInputAttributes[1].Offset = offsetof(GCRendererVertex, Color);
+	GraphicsPipelineVertexInputAttributes[1].Format = GCRendererGraphicsPipelineVertexInputAttributeFormat_Vector3;
+	GraphicsPipelineVertexInputAttributes[1].Offset = offsetof(GCRendererVertex, Normal);
 
 	GraphicsPipelineVertexInputAttributes[2].Location = 2;
-	GraphicsPipelineVertexInputAttributes[2].Format = GCRendererGraphicsPipelineVertexInputAttributeFormat_Vector2;
-	GraphicsPipelineVertexInputAttributes[2].Offset = offsetof(GCRendererVertex, TextureCoordinate);
+	GraphicsPipelineVertexInputAttributes[2].Format = GCRendererGraphicsPipelineVertexInputAttributeFormat_Vector4;
+	GraphicsPipelineVertexInputAttributes[2].Offset = offsetof(GCRendererVertex, Color);
 
 	GraphicsPipelineVertexInputAttributes[3].Location = 3;
-	GraphicsPipelineVertexInputAttributes[3].Format = GCRendererGraphicsPipelineVertexInputAttributeFormat_Integer;
-	GraphicsPipelineVertexInputAttributes[3].Offset = offsetof(GCRendererVertex, EntityID);
+	GraphicsPipelineVertexInputAttributes[3].Format = GCRendererGraphicsPipelineVertexInputAttributeFormat_Vector2;
+	GraphicsPipelineVertexInputAttributes[3].Offset = offsetof(GCRendererVertex, TextureCoordinate);
+
+	GraphicsPipelineVertexInputAttributes[4].Location = 4;
+	GraphicsPipelineVertexInputAttributes[4].Format = GCRendererGraphicsPipelineVertexInputAttributeFormat_Integer;
+	GraphicsPipelineVertexInputAttributes[4].Offset = offsetof(GCRendererVertex, EntityID);
 
 	GCRendererGraphicsPipelineVertexInput GraphicsPipelineVertexInput = { 0 };
 	GraphicsPipelineVertexInput.Bindings = GraphicsPipelineVertexInputBindings;

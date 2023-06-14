@@ -193,15 +193,18 @@ void GCUI_Render(void)
 		ImGui::OpenPopup("Add Building");
 	}
 
-	if (ImGui::BeginPopupModal("Add Building"))
+	ImGui::SetNextWindowPos(ImVec2{ UIData->ViewportSize.X / 2.0f, UIData->ViewportSize.Y / 2.0f }, ImGuiCond_Always, ImVec2{ 0.5f, 0.5f });
+	ImGui::SetNextWindowSize(ImVec2{ UIData->ViewportSize.X / 1.25f, UIData->ViewportSize.Y / 1.25f }, ImGuiCond_Always);
+
+	if (ImGui::BeginPopupModal("Add Building", nullptr, ImGuiWindowFlags_NoResize))
 	{
 		bool ClosePopup = false;
 
-		if (ImGui::ImageButton(UIData->Texture2Ds[0], ImVec2{ 50, 50 }))
+		if (ImGui::ImageButton(UIData->Texture2Ds[0], ImVec2{ 100.0f, 100.0f }))
 		{
 			static uint32_t NameCount = 0;
 
-			const std::string Name{ "Small Office" + NameCount };
+			const std::string Name{ "Small Office " + NameCount };
 
 			const GCEntity Entity = GCWorld_CreateEntity(World, Name.c_str());
 			GCRendererModel* Model = GCRendererModel_CreateFromFile("Assets/Models/Buildings/Offices/SmallOffice.obj", "Assets/Models/Buildings/Offices");
@@ -214,10 +217,7 @@ void GCUI_Render(void)
 
 			UIData->Entities.emplace_back(Entity);
 			NameCount++;
-		}
 
-		if (ImGui::Button("Done"))
-		{
 			ClosePopup = true;
 		}
 
@@ -275,11 +275,18 @@ void GCUI_Render(void)
 			GCVector3 EntityTranslation{}, EntityRotation{}, EntityScale{};
 			GCMatrix4x4_Decompose(&EntityTransform, &EntityTranslation, &EntityRotation, &EntityScale);
 
-			GCVector3 DeltaRotation = GCVector3_Subtract(EntityRotation, EntityTransformComponent->Rotation);
-
+			const GCTransformComponent EntityTransformComponentCopy = *EntityTransformComponent;
+			
 			EntityTransformComponent->Translation = EntityTranslation;
-			EntityTransformComponent->Rotation = GCVector3_Add(EntityTransformComponent->Rotation, DeltaRotation);
+			EntityTransformComponent->Rotation = EntityRotation;
 			EntityTransformComponent->Scale = EntityScale;
+
+			if (GCWorld_CheckCollision(World, UIData->SelectedEntity))
+			{
+				EntityTransformComponent->Translation = EntityTransformComponentCopy.Translation;
+				EntityTransformComponent->Rotation = EntityTransformComponentCopy.Rotation;
+				EntityTransformComponent->Scale = EntityTransformComponentCopy.Scale;
+			}
 		}
 	}
 
