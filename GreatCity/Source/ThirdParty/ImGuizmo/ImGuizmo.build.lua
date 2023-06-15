@@ -2,6 +2,7 @@ project "ImGuizmo"
     kind "StaticLib"
     language "C++"
     cppdialect "C++11"
+    warnings "Off"
 
     targetdir "%{wks.location}/Binaries/%{cfg.architecture}/%{cfg.buildcfg}"
     objdir "%{wks.location}/Intermediates/%{cfg.architecture}/%{cfg.buildcfg}"

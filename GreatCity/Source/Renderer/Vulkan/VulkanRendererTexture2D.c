@@ -15,6 +15,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#define _CRT_SECURE_NO_WARNINGS
 #include "Renderer/Vulkan/VulkanRendererTexture2D.h"
 #include "Core/Assert.h"
 #include "Core/Log.h"
@@ -30,7 +31,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <stb_image.h>
+#include <png.h>
 #include <vulkan/vulkan.h>
 
 typedef struct GCRendererTexture2D
@@ -42,12 +43,10 @@ typedef struct GCRendererTexture2D
     VkDeviceMemory ImageMemoryHandle;
     VkImageView ImageViewHandle;
     VkSampler ImageSamplerHandle;
-
-    VkDescriptorSet DescriptorSetHandle;
 } GCRendererTexture2D;
 
-static uint8_t* GCRendererTexture2D_LoadImage(const char* const TexturePath, uint32_t* const Width,
-                                              uint32_t* const Height, uint32_t* const Channels);
+static void GCRendererTexture2D_LoadPNG(const char* const TexturePath, uint32_t* const Width, uint32_t* const Height,
+                                        uint32_t* const Channels, uint8_t** Data, uint8_t*** RowPointers);
 static void GCRendererTexture2D_CreateTexture(GCRendererTexture2D* const Texture2D, const char* const TexturePath);
 static void GCRendererTexture2D_DestroyObjects(GCRendererTexture2D* const Texture2D);
 
@@ -60,7 +59,6 @@ GCRendererTexture2D* GCRendererTexture2D_Create(const GCRendererTexture2DDescrip
     Texture2D->ImageMemoryHandle = VK_NULL_HANDLE;
     Texture2D->ImageViewHandle = VK_NULL_HANDLE;
     Texture2D->ImageSamplerHandle = VK_NULL_HANDLE;
-    Texture2D->DescriptorSetHandle = VK_NULL_HANDLE;
 
     GCRendererTexture2D_CreateTexture(Texture2D, Description->TexturePath);
 
@@ -84,22 +82,81 @@ VkSampler GCRendererTexture2D_GetSamplerHandle(const GCRendererTexture2D* const 
     return Texture2D->ImageSamplerHandle;
 }
 
-uint8_t* GCRendererTexture2D_LoadImage(const char* const TexturePath, uint32_t* const Width, uint32_t* const Height,
-                                       uint32_t* const Channels)
+void GCRendererTexture2D_LoadPNG(const char* const TexturePath, uint32_t* const Width, uint32_t* const Height,
+                                 uint32_t* const Channels, uint8_t** Data, uint8_t*** RowPointers)
 {
-    int32_t TextureWidth = 0, TextureHeight = 0, TextureChannels = 0;
-    stbi_uc* TextureData = stbi_load(TexturePath, &TextureWidth, &TextureHeight, &TextureChannels, STBI_rgb_alpha);
+    FILE* TextureFile = fopen(TexturePath, "rb");
 
-    if (!TextureData)
+    if (TextureFile)
     {
-        GC_ASSERT_WITH_MESSAGE(false, "Failed to load an image file at: %s", TexturePath);
+        uint8_t PNGSignature[8] = {0};
+        fread(PNGSignature, 1, 8, TextureFile);
+
+        if (!png_check_sig(PNGSignature, 8))
+        {
+            GC_ASSERT_WITH_MESSAGE(false, "'%s': Invalid PNG file.");
+        }
+
+        png_structp PNGReadStruct = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+        png_infop PNGInfoStruct = png_create_info_struct(PNGReadStruct);
+
+        png_init_io(PNGReadStruct, TextureFile);
+        png_set_sig_bytes(PNGReadStruct, 8);
+        png_read_info(PNGReadStruct, PNGInfoStruct);
+
+        *Width = png_get_image_width(PNGReadStruct, PNGInfoStruct);
+        *Height = png_get_image_height(PNGReadStruct, PNGInfoStruct);
+        *Channels = png_get_channels(PNGReadStruct, PNGInfoStruct);
+        const uint32_t BitDepth = png_get_bit_depth(PNGReadStruct, PNGInfoStruct);
+        const uint32_t ColorType = png_get_color_type(PNGReadStruct, PNGInfoStruct);
+
+        if (BitDepth == 16)
+        {
+            png_set_strip_16(PNGReadStruct);
+        }
+
+        if (ColorType == PNG_COLOR_TYPE_PALETTE)
+        {
+            png_set_palette_to_rgb(PNGReadStruct);
+        }
+
+        if (ColorType == PNG_COLOR_TYPE_GRAY && BitDepth < 8)
+        {
+            png_set_expand_gray_1_2_4_to_8(PNGReadStruct);
+        }
+
+        if (png_get_valid(PNGReadStruct, PNGInfoStruct, PNG_INFO_tRNS))
+        {
+            png_set_tRNS_to_alpha(PNGReadStruct);
+        }
+
+        if (ColorType == PNG_COLOR_TYPE_RGB || ColorType == PNG_COLOR_TYPE_GRAY || ColorType == PNG_COLOR_TYPE_PALETTE)
+        {
+            png_set_filler(PNGReadStruct, 0xff, PNG_FILLER_AFTER);
+        }
+
+        if (ColorType == PNG_COLOR_TYPE_GRAY || ColorType == PNG_COLOR_TYPE_GRAY_ALPHA)
+        {
+            png_set_gray_to_rgb(PNGReadStruct);
+        }
+
+        png_read_update_info(PNGReadStruct, PNGInfoStruct);
+
+        const size_t RowBytes = png_get_rowbytes(PNGReadStruct, PNGInfoStruct);
+        *Data = (uint8_t*)GCMemory_Allocate(RowBytes * *Height * sizeof(uint8_t));
+        *RowPointers = (uint8_t**)GCMemory_Allocate(*Height * sizeof(uint8_t*));
+
+        for (uint32_t Counter = 0; Counter < *Height; Counter++)
+        {
+            (*RowPointers)[*Height - 1 - Counter] = *Data + Counter * RowBytes;
+        }
+
+        png_read_image(PNGReadStruct, *RowPointers);
+
+        fclose(TextureFile);
+
+        png_destroy_read_struct(&PNGReadStruct, &PNGInfoStruct, NULL);
     }
-
-    *Width = TextureWidth;
-    *Height = TextureHeight;
-    *Channels = TextureChannels;
-
-    return TextureData;
 }
 
 void GCRendererTexture2D_CreateTexture(GCRendererTexture2D* const Texture2D, const char* const TexturePath)
@@ -107,9 +164,13 @@ void GCRendererTexture2D_CreateTexture(GCRendererTexture2D* const Texture2D, con
     const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Texture2D->Device);
 
     uint32_t TextureWidth = 0, TextureHeight = 0, TextureChannels = 0;
-    uint8_t* TextureData = GCRendererTexture2D_LoadImage(TexturePath, &TextureWidth, &TextureHeight, &TextureChannels);
+    uint8_t* TextureData = NULL;
+    uint8_t** TextureRowPointers = NULL;
 
-    const size_t ImageSize = TextureWidth * TextureHeight * 4;
+    GCRendererTexture2D_LoadPNG(TexturePath, &TextureWidth, &TextureHeight, &TextureChannels, &TextureData,
+                                &TextureRowPointers);
+
+    const size_t ImageSize = TextureWidth * TextureHeight * TextureChannels;
     const uint32_t MipLevels = (uint32_t)floorf(log2f(fmaxf((float)TextureWidth, (float)TextureHeight))) + 1;
 
     VkBuffer StagingImageBufferHandle = VK_NULL_HANDLE;
@@ -123,8 +184,6 @@ void GCRendererTexture2D_CreateTexture(GCRendererTexture2D* const Texture2D, con
     vkMapMemory(DeviceHandle, StagingImageBufferMemoryHandle, 0, ImageSize, 0, &ImageData);
     memcpy(ImageData, TextureData, ImageSize);
     vkUnmapMemory(DeviceHandle, StagingImageBufferMemoryHandle);
-
-    stbi_image_free(TextureData);
 
     GCVulkanUtilities_CreateImage(
         Texture2D->Device, TextureWidth, TextureHeight, MipLevels, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
@@ -148,6 +207,9 @@ void GCRendererTexture2D_CreateTexture(GCRendererTexture2D* const Texture2D, con
                                       VK_IMAGE_ASPECT_COLOR_BIT, MipLevels, &Texture2D->ImageViewHandle);
     GCVulkanUtilities_CreateSampler(Texture2D->Device, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, MipLevels,
                                     &Texture2D->ImageSamplerHandle);
+
+    GCMemory_Free(TextureRowPointers);
+    GCMemory_Free(TextureData);
 }
 
 void GCRendererTexture2D_DestroyObjects(GCRendererTexture2D* const Texture2D)

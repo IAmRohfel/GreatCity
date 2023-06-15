@@ -217,7 +217,8 @@ void GCUI_Render(void)
 
         for (const auto& UIEntityData : UIData->UIEntityData)
         {
-            if (ImGui::ImageButton(UIEntityData.second.second, ImVec2{100.0f, 100.0f}))
+            if (ImGui::ImageButton(UIEntityData.second.second, ImVec2{100.0f, 100.0f}, ImVec2{0.0f, 1.0f},
+                                   ImVec2{1.0f, 0.0f}))
             {
                 static uint32_t ModelCount = 0;
                 const std::string Name{"Model " + ModelCount};

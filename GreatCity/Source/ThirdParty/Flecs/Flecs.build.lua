@@ -2,6 +2,7 @@ project "Flecs"
     kind "StaticLib"
     language "C"
     cdialect "C11"
+    warnings "Off"
 
     targetdir "%{wks.location}/Binaries/%{cfg.architecture}/%{cfg.buildcfg}"
     objdir "%{wks.location}/Intermediates/%{cfg.architecture}/%{cfg.buildcfg}"

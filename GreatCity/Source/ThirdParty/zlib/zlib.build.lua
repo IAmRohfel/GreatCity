@@ -1,7 +1,7 @@
-project "ImGui"
+project "zlib"
     kind "StaticLib"
-    language "C++"
-    cppdialect "C++11"
+    language "C"
+    cdialect "C11"
     warnings "Off"
 
     targetdir "%{wks.location}/Binaries/%{cfg.architecture}/%{cfg.buildcfg}"
@@ -9,15 +9,13 @@ project "ImGui"
 
     files
     {
-        "%{wks.location}/GreatCity/Source/ThirdParty/ImGui/Source/**.cpp",
-        "%{wks.location}/GreatCity/Source/ThirdParty/ImGui/Include/**.h"
+        "%{wks.location}/GreatCity/Source/ThirdParty/zlib/Source/*.c",
+        "%{wks.location}/GreatCity/Source/ThirdParty/zlib/Include/*.h"
     }
 
     includedirs
     {
-        "%{wks.location}/GreatCity/Source/ThirdParty/ImGui/Include",
-
-        "$(VULKAN_SDK)/Include"
+        "%{wks.location}/GreatCity/Source/ThirdParty/zlib/Include"
     }
 
     filter "system:windows"

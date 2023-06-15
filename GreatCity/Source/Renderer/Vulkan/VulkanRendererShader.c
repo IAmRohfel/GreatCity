@@ -134,11 +134,11 @@ char* GCRendererShader_ReadShaderSourceFile(const char* const Path)
     if (ShaderFile)
     {
         fseek(ShaderFile, 0, SEEK_END);
-        const size_t ShaderFileLength = (size_t)ftell(ShaderFile);
+        const size_t ShaderFileLength = ftell(ShaderFile);
         fseek(ShaderFile, 0, SEEK_SET);
 
         ShaderFileSource = (char*)GCMemory_AllocateZero(ShaderFileLength * sizeof(char));
-        fread(ShaderFileSource, 1, ShaderFileLength, ShaderFile);
+        fread(ShaderFileSource, ShaderFileLength * sizeof(char), 1, ShaderFile);
 
         fclose(ShaderFile);
     }
@@ -157,8 +157,8 @@ size_t GCRendererShader_ReadShaderBinaryFile(const char* const Path, char** Data
         ShaderCacheFileLength = ftell(ShaderCacheFile);
         fseek(ShaderCacheFile, 0, SEEK_SET);
 
-        *Data = GCMemory_Allocate(ShaderCacheFileLength * sizeof(char));
-        fread(*Data, 1, ShaderCacheFileLength, ShaderCacheFile);
+        *Data = (char*)GCMemory_Allocate(ShaderCacheFileLength * sizeof(char));
+        fread(*Data, ShaderCacheFileLength * sizeof(char), 1, ShaderCacheFile);
 
         fclose(ShaderCacheFile);
     }
