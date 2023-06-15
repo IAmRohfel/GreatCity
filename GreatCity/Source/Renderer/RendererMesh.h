@@ -33,12 +33,12 @@ extern "C"
 
     typedef struct GCRendererMesh
     {
-        GCRendererVertexBuffer *VertexBuffer;
-        GCRendererIndexBuffer *IndexBuffer;
+        GCRendererVertexBuffer* VertexBuffer;
+        GCRendererIndexBuffer* IndexBuffer;
     } GCRendererMesh;
 
-    GCRendererMesh *GCRendererMesh_Create(const uint64_t EntityID, const GCRendererModel *const Model);
-    void GCRendererMesh_Destroy(GCRendererMesh *Mesh);
+    GCRendererMesh* GCRendererMesh_Create(const uint64_t EntityID, const GCRendererModel* const Model);
+    void GCRendererMesh_Destroy(GCRendererMesh* Mesh);
 
 #ifdef __cplusplus
 }

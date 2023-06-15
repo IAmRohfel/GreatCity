@@ -28,9 +28,9 @@
 
 #include <vulkan/vulkan.h>
 
-void GCVulkanUtilities_CreateBuffer(const GCRendererDevice *const Device, const size_t Size,
+void GCVulkanUtilities_CreateBuffer(const GCRendererDevice* const Device, const size_t Size,
                                     const VkBufferUsageFlags Usage, const VkMemoryPropertyFlags MemoryProperty,
-                                    VkBuffer *BufferHandle, VkDeviceMemory *BufferMemoryHandle)
+                                    VkBuffer* BufferHandle, VkDeviceMemory* BufferMemoryHandle)
 {
     const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Device);
 
@@ -57,11 +57,11 @@ void GCVulkanUtilities_CreateBuffer(const GCRendererDevice *const Device, const 
     vkBindBufferMemory(DeviceHandle, *BufferHandle, *BufferMemoryHandle, 0);
 }
 
-void GCVulkanUtilities_CreateImage(const GCRendererDevice *const Device, const uint32_t Width, const uint32_t Height,
+void GCVulkanUtilities_CreateImage(const GCRendererDevice* const Device, const uint32_t Width, const uint32_t Height,
                                    const uint32_t MipLevels, const VkFormat Format, const VkImageTiling Tiling,
                                    const VkSampleCountFlagBits SampleCount, const VkImageUsageFlags Usage,
-                                   const VkMemoryPropertyFlags MemoryProperty, VkImage *ImageHandle,
-                                   VkDeviceMemory *ImageMemoryHandle)
+                                   const VkMemoryPropertyFlags MemoryProperty, VkImage* ImageHandle,
+                                   VkDeviceMemory* ImageMemoryHandle)
 {
     const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Device);
 
@@ -97,9 +97,9 @@ void GCVulkanUtilities_CreateImage(const GCRendererDevice *const Device, const u
     vkBindImageMemory(DeviceHandle, *ImageHandle, *ImageMemoryHandle, 0);
 }
 
-void GCVulkanUtilities_CreateImageView(const GCRendererDevice *const Device, const VkImage ImageHandle,
+void GCVulkanUtilities_CreateImageView(const GCRendererDevice* const Device, const VkImage ImageHandle,
                                        const VkFormat Format, const VkImageAspectFlags ImageAspect,
-                                       const uint32_t MipLevels, VkImageView *ImageViewHandle)
+                                       const uint32_t MipLevels, VkImageView* ImageViewHandle)
 {
     const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Device);
 
@@ -122,9 +122,9 @@ void GCVulkanUtilities_CreateImageView(const GCRendererDevice *const Device, con
                        "Failed to create a Vulkan image view");
 }
 
-void GCVulkanUtilities_CreateSampler(const GCRendererDevice *const Device, const VkFilter Filter,
+void GCVulkanUtilities_CreateSampler(const GCRendererDevice* const Device, const VkFilter Filter,
                                      const VkSamplerAddressMode AddressMode, const uint32_t MipLevels,
-                                     VkSampler *SamplerHandle)
+                                     VkSampler* SamplerHandle)
 {
     const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Device);
     const GCRendererDeviceCapabilities DeviceCapabilities = GCRendererDevice_GetDeviceCapabilities(Device);
@@ -256,7 +256,7 @@ void GCVulkanUtilities_TransitionImageLayout(const VkCommandBuffer CommandBuffer
                          &ImageMemoryBarrier);
 }
 
-void GCVulkanUtilities_GenerateMipmap(const GCRendererDevice *const Device, const VkCommandBuffer CommandBufferHandle,
+void GCVulkanUtilities_GenerateMipmap(const GCRendererDevice* const Device, const VkCommandBuffer CommandBufferHandle,
                                       const VkImage ImageHandle, const uint32_t Width, const uint32_t Height,
                                       const uint32_t MipLevels, const VkFormat Format)
 {
@@ -410,54 +410,7 @@ void GCVulkanUtilities_CopyBufferToImage(const VkCommandBuffer CommandBufferHand
                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &BufferImageCopyRegion);
 }
 
-VkCommandBuffer GCVulkanUtilities_BeginSingleTimeCommands(const GCRendererDevice *const Device,
-                                                          const GCRendererCommandList *const CommandList)
-{
-    const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Device);
-    const VkCommandPool TransientCommandPoolHandle = GCRendererCommandList_GetTransientCommandPoolHandle(CommandList);
-
-    VkCommandBufferAllocateInfo CommandBufferAllocateInformation = {0};
-    CommandBufferAllocateInformation.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    CommandBufferAllocateInformation.commandPool = TransientCommandPoolHandle;
-    CommandBufferAllocateInformation.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    CommandBufferAllocateInformation.commandBufferCount = 1;
-
-    VkCommandBuffer CommandBufferHandle = VK_NULL_HANDLE;
-    GC_VULKAN_VALIDATE(vkAllocateCommandBuffers(DeviceHandle, &CommandBufferAllocateInformation, &CommandBufferHandle),
-                       "Failed to allocate a Vulkan command buffer");
-
-    VkCommandBufferBeginInfo CommandBufferBeginInformation = {0};
-    CommandBufferBeginInformation.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    CommandBufferBeginInformation.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-    GC_VULKAN_VALIDATE(vkBeginCommandBuffer(CommandBufferHandle, &CommandBufferBeginInformation),
-                       "Failed to begin a Vulkan command buffer");
-
-    return CommandBufferHandle;
-}
-
-void GCVulkanUtilities_EndSingleTimeCommands(const GCRendererDevice *const Device,
-                                             const GCRendererCommandList *const CommandList,
-                                             const VkCommandBuffer CommandBufferHandle)
-{
-    const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Device);
-    const VkCommandPool TransientCommandPoolHandle = GCRendererCommandList_GetTransientCommandPoolHandle(CommandList);
-    const VkQueue GraphicsQueueHandle = GCRendererDevice_GetGraphicsQueueHandle(Device);
-
-    GC_VULKAN_VALIDATE(vkEndCommandBuffer(CommandBufferHandle), "Failed to end a Vulkan command buffer");
-
-    VkSubmitInfo SubmitInformation = {0};
-    SubmitInformation.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    SubmitInformation.commandBufferCount = 1;
-    SubmitInformation.pCommandBuffers = &CommandBufferHandle;
-
-    vkQueueSubmit(GraphicsQueueHandle, 1, &SubmitInformation, VK_NULL_HANDLE);
-    vkQueueWaitIdle(GraphicsQueueHandle);
-
-    vkFreeCommandBuffers(DeviceHandle, TransientCommandPoolHandle, 1, &CommandBufferHandle);
-}
-
-VkSampleCountFlagBits GCVulkanUtilities_GetMaximumUsableSampleCount(const GCRendererDevice *const Device)
+VkSampleCountFlagBits GCVulkanUtilities_GetMaximumUsableSampleCount(const GCRendererDevice* const Device)
 {
     VkPhysicalDeviceProperties PhysicalDeviceProperties = {0};
     vkGetPhysicalDeviceProperties(GCRendererDevice_GetPhysicalDeviceHandle(Device), &PhysicalDeviceProperties);
@@ -493,7 +446,7 @@ VkSampleCountFlagBits GCVulkanUtilities_GetMaximumUsableSampleCount(const GCRend
     return VK_SAMPLE_COUNT_1_BIT;
 }
 
-VkFormat GCVulkanUtilities_ToVkFormat(const GCRendererDevice *const Device, const GCRendererAttachmentFormat Format)
+VkFormat GCVulkanUtilities_ToVkFormat(const GCRendererDevice* const Device, const GCRendererAttachmentFormat Format)
 {
     (void)Device;
 
@@ -520,7 +473,7 @@ VkFormat GCVulkanUtilities_ToVkFormat(const GCRendererDevice *const Device, cons
     return VK_FORMAT_UNDEFINED;
 }
 
-VkSampleCountFlagBits GCVulkanUtilities_ToVkSampleCountFlagBits(const GCRendererDevice *const Device,
+VkSampleCountFlagBits GCVulkanUtilities_ToVkSampleCountFlagBits(const GCRendererDevice* const Device,
                                                                 const GCRendererAttachmentSampleCount SampleCount)
 {
     switch (SampleCount)

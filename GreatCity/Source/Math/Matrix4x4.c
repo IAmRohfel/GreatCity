@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-GCMatrix4x4 GCMatrix4x4_Create(const float *const Data)
+GCMatrix4x4 GCMatrix4x4_Create(const float* const Data)
 {
     GCMatrix4x4 Result;
 
@@ -217,7 +217,7 @@ GCMatrix4x4 GCMatrix4x4_CreatePerspective(const float FoV, const float AspectRat
     return Result;
 }
 
-GCMatrix4x4 GCMatrix4x4_Multiply(const GCMatrix4x4 *const Matrix1, const GCMatrix4x4 *const Matrix2)
+GCMatrix4x4 GCMatrix4x4_Multiply(const GCMatrix4x4* const Matrix1, const GCMatrix4x4* const Matrix2)
 {
     GCMatrix4x4 Result;
 
@@ -260,7 +260,7 @@ GCMatrix4x4 GCMatrix4x4_Multiply(const GCMatrix4x4 *const Matrix1, const GCMatri
     return Result;
 }
 
-GCMatrix4x4 GCMatrix4x4_MultiplyByScalar(const GCMatrix4x4 *const Matrix, const float Scalar)
+GCMatrix4x4 GCMatrix4x4_MultiplyByScalar(const GCMatrix4x4* const Matrix, const float Scalar)
 {
     GCMatrix4x4 Result;
 
@@ -287,7 +287,7 @@ GCMatrix4x4 GCMatrix4x4_MultiplyByScalar(const GCMatrix4x4 *const Matrix, const 
     return Result;
 }
 
-GCVector4 GCMatrix4x4_MultiplyByVector(const GCMatrix4x4 *const Matrix, const GCVector4 Vector)
+GCVector4 GCMatrix4x4_MultiplyByVector(const GCMatrix4x4* const Matrix, const GCVector4 Vector)
 {
     GCVector4 Result;
 
@@ -303,7 +303,7 @@ GCVector4 GCMatrix4x4_MultiplyByVector(const GCMatrix4x4 *const Matrix, const GC
     return Result;
 }
 
-float GCMatrix4x4_Determinant(const GCMatrix4x4 *const Matrix)
+float GCMatrix4x4_Determinant(const GCMatrix4x4* const Matrix)
 {
     float Result = 0.0f, InnerMatrixDeterminant = 0.0f;
 
@@ -349,7 +349,7 @@ float GCMatrix4x4_Determinant(const GCMatrix4x4 *const Matrix)
     return Result;
 }
 
-GCMatrix4x4 GCMatrix4x4_Inverse(const GCMatrix4x4 *const Matrix)
+GCMatrix4x4 GCMatrix4x4_Inverse(const GCMatrix4x4* const Matrix)
 {
     GCMatrix4x4 Result;
 
@@ -459,7 +459,7 @@ GCMatrix4x4 GCMatrix4x4_Inverse(const GCMatrix4x4 *const Matrix)
     return Result;
 }
 
-GCMatrix4x4 GCMatrix4x4_Transpose(const GCMatrix4x4 *const Matrix)
+GCMatrix4x4 GCMatrix4x4_Transpose(const GCMatrix4x4* const Matrix)
 {
     GCMatrix4x4 Result;
 
@@ -486,8 +486,8 @@ GCMatrix4x4 GCMatrix4x4_Transpose(const GCMatrix4x4 *const Matrix)
     return Result;
 }
 
-void GCMatrix4x4_Decompose(const GCMatrix4x4 *const Matrix, GCVector3 *const Translation, GCVector3 *const Rotation,
-                           GCVector3 *const Scale)
+void GCMatrix4x4_Decompose(const GCMatrix4x4* const Matrix, GCVector3* const Translation, GCVector3* const Rotation,
+                           GCVector3* const Scale)
 {
     GCMatrix4x4 TheMatrix = *Matrix;
 
@@ -547,7 +547,7 @@ void GCMatrix4x4_Decompose(const GCMatrix4x4 *const Matrix, GCVector3 *const Tra
     }
 }
 
-bool GCMatrix4x4_IsEqual(const GCMatrix4x4 *const Matrix1, const GCMatrix4x4 *const Matrix2)
+bool GCMatrix4x4_IsEqual(const GCMatrix4x4* const Matrix1, const GCMatrix4x4* const Matrix2)
 {
     return Matrix1->Data[0][0] == Matrix2->Data[0][0] && Matrix1->Data[0][1] == Matrix2->Data[0][1] &&
            Matrix1->Data[0][2] == Matrix2->Data[0][2] && Matrix1->Data[0][3] == Matrix2->Data[0][3] &&
@@ -559,7 +559,7 @@ bool GCMatrix4x4_IsEqual(const GCMatrix4x4 *const Matrix1, const GCMatrix4x4 *co
            Matrix1->Data[3][2] == Matrix2->Data[3][2] && Matrix1->Data[3][3] == Matrix2->Data[3][3];
 }
 
-char *GCMatrix4x4_ToString(const GCMatrix4x4 *const Matrix)
+char* GCMatrix4x4_ToString(const GCMatrix4x4* const Matrix)
 {
     const int32_t Length =
         snprintf(NULL, 0, "(%f, %f, %f, %f)\n(%f, %f, %f, %f)\n(%f, %f, %f, %f)\n(%f, %f, %f, %f)", Matrix->Data[0][0],
@@ -568,7 +568,7 @@ char *GCMatrix4x4_ToString(const GCMatrix4x4 *const Matrix)
                  Matrix->Data[2][3], Matrix->Data[3][0], Matrix->Data[3][1], Matrix->Data[3][2], Matrix->Data[3][3]) +
         1;
 
-    char *Buffer = (char *)GCMemory_Allocate(Length * sizeof(char));
+    char* Buffer = (char*)GCMemory_Allocate(Length * sizeof(char));
     snprintf(Buffer, Length, "(%f, %f, %f, %f)\n(%f, %f, %f, %f)\n(%f, %f, %f, %f)\n(%f, %f, %f, %f)",
              Matrix->Data[0][0], Matrix->Data[0][1], Matrix->Data[0][2], Matrix->Data[0][3], Matrix->Data[1][0],
              Matrix->Data[1][1], Matrix->Data[1][2], Matrix->Data[1][3], Matrix->Data[2][0], Matrix->Data[2][1],

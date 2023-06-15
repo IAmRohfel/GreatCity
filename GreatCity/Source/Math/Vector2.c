@@ -107,11 +107,11 @@ GCVector2 GCVector2_Normalize(const GCVector2 Vector)
     return Result;
 }
 
-char *GCVector2_ToString(const GCVector2 Vector)
+char* GCVector2_ToString(const GCVector2 Vector)
 {
     const int32_t Length = snprintf(NULL, 0, "(%f, %f)", Vector.X, Vector.Y) + 1;
 
-    char *Buffer = (char *)GCMemory_Allocate(Length * sizeof(char));
+    char* Buffer = (char*)GCMemory_Allocate(Length * sizeof(char));
     snprintf(Buffer, Length, "(%f, %f)", Vector.X, Vector.Y);
 
     return Buffer;

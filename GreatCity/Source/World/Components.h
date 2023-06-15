@@ -37,10 +37,10 @@ extern "C"
 
     typedef struct GCMeshComponent
     {
-        GCRendererMesh *Mesh;
+        GCRendererMesh* Mesh;
     } GCMeshComponent;
 
-    GCMatrix4x4 GCTransformComponent_GetTransform(const GCTransformComponent *const TransformComponent);
+    GCMatrix4x4 GCTransformComponent_GetTransform(const GCTransformComponent* const TransformComponent);
 
 #ifdef __cplusplus
 }

@@ -32,23 +32,23 @@
 
 typedef struct GCRendererUniformBuffer
 {
-    const GCRendererDevice *Device;
-    const GCRendererCommandList *CommandList;
+    const GCRendererDevice* Device;
+    const GCRendererCommandList* CommandList;
 
     VkBuffer UniformBufferHandle;
     VkDeviceMemory UniformBufferMemoryHandle;
 
-    void *Data;
+    void* Data;
     size_t DataSize;
 } GCRendererUniformBuffer;
 
-static void GCRendererUniformBuffer_CreateUniformBuffer(GCRendererUniformBuffer *const UniformBuffer);
-static void GCRendererUniformBuffer_DestroyObjects(GCRendererUniformBuffer *const UniformBuffer);
+static void GCRendererUniformBuffer_CreateUniformBuffer(GCRendererUniformBuffer* const UniformBuffer);
+static void GCRendererUniformBuffer_DestroyObjects(GCRendererUniformBuffer* const UniformBuffer);
 
-GCRendererUniformBuffer *GCRendererUniformBuffer_Create(const GCRendererUniformBufferDescription *const Description)
+GCRendererUniformBuffer* GCRendererUniformBuffer_Create(const GCRendererUniformBufferDescription* const Description)
 {
-    GCRendererUniformBuffer *UniformBuffer =
-        (GCRendererUniformBuffer *)GCMemory_Allocate(sizeof(GCRendererUniformBuffer));
+    GCRendererUniformBuffer* UniformBuffer =
+        (GCRendererUniformBuffer*)GCMemory_Allocate(sizeof(GCRendererUniformBuffer));
     UniformBuffer->Device = Description->Device;
     UniformBuffer->CommandList = Description->CommandList;
     UniformBuffer->UniformBufferHandle = VK_NULL_HANDLE;
@@ -61,13 +61,13 @@ GCRendererUniformBuffer *GCRendererUniformBuffer_Create(const GCRendererUniformB
     return UniformBuffer;
 }
 
-void GCRendererUniformBuffer_UpdateUniformBuffer(const GCRendererUniformBuffer *const UniformBuffer,
-                                                 const void *const Data, const size_t DataSize)
+void GCRendererUniformBuffer_UpdateUniformBuffer(const GCRendererUniformBuffer* const UniformBuffer,
+                                                 const void* const Data, const size_t DataSize)
 {
     memcpy(UniformBuffer->Data, Data, DataSize);
 }
 
-void GCRendererUniformBuffer_Destroy(GCRendererUniformBuffer *UniformBuffer)
+void GCRendererUniformBuffer_Destroy(GCRendererUniformBuffer* UniformBuffer)
 {
     GCRendererDevice_WaitIdle(UniformBuffer->Device);
 
@@ -76,22 +76,22 @@ void GCRendererUniformBuffer_Destroy(GCRendererUniformBuffer *UniformBuffer)
     GCMemory_Free(UniformBuffer);
 }
 
-VkBuffer GCRendererUniformBuffer_GetBufferHandle(const GCRendererUniformBuffer *const UniformBuffer)
+VkBuffer GCRendererUniformBuffer_GetBufferHandle(const GCRendererUniformBuffer* const UniformBuffer)
 {
     return UniformBuffer->UniformBufferHandle;
 }
 
-void *GCRendererUniformBuffer_GetData(const GCRendererUniformBuffer *const UniformBuffer)
+void* GCRendererUniformBuffer_GetData(const GCRendererUniformBuffer* const UniformBuffer)
 {
     return UniformBuffer->Data;
 }
 
-size_t GCRendererUniformBuffer_GetDataSize(const GCRendererUniformBuffer *const UniformBuffer)
+size_t GCRendererUniformBuffer_GetDataSize(const GCRendererUniformBuffer* const UniformBuffer)
 {
     return UniformBuffer->DataSize;
 }
 
-void GCRendererUniformBuffer_CreateUniformBuffer(GCRendererUniformBuffer *const UniformBuffer)
+void GCRendererUniformBuffer_CreateUniformBuffer(GCRendererUniformBuffer* const UniformBuffer)
 {
     const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(UniformBuffer->Device);
 
@@ -103,7 +103,7 @@ void GCRendererUniformBuffer_CreateUniformBuffer(GCRendererUniformBuffer *const 
                 &UniformBuffer->Data);
 }
 
-void GCRendererUniformBuffer_DestroyObjects(GCRendererUniformBuffer *const UniformBuffer)
+void GCRendererUniformBuffer_DestroyObjects(GCRendererUniformBuffer* const UniformBuffer)
 {
     const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(UniformBuffer->Device);
 

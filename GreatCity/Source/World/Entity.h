@@ -31,10 +31,10 @@ extern "C"
 
     typedef struct GCRendererModel GCRendererModel;
 
-    GCTransformComponent *GCEntity_AddTransformComponent(const GCEntity Entity);
-    GCTransformComponent *GCEntity_GetTransformComponent(const GCEntity Entity);
-    GCMeshComponent *GCEntity_AddMeshComponent(const GCEntity Entity, const GCRendererModel *const Model);
-    GCMeshComponent *GCEntity_GetMeshComponent(const GCEntity Entity);
+    GCTransformComponent* GCEntity_AddTransformComponent(const GCEntity Entity);
+    GCTransformComponent* GCEntity_GetTransformComponent(const GCEntity Entity);
+    GCMeshComponent* GCEntity_AddMeshComponent(const GCEntity Entity, const GCRendererModel* const Model);
+    GCMeshComponent* GCEntity_GetMeshComponent(const GCEntity Entity);
     void GCEntity_RemoveMeshComponent(const GCEntity Entity);
 
 #ifdef __cplusplus

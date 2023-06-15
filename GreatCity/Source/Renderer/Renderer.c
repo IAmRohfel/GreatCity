@@ -48,27 +48,27 @@
 
 typedef struct GCRendererDrawData
 {
-    const GCRendererVertexBuffer *VertexBuffer;
+    const GCRendererVertexBuffer* VertexBuffer;
     uint32_t VertexCount;
 
-    const GCRendererIndexBuffer *IndexBuffer;
+    const GCRendererIndexBuffer* IndexBuffer;
     uint32_t IndexCount;
 } GCRendererDrawData;
 
 typedef struct GCRenderer
 {
-    GCRendererDevice *Device;
-    GCRendererSwapChain *SwapChain;
-    GCRendererCommandList *CommandList;
-    GCRendererUniformBuffer *UniformBuffer;
-    GCRendererShader *BasicShader;
-    GCRendererTexture2D **Texture2Ds;
+    GCRendererDevice* Device;
+    GCRendererSwapChain* SwapChain;
+    GCRendererCommandList* CommandList;
+    GCRendererUniformBuffer* UniformBuffer;
+    GCRendererShader* BasicShader;
+    GCRendererTexture2D** Texture2Ds;
     uint32_t Texture2DCount;
-    GCRendererGraphicsPipeline *GraphicsPipeline;
-    GCRendererFramebuffer *Framebuffer;
+    GCRendererGraphicsPipeline* GraphicsPipeline;
+    GCRendererFramebuffer* Framebuffer;
 
     uint32_t MaximumDrawDataCount;
-    GCRendererDrawData *DrawData;
+    GCRendererDrawData* DrawData;
     uint32_t DrawDataCount;
 } GCRenderer;
 
@@ -79,11 +79,11 @@ typedef struct GCRendererUniformBufferData
 
 static void GCRenderer_ResizeSwapChain(void);
 
-static GCRenderer *Renderer = NULL;
+static GCRenderer* Renderer = NULL;
 
 void GCRenderer_PreInitialize(void)
 {
-    Renderer = (GCRenderer *)GCMemory_Allocate(sizeof(GCRenderer));
+    Renderer = (GCRenderer*)GCMemory_Allocate(sizeof(GCRenderer));
     Renderer->Device = GCRendererDevice_Create();
 
     GCRendererSwapChainDescription SwapChainDescription = {0};
@@ -204,18 +204,18 @@ void GCRenderer_Initialize(void)
 
     Renderer->MaximumDrawDataCount = 100;
     Renderer->DrawData =
-        (GCRendererDrawData *)GCMemory_Allocate(Renderer->MaximumDrawDataCount * sizeof(GCRendererDrawData));
+        (GCRendererDrawData*)GCMemory_Allocate(Renderer->MaximumDrawDataCount * sizeof(GCRendererDrawData));
     Renderer->DrawDataCount = 0;
 }
 
-void GCRenderer_SetTexture2Ds(GCRendererTexture2D **const Texture2Ds, const uint32_t Texture2DCount)
+void GCRenderer_SetTexture2Ds(GCRendererTexture2D** const Texture2Ds, const uint32_t Texture2DCount)
 {
-    Renderer->Texture2Ds = (GCRendererTexture2D **)GCMemory_Allocate(Texture2DCount * sizeof(GCRendererTexture2D *));
-    memcpy(Renderer->Texture2Ds, Texture2Ds, Texture2DCount * sizeof(GCRendererTexture2D *));
+    Renderer->Texture2Ds = (GCRendererTexture2D**)GCMemory_Allocate(Texture2DCount * sizeof(GCRendererTexture2D*));
+    memcpy(Renderer->Texture2Ds, Texture2Ds, Texture2DCount * sizeof(GCRendererTexture2D*));
     Renderer->Texture2DCount = Texture2DCount;
 }
 
-void GCRenderer_BeginWorld(const GCWorldCamera *const WorldCamera)
+void GCRenderer_BeginWorld(const GCWorldCamera* const WorldCamera)
 {
     Renderer->DrawDataCount = 0;
 
@@ -236,24 +236,24 @@ void GCRenderer_BeginWorld(const GCWorldCamera *const WorldCamera)
 
 void GCRenderer_RenderEntity(const GCEntity Entity)
 {
-    const GCTransformComponent *const TransformComponent = GCEntity_GetTransformComponent(Entity);
-    const GCMeshComponent *const MeshComponent = GCEntity_GetMeshComponent(Entity);
+    const GCTransformComponent* const TransformComponent = GCEntity_GetTransformComponent(Entity);
+    const GCMeshComponent* const MeshComponent = GCEntity_GetMeshComponent(Entity);
 
     const GCMatrix4x4 Transform = GCTransformComponent_GetTransform(TransformComponent);
-    GCRendererMesh *const Mesh = MeshComponent->Mesh;
+    GCRendererMesh* const Mesh = MeshComponent->Mesh;
 
     if (Renderer->DrawDataCount >= Renderer->MaximumDrawDataCount)
     {
         Renderer->MaximumDrawDataCount += Renderer->MaximumDrawDataCount;
-        Renderer->DrawData = (GCRendererDrawData *)GCMemory_Reallocate(
+        Renderer->DrawData = (GCRendererDrawData*)GCMemory_Reallocate(
             Renderer->DrawData, Renderer->MaximumDrawDataCount * sizeof(GCRendererDrawData));
     }
 
-    const GCRendererVertex *const OriginalVertices =
-        (const GCRendererVertex *const)GCRendererVertexBuffer_GetVertices(Mesh->VertexBuffer);
+    const GCRendererVertex* const OriginalVertices =
+        (const GCRendererVertex* const)GCRendererVertexBuffer_GetVertices(Mesh->VertexBuffer);
     const uint32_t VertexCount = GCRendererVertexBuffer_GetVertexCount(Mesh->VertexBuffer);
 
-    GCRendererVertex *Vertices = (GCRendererVertex *)GCMemory_Allocate(VertexCount * sizeof(GCRendererVertex));
+    GCRendererVertex* Vertices = (GCRendererVertex*)GCMemory_Allocate(VertexCount * sizeof(GCRendererVertex));
     memcpy(Vertices, OriginalVertices, VertexCount * sizeof(GCRendererVertex));
 
     for (uint32_t Counter = 0; Counter < VertexCount; Counter++)
@@ -336,27 +336,27 @@ void GCRenderer_Terminate(void)
     GCMemory_Free(Renderer);
 }
 
-GCRendererDevice *const GCRenderer_GetDevice(void)
+GCRendererDevice* const GCRenderer_GetDevice(void)
 {
     return Renderer->Device;
 }
 
-GCRendererSwapChain *const GCRenderer_GetSwapChain(void)
+GCRendererSwapChain* const GCRenderer_GetSwapChain(void)
 {
     return Renderer->SwapChain;
 }
 
-GCRendererCommandList *const GCRenderer_GetCommandList(void)
+GCRendererCommandList* const GCRenderer_GetCommandList(void)
 {
     return Renderer->CommandList;
 }
 
-GCRendererGraphicsPipeline *const GCRenderer_GetGraphicsPipeline(void)
+GCRendererGraphicsPipeline* const GCRenderer_GetGraphicsPipeline(void)
 {
     return Renderer->GraphicsPipeline;
 }
 
-GCRendererFramebuffer *const GCRenderer_GetFramebuffer(void)
+GCRendererFramebuffer* const GCRenderer_GetFramebuffer(void)
 {
     return Renderer->Framebuffer;
 }

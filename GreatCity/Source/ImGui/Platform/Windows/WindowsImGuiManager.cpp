@@ -24,9 +24,9 @@
 
 typedef struct GCPlatformWindow GCWindowsWindow;
 
-extern "C" void GCWindowsWindow_SetAnotherMessageCallback(GCWindowsWindow *const Window,
+extern "C" void GCWindowsWindow_SetAnotherMessageCallback(GCWindowsWindow* const Window,
                                                           LRESULT (*MessageCallback)(HWND, UINT, WPARAM, LPARAM));
-extern "C" HWND GCWindowsWindow_GetWindowHandle(const GCWindowsWindow *const Window);
+extern "C" HWND GCWindowsWindow_GetWindowHandle(const GCWindowsWindow* const Window);
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -34,7 +34,7 @@ static LRESULT GCImGuiManager_MessageCallback(HWND WindowHandle, UINT Message, W
 
 extern "C" void GCImGuiManager_InitializePlatform(void)
 {
-    GCWindow *const Window = GCApplication_GetWindow();
+    GCWindow* const Window = GCApplication_GetWindow();
 
     ImGui_ImplWin32_Init(GCWindowsWindow_GetWindowHandle(Window));
     GCWindowsWindow_SetAnotherMessageCallback(Window, GCImGuiManager_MessageCallback);

@@ -62,10 +62,10 @@ extern "C"
 
     typedef struct GCRendererGraphicsPipelineVertexInput
     {
-        GCRendererGraphicsPipelineVertexInputBinding *Bindings;
+        GCRendererGraphicsPipelineVertexInputBinding* Bindings;
         uint32_t BindingCount;
 
-        GCRendererGraphicsPipelineVertexInputAttribute *Attributes;
+        GCRendererGraphicsPipelineVertexInputAttribute* Attributes;
         uint32_t AttributeCount;
     } GCRendererGraphicsPipelineVertexInput;
 
@@ -78,24 +78,24 @@ extern "C"
 
     typedef struct GCRendererGraphicsPipelineDescription
     {
-        const GCRendererDevice *Device;
-        const GCRendererSwapChain *SwapChain;
-        const GCRendererCommandList *CommandList;
+        const GCRendererDevice* Device;
+        const GCRendererSwapChain* SwapChain;
+        const GCRendererCommandList* CommandList;
 
-        const GCRendererGraphicsPipelineAttachment *Attachments;
+        const GCRendererGraphicsPipelineAttachment* Attachments;
         uint32_t AttachmentCount;
-        const GCRendererGraphicsPipelineVertexInput *VertexInput;
+        const GCRendererGraphicsPipelineVertexInput* VertexInput;
         GCRendererAttachmentSampleCount SampleCount;
 
-        const GCRendererUniformBuffer *UniformBuffer;
-        const GCRendererTexture2D *const *Texture2Ds;
+        const GCRendererUniformBuffer* UniformBuffer;
+        const GCRendererTexture2D* const* Texture2Ds;
         uint32_t Texture2DCount;
-        const GCRendererShader *Shader;
+        const GCRendererShader* Shader;
     } GCRendererGraphicsPipelineDescription;
 
-    GCRendererGraphicsPipeline *GCRendererGraphicsPipeline_Create(
-        const GCRendererGraphicsPipelineDescription *const Description);
-    void GCRendererGraphicsPipeline_Destroy(GCRendererGraphicsPipeline *GraphicsPipeline);
+    GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(
+        const GCRendererGraphicsPipelineDescription* const Description);
+    void GCRendererGraphicsPipeline_Destroy(GCRendererGraphicsPipeline* GraphicsPipeline);
 
 #ifdef __cplusplus
 }

@@ -27,14 +27,14 @@
 #include <stdint.h>
 #include <string.h>
 
-GCRendererMesh *GCRendererMesh_Create(const GCEntity Entity, const GCRendererModel *const Model)
+GCRendererMesh* GCRendererMesh_Create(const GCEntity Entity, const GCRendererModel* const Model)
 {
-    GCRendererMesh *Mesh = (GCRendererMesh *)GCMemory_Allocate(sizeof(GCRendererMesh));
+    GCRendererMesh* Mesh = (GCRendererMesh*)GCMemory_Allocate(sizeof(GCRendererMesh));
     Mesh->VertexBuffer = NULL;
     Mesh->IndexBuffer = NULL;
 
-    const GCRendererDevice *const Device = GCRenderer_GetDevice();
-    const GCRendererCommandList *const CommandList = GCRenderer_GetCommandList();
+    const GCRendererDevice* const Device = GCRenderer_GetDevice();
+    const GCRendererCommandList* const CommandList = GCRenderer_GetCommandList();
 
     for (uint32_t Counter = 0; Counter < Model->VertexCount; Counter++)
     {
@@ -62,7 +62,7 @@ GCRendererMesh *GCRendererMesh_Create(const GCEntity Entity, const GCRendererMod
     return Mesh;
 }
 
-void GCRendererMesh_Destroy(GCRendererMesh *Mesh)
+void GCRendererMesh_Destroy(GCRendererMesh* Mesh)
 {
     GCRendererDevice_WaitIdle(GCRenderer_GetDevice());
 

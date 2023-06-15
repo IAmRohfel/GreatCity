@@ -23,9 +23,9 @@
 #include <stdio.h>
 #include <string.h>
 
-void GCLog_LogToConsole(const GCLogLevel Level, const char *const Format, ...)
+void GCLog_LogToConsole(const GCLogLevel Level, const char* const Format, ...)
 {
-    FILE *OutputHandle = NULL;
+    FILE* OutputHandle = NULL;
 
     if (Level < GCLogLevel_Error)
     {
@@ -41,7 +41,7 @@ void GCLog_LogToConsole(const GCLogLevel Level, const char *const Format, ...)
     va_list Arguments;
     va_start(Arguments, Format);
 
-    char *FormatNewLine = (char *)GCMemory_Allocate((strlen(Format) + 2) * sizeof(char));
+    char* FormatNewLine = (char*)GCMemory_Allocate((strlen(Format) + 2) * sizeof(char));
     strcpy(FormatNewLine, Format);
     strcat(FormatNewLine, "\n");
 

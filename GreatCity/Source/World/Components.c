@@ -20,7 +20,7 @@
 #include "Math/Quaternion.h"
 #include "Math/Vector3.h"
 
-GCMatrix4x4 GCTransformComponent_GetTransform(const GCTransformComponent *const TransformComponent)
+GCMatrix4x4 GCTransformComponent_GetTransform(const GCTransformComponent* const TransformComponent)
 {
     const GCMatrix4x4 Translation = GCMatrix4x4_CreateTranslation(TransformComponent->Translation);
     const GCMatrix4x4 Rotation = GCQuaternion_ToRotationMatrix(GCQuaternion_CreateFromEulerAngles(

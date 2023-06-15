@@ -31,15 +31,15 @@ extern "C"
     typedef struct GCWorldCamera GCWorldCamera;
     typedef struct GCEvent GCEvent;
 
-    GCWorld *GCWorld_Create(void);
-    GCEntity GCWorld_CreateEntity(GCWorld *const World, const char *const Name);
-    bool GCWorld_CheckCollision(const GCWorld *const World, const GCEntity Entity);
-    void GCWorld_OnUpdate(GCWorld *const World);
-    void GCWorld_OnEvent(GCWorld *const World, GCEvent *const Event);
-    GCWorldCamera *GCWorld_GetCamera(const GCWorld *const World);
+    GCWorld* GCWorld_Create(void);
+    GCEntity GCWorld_CreateEntity(GCWorld* const World, const char* const Name);
+    bool GCWorld_CheckCollision(const GCWorld* const World, const GCEntity Entity);
+    void GCWorld_OnUpdate(GCWorld* const World);
+    void GCWorld_OnEvent(GCWorld* const World, GCEvent* const Event);
+    GCWorldCamera* GCWorld_GetCamera(const GCWorld* const World);
 
-    GCEntity GCWorld_GetTerrainEntity(const GCWorld *const World);
-    void GCWorld_Destroy(GCWorld *World);
+    GCEntity GCWorld_GetTerrainEntity(const GCWorld* const World);
+    void GCWorld_Destroy(GCWorld* World);
 
 #ifdef __cplusplus
 }

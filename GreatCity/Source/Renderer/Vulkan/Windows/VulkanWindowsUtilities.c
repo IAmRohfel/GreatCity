@@ -29,10 +29,10 @@
 
 typedef struct GCPlatformWindow GCWindowsWindow;
 
-extern HWND GCWindowsWindow_GetWindowHandle(const GCWindowsWindow *const Window);
-extern HINSTANCE GCWindowsWindow_GetInstanceHandle(const GCWindowsWindow *const Window);
+extern HWND GCWindowsWindow_GetWindowHandle(const GCWindowsWindow* const Window);
+extern HINSTANCE GCWindowsWindow_GetInstanceHandle(const GCWindowsWindow* const Window);
 
-void GCRendererDevice_CreateSurface(const VkInstance InstanceHandle, VkSurfaceKHR *SurfaceHandle)
+void GCRendererDevice_CreateSurface(const VkInstance InstanceHandle, VkSurfaceKHR* SurfaceHandle)
 {
     VkWin32SurfaceCreateInfoKHR SurfaceInformation = {0};
     SurfaceInformation.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;

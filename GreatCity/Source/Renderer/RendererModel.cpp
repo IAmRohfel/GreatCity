@@ -26,13 +26,13 @@
 
 #include <tiny_obj_loader.h>
 
-static void GCRendererModel_HashCombine(std::size_t &Seed)
+static void GCRendererModel_HashCombine(std::size_t& Seed)
 {
     (void)Seed;
 }
 
 template <typename Type, typename... TypeRest>
-static void GCRendererModel_HashCombine(std::size_t &Seed, const Type &Value, TypeRest... Rest)
+static void GCRendererModel_HashCombine(std::size_t& Seed, const Type& Value, TypeRest... Rest)
 {
     Seed ^= std::hash<Type>{}(Value) + 0x9e3779b9 + (Seed << 6) + (Seed >> 2);
     GCRendererModel_HashCombine(Seed, Rest...);
@@ -42,7 +42,7 @@ namespace std
 {
 template <> struct hash<GCRendererVertex>
 {
-    size_t operator()(const GCRendererVertex &Vertex) const
+    size_t operator()(const GCRendererVertex& Vertex) const
     {
         size_t Seed = 0;
         GCRendererModel_HashCombine(Seed, Vertex.Position.X, Vertex.Position.Y, Vertex.Position.Z, Vertex.Normal.X,
@@ -54,18 +54,18 @@ template <> struct hash<GCRendererVertex>
 };
 } // namespace std
 
-GCRendererModel *GCRendererModel_CreateFromFile(const char *const ModelPath, const char *const MaterialPath)
+GCRendererModel* GCRendererModel_CreateFromFile(const char* const ModelPath, const char* const MaterialPath)
 {
-    const char *const ModelPaths[1] = {ModelPath};
-    const char *const MaterialPaths[1] = {MaterialPath};
+    const char* const ModelPaths[1] = {ModelPath};
+    const char* const MaterialPaths[1] = {MaterialPath};
 
     return GCRendererModel_CreateFromFiles(ModelPaths, MaterialPaths, 1);
 }
 
-GCRendererModel *GCRendererModel_CreateFromFiles(const char *const *const ModelPaths,
-                                                 const char *const *const MaterialPaths, const uint32_t ModelCount)
+GCRendererModel* GCRendererModel_CreateFromFiles(const char* const* const ModelPaths,
+                                                 const char* const* const MaterialPaths, const uint32_t ModelCount)
 {
-    GCRendererModel *Model = static_cast<GCRendererModel *>(GCMemory_Allocate(sizeof(GCRendererModel)));
+    GCRendererModel* Model = static_cast<GCRendererModel*>(GCMemory_Allocate(sizeof(GCRendererModel)));
 
     std::vector<GCRendererVertex> Vertices{};
     std::vector<uint32_t> Indices{};
@@ -91,13 +91,13 @@ GCRendererModel *GCRendererModel_CreateFromFiles(const char *const *const ModelP
             }
         }
 
-        const tinyobj::attrib_t &Attribute = Reader.GetAttrib();
-        const std::vector<tinyobj::shape_t> &Shapes = Reader.GetShapes();
-        const std::vector<tinyobj::material_t> &Materials = Reader.GetMaterials();
+        const tinyobj::attrib_t& Attribute = Reader.GetAttrib();
+        const std::vector<tinyobj::shape_t>& Shapes = Reader.GetShapes();
+        const std::vector<tinyobj::material_t>& Materials = Reader.GetMaterials();
 
         std::unordered_map<GCRendererVertex, uint32_t> UniqueVertices{};
 
-        for (const tinyobj::shape_t &Shape : Shapes)
+        for (const tinyobj::shape_t& Shape : Shapes)
         {
             uint32_t IndexOffset = 0;
 
@@ -149,18 +149,18 @@ GCRendererModel *GCRendererModel_CreateFromFiles(const char *const *const ModelP
         }
     }
 
-    Model->Vertices = static_cast<GCRendererVertex *>(GCMemory_Allocate(Vertices.size() * sizeof(GCRendererVertex)));
+    Model->Vertices = static_cast<GCRendererVertex*>(GCMemory_Allocate(Vertices.size() * sizeof(GCRendererVertex)));
     memcpy(Model->Vertices, Vertices.data(), Vertices.size() * sizeof(GCRendererVertex));
     Model->VertexCount = static_cast<uint32_t>(Vertices.size());
 
-    Model->Indices = static_cast<uint32_t *>(GCMemory_Allocate(Indices.size() * sizeof(uint32_t)));
+    Model->Indices = static_cast<uint32_t*>(GCMemory_Allocate(Indices.size() * sizeof(uint32_t)));
     memcpy(Model->Indices, Indices.data(), Indices.size() * sizeof(uint32_t));
     Model->IndexCount = static_cast<uint32_t>(Indices.size());
 
     return Model;
 }
 
-void GCRendererModel_Destroy(GCRendererModel *Model)
+void GCRendererModel_Destroy(GCRendererModel* Model)
 {
     GCMemory_Free(Model->Indices);
     GCMemory_Free(Model->Vertices);

@@ -33,7 +33,7 @@
 
 typedef struct GCRendererSwapChain
 {
-    const GCRendererDevice *Device;
+    const GCRendererDevice* Device;
 
     VkSurfaceCapabilitiesKHR SurfaceCapabilities;
     VkExtent2D Extent;
@@ -42,32 +42,32 @@ typedef struct GCRendererSwapChain
     uint32_t ImageCount;
 
     VkSwapchainKHR SwapChainHandle;
-    VkImage *ImageHandles;
-    VkImageView *ImageViewHandles;
+    VkImage* ImageHandles;
+    VkImageView* ImageViewHandles;
 } GCRendererSwapChain;
 
-static void GCRendererSwapChain_QuerySwapChainSupport(GCRendererSwapChain *const SwapChain);
-static void GCRendererSwapChain_SelectExtent(GCRendererSwapChain *const SwapChain);
-static void GCRendererSwapChain_SelectSurfaceFormat(GCRendererSwapChain *const SwapChain,
-                                                    const VkSurfaceFormatKHR *const Formats,
+static void GCRendererSwapChain_QuerySwapChainSupport(GCRendererSwapChain* const SwapChain);
+static void GCRendererSwapChain_SelectExtent(GCRendererSwapChain* const SwapChain);
+static void GCRendererSwapChain_SelectSurfaceFormat(GCRendererSwapChain* const SwapChain,
+                                                    const VkSurfaceFormatKHR* const Formats,
                                                     const uint32_t FormatCount);
-static void GCRendererSwapChain_SelectPresentMode(GCRendererSwapChain *const SwapChain,
-                                                  const VkPresentModeKHR *const PresentModes,
+static void GCRendererSwapChain_SelectPresentMode(GCRendererSwapChain* const SwapChain,
+                                                  const VkPresentModeKHR* const PresentModes,
                                                   const uint32_t PresentModeCount);
-static void GCRendererSwapChain_CreateSwapChain(GCRendererSwapChain *const SwapChain);
-static void GCRendererSwapChain_CreateImageViews(GCRendererSwapChain *const SwapChain);
-static void GCRendererSwapChain_DestroyObjects(GCRendererSwapChain *const SwapChain);
+static void GCRendererSwapChain_CreateSwapChain(GCRendererSwapChain* const SwapChain);
+static void GCRendererSwapChain_CreateImageViews(GCRendererSwapChain* const SwapChain);
+static void GCRendererSwapChain_DestroyObjects(GCRendererSwapChain* const SwapChain);
 
-static void GCRendererSwapChain_ClampExtent(VkExtent2D *const Extent,
-                                            const VkSurfaceCapabilitiesKHR *const SurfaceCapabilities);
-static VkFormat GCRendererSwapChain_GetSupportedFormat(const GCRendererSwapChain *const SwapChain,
-                                                       const VkFormat *const Formats, const uint32_t FormatCount,
+static void GCRendererSwapChain_ClampExtent(VkExtent2D* const Extent,
+                                            const VkSurfaceCapabilitiesKHR* const SurfaceCapabilities);
+static VkFormat GCRendererSwapChain_GetSupportedFormat(const GCRendererSwapChain* const SwapChain,
+                                                       const VkFormat* const Formats, const uint32_t FormatCount,
                                                        const VkImageTiling Tiling,
                                                        const VkFormatFeatureFlags FormatFeature);
 
-GCRendererSwapChain *GCRendererSwapChain_Create(const GCRendererSwapChainDescription *const Description)
+GCRendererSwapChain* GCRendererSwapChain_Create(const GCRendererSwapChainDescription* const Description)
 {
-    GCRendererSwapChain *SwapChain = (GCRendererSwapChain *)GCMemory_Allocate(sizeof(GCRendererSwapChain));
+    GCRendererSwapChain* SwapChain = (GCRendererSwapChain*)GCMemory_Allocate(sizeof(GCRendererSwapChain));
     SwapChain->Device = Description->Device;
     SwapChain->SurfaceCapabilities = (VkSurfaceCapabilitiesKHR){0};
     SwapChain->Extent = (VkExtent2D){0};
@@ -85,7 +85,7 @@ GCRendererSwapChain *GCRendererSwapChain_Create(const GCRendererSwapChainDescrip
     return SwapChain;
 }
 
-void GCRendererSwapChain_Recreate(GCRendererSwapChain *const SwapChain)
+void GCRendererSwapChain_Recreate(GCRendererSwapChain* const SwapChain)
 {
     GCRendererDevice_WaitIdle(SwapChain->Device);
 
@@ -96,7 +96,7 @@ void GCRendererSwapChain_Recreate(GCRendererSwapChain *const SwapChain)
     GCRendererSwapChain_CreateImageViews(SwapChain);
 }
 
-void GCRendererSwapChain_Destroy(GCRendererSwapChain *SwapChain)
+void GCRendererSwapChain_Destroy(GCRendererSwapChain* SwapChain)
 {
     GCRendererDevice_WaitIdle(SwapChain->Device);
 
@@ -117,32 +117,32 @@ bool GCRendererSwapChain_IsSwapChainSupported(const VkPhysicalDevice PhysicalDev
     return FormatCount && PresentModeCount;
 }
 
-VkFormat GCRendererSwapChain_GetFormat(const GCRendererSwapChain *const SwapChain)
+VkFormat GCRendererSwapChain_GetFormat(const GCRendererSwapChain* const SwapChain)
 {
     return SwapChain->SurfaceFormat.format;
 }
 
-VkExtent2D GCRendererSwapChain_GetExtent(const GCRendererSwapChain *const SwapChain)
+VkExtent2D GCRendererSwapChain_GetExtent(const GCRendererSwapChain* const SwapChain)
 {
     return SwapChain->Extent;
 }
 
-VkSwapchainKHR GCRendererSwapChain_GetHandle(const GCRendererSwapChain *const SwapChain)
+VkSwapchainKHR GCRendererSwapChain_GetHandle(const GCRendererSwapChain* const SwapChain)
 {
     return SwapChain->SwapChainHandle;
 }
 
-VkImageView *GCRendererSwapChain_GetImageViewHandles(const GCRendererSwapChain *const SwapChain)
+VkImageView* GCRendererSwapChain_GetImageViewHandles(const GCRendererSwapChain* const SwapChain)
 {
     return SwapChain->ImageViewHandles;
 }
 
-uint32_t GCRendererSwapChain_GetImageCount(const GCRendererSwapChain *const SwapChain)
+uint32_t GCRendererSwapChain_GetImageCount(const GCRendererSwapChain* const SwapChain)
 {
     return SwapChain->ImageCount;
 }
 
-VkFormat GCRendererSwapChain_GetDepthFormat(const GCRendererSwapChain *const SwapChain)
+VkFormat GCRendererSwapChain_GetDepthFormat(const GCRendererSwapChain* const SwapChain)
 {
     const VkFormat Formats[3] = {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT};
     return GCRendererSwapChain_GetSupportedFormat(SwapChain, Formats, sizeof(Formats) / sizeof(VkFormat),
@@ -150,7 +150,7 @@ VkFormat GCRendererSwapChain_GetDepthFormat(const GCRendererSwapChain *const Swa
                                                   VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-void GCRendererSwapChain_QuerySwapChainSupport(GCRendererSwapChain *const SwapChain)
+void GCRendererSwapChain_QuerySwapChainSupport(GCRendererSwapChain* const SwapChain)
 {
     const VkPhysicalDevice PhysicalDeviceHandle = GCRendererDevice_GetPhysicalDeviceHandle(SwapChain->Device);
     const VkSurfaceKHR SurfaceHandle = GCRendererDevice_GetSurfaceHandle(SwapChain->Device);
@@ -160,13 +160,13 @@ void GCRendererSwapChain_QuerySwapChainSupport(GCRendererSwapChain *const SwapCh
     uint32_t FormatCount = 0;
     vkGetPhysicalDeviceSurfaceFormatsKHR(PhysicalDeviceHandle, SurfaceHandle, &FormatCount, NULL);
 
-    VkSurfaceFormatKHR *Formats = (VkSurfaceFormatKHR *)GCMemory_Allocate(FormatCount * sizeof(VkSurfaceFormatKHR));
+    VkSurfaceFormatKHR* Formats = (VkSurfaceFormatKHR*)GCMemory_Allocate(FormatCount * sizeof(VkSurfaceFormatKHR));
     vkGetPhysicalDeviceSurfaceFormatsKHR(PhysicalDeviceHandle, SurfaceHandle, &FormatCount, Formats);
 
     uint32_t PresentModeCount = 0;
     vkGetPhysicalDeviceSurfacePresentModesKHR(PhysicalDeviceHandle, SurfaceHandle, &PresentModeCount, NULL);
 
-    VkPresentModeKHR *PresentModes = (VkPresentModeKHR *)GCMemory_Allocate(PresentModeCount * sizeof(VkPresentModeKHR));
+    VkPresentModeKHR* PresentModes = (VkPresentModeKHR*)GCMemory_Allocate(PresentModeCount * sizeof(VkPresentModeKHR));
     vkGetPhysicalDeviceSurfacePresentModesKHR(PhysicalDeviceHandle, SurfaceHandle, &PresentModeCount, PresentModes);
 
     GCRendererSwapChain_SelectExtent(SwapChain);
@@ -177,7 +177,7 @@ void GCRendererSwapChain_QuerySwapChainSupport(GCRendererSwapChain *const SwapCh
     GCMemory_Free(Formats);
 }
 
-void GCRendererSwapChain_SelectExtent(GCRendererSwapChain *const SwapChain)
+void GCRendererSwapChain_SelectExtent(GCRendererSwapChain* const SwapChain)
 {
     const VkSurfaceCapabilitiesKHR SurfaceCapabilities = SwapChain->SurfaceCapabilities;
 
@@ -200,8 +200,8 @@ void GCRendererSwapChain_SelectExtent(GCRendererSwapChain *const SwapChain)
     }
 }
 
-void GCRendererSwapChain_SelectSurfaceFormat(GCRendererSwapChain *const SwapChain,
-                                             const VkSurfaceFormatKHR *const Formats, const uint32_t FormatCount)
+void GCRendererSwapChain_SelectSurfaceFormat(GCRendererSwapChain* const SwapChain,
+                                             const VkSurfaceFormatKHR* const Formats, const uint32_t FormatCount)
 {
     for (uint32_t Counter = 0; Counter < FormatCount; Counter++)
     {
@@ -217,8 +217,8 @@ void GCRendererSwapChain_SelectSurfaceFormat(GCRendererSwapChain *const SwapChai
     SwapChain->SurfaceFormat = Formats[0];
 }
 
-void GCRendererSwapChain_SelectPresentMode(GCRendererSwapChain *const SwapChain,
-                                           const VkPresentModeKHR *const PresentModes, const uint32_t PresentModeCount)
+void GCRendererSwapChain_SelectPresentMode(GCRendererSwapChain* const SwapChain,
+                                           const VkPresentModeKHR* const PresentModes, const uint32_t PresentModeCount)
 {
     for (uint32_t Counter = 0; Counter < PresentModeCount; Counter++)
     {
@@ -233,7 +233,7 @@ void GCRendererSwapChain_SelectPresentMode(GCRendererSwapChain *const SwapChain,
     SwapChain->PresentMode = VK_PRESENT_MODE_FIFO_KHR;
 }
 
-void GCRendererSwapChain_CreateSwapChain(GCRendererSwapChain *const SwapChain)
+void GCRendererSwapChain_CreateSwapChain(GCRendererSwapChain* const SwapChain)
 {
     const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(SwapChain->Device);
     const VkSurfaceKHR SurfaceHandle = GCRendererDevice_GetSurfaceHandle(SwapChain->Device);
@@ -282,15 +282,15 @@ void GCRendererSwapChain_CreateSwapChain(GCRendererSwapChain *const SwapChain)
 
     GC_VULKAN_VALIDATE(vkGetSwapchainImagesKHR(DeviceHandle, SwapChain->SwapChainHandle, &SwapChain->ImageCount, NULL),
                        "Failed to get Vulkan swap chain images");
-    SwapChain->ImageHandles = (VkImage *)GCMemory_Allocate(SwapChain->ImageCount * sizeof(VkImage));
+    SwapChain->ImageHandles = (VkImage*)GCMemory_Allocate(SwapChain->ImageCount * sizeof(VkImage));
     GC_VULKAN_VALIDATE(vkGetSwapchainImagesKHR(DeviceHandle, SwapChain->SwapChainHandle, &SwapChain->ImageCount,
                                                SwapChain->ImageHandles),
                        "Failed to get Vulkan swap chain images");
 }
 
-void GCRendererSwapChain_CreateImageViews(GCRendererSwapChain *const SwapChain)
+void GCRendererSwapChain_CreateImageViews(GCRendererSwapChain* const SwapChain)
 {
-    SwapChain->ImageViewHandles = (VkImageView *)GCMemory_Allocate(SwapChain->ImageCount * sizeof(VkImageView));
+    SwapChain->ImageViewHandles = (VkImageView*)GCMemory_Allocate(SwapChain->ImageCount * sizeof(VkImageView));
 
     for (uint32_t Counter = 0; Counter < SwapChain->ImageCount; Counter++)
     {
@@ -300,7 +300,7 @@ void GCRendererSwapChain_CreateImageViews(GCRendererSwapChain *const SwapChain)
     }
 }
 
-void GCRendererSwapChain_DestroyObjects(GCRendererSwapChain *const SwapChain)
+void GCRendererSwapChain_DestroyObjects(GCRendererSwapChain* const SwapChain)
 {
     const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(SwapChain->Device);
 
@@ -315,11 +315,11 @@ void GCRendererSwapChain_DestroyObjects(GCRendererSwapChain *const SwapChain)
     GCMemory_Free(SwapChain->ImageHandles);
 }
 
-void GCRendererSwapChain_ClampExtent(VkExtent2D *const Extent,
-                                     const VkSurfaceCapabilitiesKHR *const SurfaceCapabilities)
+void GCRendererSwapChain_ClampExtent(VkExtent2D* const Extent,
+                                     const VkSurfaceCapabilitiesKHR* const SurfaceCapabilities)
 {
-    uint32_t *const Width = &Extent->width;
-    uint32_t *const Height = &Extent->height;
+    uint32_t* const Width = &Extent->width;
+    uint32_t* const Height = &Extent->height;
 
     if (*Width < SurfaceCapabilities->minImageExtent.width)
     {
@@ -340,8 +340,8 @@ void GCRendererSwapChain_ClampExtent(VkExtent2D *const Extent,
     }
 }
 
-VkFormat GCRendererSwapChain_GetSupportedFormat(const GCRendererSwapChain *const SwapChain,
-                                                const VkFormat *const Formats, const uint32_t FormatCount,
+VkFormat GCRendererSwapChain_GetSupportedFormat(const GCRendererSwapChain* const SwapChain,
+                                                const VkFormat* const Formats, const uint32_t FormatCount,
                                                 const VkImageTiling Tiling, const VkFormatFeatureFlags FormatFeature)
 {
     const VkPhysicalDevice PhysicalDeviceHandle = GCRendererDevice_GetPhysicalDeviceHandle(SwapChain->Device);

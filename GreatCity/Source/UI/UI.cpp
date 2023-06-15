@@ -41,6 +41,7 @@
 #include <array>
 #include <cstdint>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 // clang-format off
@@ -51,8 +52,8 @@
 struct GCUIData
 {
   public:
-    std::vector<void *> Texture2Ds{};
     std::vector<GCEntity> Entities{};
+    std::unordered_map<GCRendererModel*, std::pair<GCRendererTexture2D*, void*>> UIEntityData{};
 
     GCVector2 ViewportSize{};
     GCVector2 ViewportBounds[2]{};
@@ -65,37 +66,44 @@ struct GCUIData
     int32_t GizmoType{-1};
 };
 
-static bool GCUI_OnKeyPressed(GCEvent *const Event, void *CustomData);
-static bool GCUI_OnMouseButtonPressed(GCEvent *const Event, void *CustomData);
 static void GCUI_ResizeAttachment(void);
+static bool GCUI_OnKeyPressed(GCEvent* const Event, void* CustomData);
+static bool GCUI_OnMouseButtonPressed(GCEvent* const Event, void* CustomData);
+static GCVector2 GCUI_GetMousePosition(void);
 
-static GCUIData *UIData{};
+static GCUIData* UIData{};
 
 void GCUI_Initialize(void)
 {
     UIData = new GCUIData();
 
-    const GCRendererDevice *const Device = GCRenderer_GetDevice();
-    const GCRendererCommandList *const CommandList = GCRenderer_GetCommandList();
-
-    GCRendererTexture2DDescription SmallOfficeTextureDescription = {0};
-    SmallOfficeTextureDescription.Device = Device;
-    SmallOfficeTextureDescription.CommandList = CommandList;
-    SmallOfficeTextureDescription.TexturePath = "Assets/Textures/Buildings/Offices/SmallOffice.png";
-    GCRendererTexture2D *SmallOfficeTexture = GCRendererTexture2D_Create(&SmallOfficeTextureDescription);
-
-    std::array<GCRendererTexture2D *, 1> Texture2Ds{};
-    Texture2Ds[0] = SmallOfficeTexture;
-
-    UIData->Texture2Ds.resize(Texture2Ds.size());
-    GCRenderer_SetTexture2Ds(Texture2Ds.data(), static_cast<uint32_t>(Texture2Ds.size()));
+    const GCRendererDevice* const Device = GCRenderer_GetDevice();
+    const GCRendererCommandList* const CommandList = GCRenderer_GetCommandList();
 
     GCRendererCommandList_SetAttachmentResizeCallback(GCRenderer_GetCommandList(), GCUI_ResizeAttachment);
 
     GCImGuiManager_Initialize();
     GCImGuiManager_InitializePlatform();
-    GCImGuiManager_InitializeRenderer(Texture2Ds.data(), UIData->Texture2Ds.data(),
-                                      static_cast<uint32_t>(Texture2Ds.size()));
+    GCImGuiManager_InitializeRenderer();
+
+    const std::array<std::tuple<std::string, std::string, std::string>, 2> ModelLocations = {
+        {{"Assets/Models/Buildings/Offices/SmallOffice.obj", "Assets/Models/Buildings/Offices",
+          "Assets/Textures/Buildings/Offices/SmallOffice.png"},
+         {"Assets/Models/Buildings/Offices/Office.obj", "Assets/Models/Buildings/Offices",
+          "Assets/Textures/Buildings/Offices/Office.png"}}};
+
+    for (const std::tuple<std::string, std::string, std::string>& ModelLocation : ModelLocations)
+    {
+        GCRendererTexture2DDescription TextureDescription = {0};
+        TextureDescription.Device = Device;
+        TextureDescription.CommandList = CommandList;
+        TextureDescription.TexturePath = std::get<2>(ModelLocation).c_str();
+        GCRendererTexture2D* Texture = GCRendererTexture2D_Create(&TextureDescription);
+
+        UIData->UIEntityData[GCRendererModel_CreateFromFile(std::get<0>(ModelLocation).c_str(),
+                                                            std::get<1>(ModelLocation).c_str())] =
+            std::make_pair(Texture, GCImGuiManager_AddTexture(Texture));
+    }
 }
 
 void GCUI_Render(void)
@@ -126,7 +134,7 @@ void GCUI_Render(void)
 
     if (IsFullscreen)
     {
-        ImGuiViewport *Viewport = ImGui::GetMainViewport();
+        ImGuiViewport* Viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(Viewport->Pos);
         ImGui::SetNextWindowSize(Viewport->Size);
         ImGui::SetNextWindowViewport(Viewport->ID);
@@ -153,8 +161,8 @@ void GCUI_Render(void)
         ImGui::PopStyleVar(2);
     }
 
-    ImGuiIO &IO = ImGui::GetIO();
-    ImGuiStyle &Style = ImGui::GetStyle();
+    ImGuiIO& IO = ImGui::GetIO();
+    ImGuiStyle& Style = ImGui::GetStyle();
 
     const float MinimumWindowSizeX = Style.WindowMinSize.x;
     Style.WindowMinSize.x = 370.0f;
@@ -169,7 +177,7 @@ void GCUI_Render(void)
 
     ImGui::End();
 
-    GCWorld *const World = GCApplication_GetWorld();
+    GCWorld* const World = GCApplication_GetWorld();
 
     bool OpenAddBuildingPopup = false;
 
@@ -204,28 +212,35 @@ void GCUI_Render(void)
 
     if (ImGui::BeginPopupModal("Add Building", nullptr, ImGuiWindowFlags_NoResize))
     {
+        GCEntity Entity{};
         bool ClosePopup = false;
 
-        if (ImGui::ImageButton(UIData->Texture2Ds[0], ImVec2{100.0f, 100.0f}))
+        for (const auto& UIEntityData : UIData->UIEntityData)
         {
-            static uint32_t NameCount = 0;
+            if (ImGui::ImageButton(UIEntityData.second.second, ImVec2{100.0f, 100.0f}))
+            {
+                static uint32_t ModelCount = 0;
+                const std::string Name{"Model " + ModelCount};
 
-            const std::string Name{"Small Office " + NameCount};
+                Entity = GCWorld_CreateEntity(World, Name.c_str());
+                GCEntity_AddMeshComponent(Entity, UIEntityData.first);
 
-            const GCEntity Entity = GCWorld_CreateEntity(World, Name.c_str());
-            GCRendererModel *Model = GCRendererModel_CreateFromFile("Assets/Models/Buildings/Offices/SmallOffice.obj",
-                                                                    "Assets/Models/Buildings/Offices");
+                ModelCount++;
+                ClosePopup = true;
+            }
+        }
 
-            GCTransformComponent *const TransformComponent = GCEntity_GetTransformComponent(Entity);
+        if (Entity != 0)
+        {
+            GCTransformComponent* const TransformComponent = GCEntity_GetTransformComponent(Entity);
             TransformComponent->Translation =
                 GCVector3_Create(0.0f, GCEntity_GetTransformComponent(Entity)->Translation.Y - 2.5f, 0.0f);
 
-            GCEntity_AddMeshComponent(Entity, Model);
-            GCRendererModel_Destroy(Model);
-
             UIData->Entities.emplace_back(Entity);
-            NameCount++;
+        }
 
+        if (ImGui::Button("Done"))
+        {
             ClosePopup = true;
         }
 
@@ -261,14 +276,14 @@ void GCUI_Render(void)
                           UIData->ViewportBounds[1].X - UIData->ViewportBounds[0].X,
                           UIData->ViewportBounds[1].Y - UIData->ViewportBounds[0].Y);
 
-        const GCWorldCamera *const WorldCamera = GCWorld_GetCamera(World);
-        const GCMatrix4x4 *const WorldCameraViewMatrix = GCWorldCamera_GetViewMatrix(WorldCamera);
-        const GCMatrix4x4 *const OriginalWorldCameraProjectionMatrix = GCWorldCamera_GetProjectionMatrix(WorldCamera);
+        const GCWorldCamera* const WorldCamera = GCWorld_GetCamera(World);
+        const GCMatrix4x4* const WorldCameraViewMatrix = GCWorldCamera_GetViewMatrix(WorldCamera);
+        const GCMatrix4x4* const OriginalWorldCameraProjectionMatrix = GCWorldCamera_GetProjectionMatrix(WorldCamera);
 
         GCMatrix4x4 WorldCameraProjectionMatrix = *OriginalWorldCameraProjectionMatrix;
         WorldCameraProjectionMatrix.Data[1][1] *= -1.0f;
 
-        GCTransformComponent *const EntityTransformComponent = GCEntity_GetTransformComponent(UIData->SelectedEntity);
+        GCTransformComponent* const EntityTransformComponent = GCEntity_GetTransformComponent(UIData->SelectedEntity);
         GCMatrix4x4 EntityTransform = GCTransformComponent_GetTransform(EntityTransformComponent);
 
         std::array<float, 3> SnapValues{};
@@ -322,14 +337,12 @@ void GCUI_OnUpdate(void)
         GCWorldCamera_Update(GCWorld_GetCamera(GCApplication_GetWorld()));
     }
 
-    ImVec2 MousePosition{ImGui::GetMousePos()};
-    MousePosition.x -= UIData->ViewportBounds[0].X;
-    MousePosition.y -= UIData->ViewportBounds[0].Y;
-
     UIData->ViewportSize = GCVector2_Subtract(UIData->ViewportBounds[1], UIData->ViewportBounds[0]);
 
-    const std::int32_t MouseX = static_cast<std::int32_t>(MousePosition.x);
-    const std::int32_t MouseY = static_cast<std::int32_t>(MousePosition.y);
+    const GCVector2 MousePosition = GCUI_GetMousePosition();
+
+    const int32_t MouseX = static_cast<int32_t>(MousePosition.X);
+    const int32_t MouseY = static_cast<int32_t>(MousePosition.Y);
 
     uint32_t FramebufferWidth = 0, FramebufferHeight = 0;
     GCRendererFramebuffer_GetSize(GCRenderer_GetFramebuffer(), &FramebufferWidth, &FramebufferHeight);
@@ -347,7 +360,7 @@ void GCUI_OnUpdate(void)
     }
 }
 
-void GCUI_OnEvent(GCEvent *const Event)
+void GCUI_OnEvent(GCEvent* const Event)
 {
     GCEvent_Dispatch(GCEventType_KeyPressed, Event, GCUI_OnKeyPressed, NULL);
     GCEvent_Dispatch(GCEventType_MouseButtonPressed, Event, GCUI_OnMouseButtonPressed, NULL);
@@ -355,6 +368,12 @@ void GCUI_OnEvent(GCEvent *const Event)
 
 void GCUI_Terminate(void)
 {
+    for (const auto& Iterator : UIData->UIEntityData)
+    {
+        GCRendererTexture2D_Destroy(Iterator.second.first);
+        GCRendererModel_Destroy(Iterator.first);
+    }
+
     GCImGuiManager_TerminateRenderer();
     GCImGuiManager_TerminatePlatform();
     GCImGuiManager_Terminate();
@@ -371,11 +390,11 @@ void GCUI_ResizeAttachment(void)
                           static_cast<uint32_t>(UIData->ViewportSize.Y));
 }
 
-bool GCUI_OnKeyPressed(GCEvent *const Event, void *CustomData)
+bool GCUI_OnKeyPressed(GCEvent* const Event, void* CustomData)
 {
     (void)CustomData;
 
-    const GCKeyPressedEvent *const EventDetail = (const GCKeyPressedEvent *const)Event->EventDetail;
+    const GCKeyPressedEvent* const EventDetail = (const GCKeyPressedEvent* const)Event->EventDetail;
 
     switch (EventDetail->KeyCode)
     {
@@ -403,11 +422,11 @@ bool GCUI_OnKeyPressed(GCEvent *const Event, void *CustomData)
     return false;
 }
 
-bool GCUI_OnMouseButtonPressed(GCEvent *const Event, void *CustomData)
+bool GCUI_OnMouseButtonPressed(GCEvent* const Event, void* CustomData)
 {
     (void)CustomData;
 
-    const GCMouseButtonPressedEvent *const EventDetail = (const GCMouseButtonPressedEvent *const)Event->EventDetail;
+    const GCMouseButtonPressedEvent* const EventDetail = (const GCMouseButtonPressedEvent* const)Event->EventDetail;
 
     if (EventDetail->MouseButtonCode == GCMouseButtonCode_Left)
     {
@@ -418,4 +437,13 @@ bool GCUI_OnMouseButtonPressed(GCEvent *const Event, void *CustomData)
     }
 
     return false;
+}
+
+GCVector2 GCUI_GetMousePosition(void)
+{
+    ImVec2 MousePosition{ImGui::GetMousePos()};
+    MousePosition.x -= UIData->ViewportBounds[0].X;
+    MousePosition.y -= UIData->ViewportBounds[0].Y;
+
+    return GCVector2_Create(MousePosition.x, MousePosition.y);
 }

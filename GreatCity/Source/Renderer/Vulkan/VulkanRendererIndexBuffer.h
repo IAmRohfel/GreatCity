@@ -27,7 +27,7 @@ extern "C"
 
     typedef struct GCRendererIndexBuffer GCRendererIndexBuffer;
 
-    VkBuffer GCRendererIndexBuffer_GetHandle(const GCRendererIndexBuffer *const IndexBuffer);
+    VkBuffer GCRendererIndexBuffer_GetHandle(const GCRendererIndexBuffer* const IndexBuffer);
 
 #ifdef __cplusplus
 }

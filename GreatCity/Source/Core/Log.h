@@ -32,7 +32,7 @@ extern "C"
         GCLogLevel_Fatal
     } GCLogLevel;
 
-    void GCLog_LogToConsole(const GCLogLevel Level, const char *const Format, ...);
+    void GCLog_LogToConsole(const GCLogLevel Level, const char* const Format, ...);
     void GCLog_ChangeConsoleColor(const GCLogLevel Level);
 
 #define GC_LOG_TRACE(...) GCLog_LogToConsole(GCLogLevel_Trace, __VA_ARGS__)

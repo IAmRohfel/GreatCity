@@ -39,41 +39,41 @@ typedef struct GCPlatformWindow
     LRESULT (*AnotherMessageCallback)(HWND, UINT, WPARAM, LPARAM);
 } GCWindow, GCWindowsWindow;
 
-HWND GCWindowsWindow_GetWindowHandle(const GCWindowsWindow *const Window);
-HINSTANCE GCWindowsWindow_GetInstanceHandle(const GCWindowsWindow *const Window);
+HWND GCWindowsWindow_GetWindowHandle(const GCWindowsWindow* const Window);
+HINSTANCE GCWindowsWindow_GetInstanceHandle(const GCWindowsWindow* const Window);
 
-static GCWindowsWindow *GCWindowsWindow_Create(const GCWindowProperties *const Properties);
+static GCWindowsWindow* GCWindowsWindow_Create(const GCWindowProperties* const Properties);
 static LRESULT CALLBACK GCWindowsWindow_SetupMessageHandler(HWND WindowHandle, UINT Message, WPARAM WParam,
                                                             LPARAM LParam);
 static LRESULT CALLBACK GCWindowsWindow_MessageHandler(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam);
-static void GCWindowsWindow_ProcessEvents(GCWindowsWindow *const Window);
-static void GCWindowsWindow_GetWindowSize(const GCWindowsWindow *const Window, uint32_t *const Width,
-                                          uint32_t *const Height);
-static void GCWindowsWindow_Destroy(GCWindowsWindow *Window);
+static void GCWindowsWindow_ProcessEvents(GCWindowsWindow* const Window);
+static void GCWindowsWindow_GetWindowSize(const GCWindowsWindow* const Window, uint32_t* const Width,
+                                          uint32_t* const Height);
+static void GCWindowsWindow_Destroy(GCWindowsWindow* Window);
 
-GCWindow *GCWindow_Create(const GCWindowProperties *const Properties)
+GCWindow* GCWindow_Create(const GCWindowProperties* const Properties)
 {
     return GCWindowsWindow_Create(Properties);
 }
 
-void GCWindow_ProcessEvents(GCWindow *const Window)
+void GCWindow_ProcessEvents(GCWindow* const Window)
 {
     GCWindowsWindow_ProcessEvents(Window);
 }
 
-void GCWindow_GetWindowSize(const GCWindow *const Window, uint32_t *const Width, uint32_t *const Height)
+void GCWindow_GetWindowSize(const GCWindow* const Window, uint32_t* const Width, uint32_t* const Height)
 {
     GCWindowsWindow_GetWindowSize(Window, Width, Height);
 }
 
-void GCWindow_Destroy(GCWindow *Window)
+void GCWindow_Destroy(GCWindow* Window)
 {
     GCWindowsWindow_Destroy(Window);
 }
 
-GCWindowsWindow *GCWindowsWindow_Create(const GCWindowProperties *const Properties)
+GCWindowsWindow* GCWindowsWindow_Create(const GCWindowProperties* const Properties)
 {
-    GCWindowsWindow *Window = (GCWindowsWindow *)GCMemory_Allocate(sizeof(GCWindowsWindow));
+    GCWindowsWindow* Window = (GCWindowsWindow*)GCMemory_Allocate(sizeof(GCWindowsWindow));
     Window->Properties = *Properties;
     Window->ClassName = L"GreatCityWindow";
     Window->InstanceHandle = GetModuleHandleW(NULL);
@@ -98,7 +98,7 @@ GCWindowsWindow *GCWindowsWindow_Create(const GCWindowProperties *const Properti
 
     RegisterClassExW(&WindowClass);
 
-    wchar_t *WindowTitleUTF16 = GCString_UTF8ToUTF16(Window->Properties.Title);
+    wchar_t* WindowTitleUTF16 = GCString_UTF8ToUTF16(Window->Properties.Title);
     Window->WindowHandle = CreateWindowExW(0, Window->ClassName, WindowTitleUTF16, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
                                            CW_USEDEFAULT, Window->Properties.Width, Window->Properties.Height, NULL,
                                            NULL, Window->InstanceHandle, Window);
@@ -113,8 +113,8 @@ LRESULT CALLBACK GCWindowsWindow_SetupMessageHandler(HWND WindowHandle, UINT Mes
 {
     if (Message == WM_NCCREATE)
     {
-        const CREATESTRUCTW *const CreateStruct = (const CREATESTRUCTW *const)LParam;
-        const GCWindowsWindow *const Window = (const GCWindowsWindow *const)CreateStruct->lpCreateParams;
+        const CREATESTRUCTW* const CreateStruct = (const CREATESTRUCTW* const)LParam;
+        const GCWindowsWindow* const Window = (const GCWindowsWindow* const)CreateStruct->lpCreateParams;
 
         SetWindowLongPtrW(WindowHandle, GWLP_USERDATA, (LONG_PTR)Window);
         SetWindowLongPtrW(WindowHandle, GWLP_WNDPROC, (LONG_PTR)GCWindowsWindow_MessageHandler);
@@ -127,7 +127,7 @@ LRESULT CALLBACK GCWindowsWindow_SetupMessageHandler(HWND WindowHandle, UINT Mes
 
 LRESULT CALLBACK GCWindowsWindow_MessageHandler(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam)
 {
-    GCWindowsWindow *const Window = (GCWindowsWindow *const)GetWindowLongPtrW(WindowHandle, GWLP_USERDATA);
+    GCWindowsWindow* const Window = (GCWindowsWindow* const)GetWindowLongPtrW(WindowHandle, GWLP_USERDATA);
 
     if (Window->AnotherMessageCallback)
     {
@@ -268,7 +268,7 @@ LRESULT CALLBACK GCWindowsWindow_MessageHandler(HWND WindowHandle, UINT Message,
     return DefWindowProcW(WindowHandle, Message, WParam, LParam);
 }
 
-void GCWindowsWindow_ProcessEvents(GCWindowsWindow *const Window)
+void GCWindowsWindow_ProcessEvents(GCWindowsWindow* const Window)
 {
     (void)Window;
 
@@ -281,7 +281,7 @@ void GCWindowsWindow_ProcessEvents(GCWindowsWindow *const Window)
     }
 }
 
-void GCWindowsWindow_GetWindowSize(const GCWindowsWindow *const Window, uint32_t *const Width, uint32_t *const Height)
+void GCWindowsWindow_GetWindowSize(const GCWindowsWindow* const Window, uint32_t* const Width, uint32_t* const Height)
 {
     RECT Coordinate = {0};
     GetClientRect(Window->WindowHandle, &Coordinate);
@@ -297,7 +297,7 @@ void GCWindowsWindow_GetWindowSize(const GCWindowsWindow *const Window, uint32_t
     }
 }
 
-void GCWindowsWindow_Destroy(GCWindowsWindow *Window)
+void GCWindowsWindow_Destroy(GCWindowsWindow* Window)
 {
     DestroyWindow(Window->WindowHandle);
     UnregisterClassW(Window->ClassName, Window->InstanceHandle);
@@ -305,18 +305,18 @@ void GCWindowsWindow_Destroy(GCWindowsWindow *Window)
     GCMemory_Free(Window);
 }
 
-void GCWindowsWindow_SetAnotherMessageCallback(GCWindowsWindow *const Window,
+void GCWindowsWindow_SetAnotherMessageCallback(GCWindowsWindow* const Window,
                                                LRESULT (*MessageCallback)(HWND, UINT, WPARAM, LPARAM))
 {
     Window->AnotherMessageCallback = MessageCallback;
 }
 
-HWND GCWindowsWindow_GetWindowHandle(const GCWindowsWindow *const Window)
+HWND GCWindowsWindow_GetWindowHandle(const GCWindowsWindow* const Window)
 {
     return Window->WindowHandle;
 }
 
-HINSTANCE GCWindowsWindow_GetInstanceHandle(const GCWindowsWindow *const Window)
+HINSTANCE GCWindowsWindow_GetInstanceHandle(const GCWindowsWindow* const Window)
 {
     return Window->InstanceHandle;
 }

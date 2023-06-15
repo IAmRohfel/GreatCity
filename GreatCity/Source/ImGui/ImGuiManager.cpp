@@ -31,7 +31,7 @@ extern "C" void GCImGuiManager_Initialize(void)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
-    ImGuiIO &IO = ImGui::GetIO();
+    ImGuiIO& IO = ImGui::GetIO();
     IO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     IO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
@@ -39,7 +39,7 @@ extern "C" void GCImGuiManager_Initialize(void)
 
     GCImGuiManager_SetDarkTheme();
 
-    ImGuizmo::Style &ImGuizmoStyle = ImGuizmo::GetStyle();
+    ImGuizmo::Style& ImGuizmoStyle = ImGuizmo::GetStyle();
 
     ImGuizmoStyle.TranslationLineThickness = 5.0f;
     ImGuizmoStyle.ScaleLineThickness = 5.0f;
@@ -61,29 +61,30 @@ extern "C" void GCImGuiManager_Terminate(void)
 
 void GCImGuiManager_SetDarkTheme(void)
 {
-    ImGuiStyle &Style = ImGui::GetStyle();
+    ImGuiStyle& Style = ImGui::GetStyle();
 
+    Style.Colors[ImGuiCol_MenuBarBg] = ImVec4{0.070f, 0.070f, 0.070f, 1.0f};
     Style.Colors[ImGuiCol_DockingPreview] = ImVec4{0.054f, 0.647f, 0.913f, 1.0f};
 
-    Style.Colors[ImGuiCol_Header] = ImVec4{0.121f, 0.160f, 0.215f, 1.0f};
+    Style.Colors[ImGuiCol_Header] = ImVec4{0.070f, 0.070f, 0.070f, 1.0f};
     Style.Colors[ImGuiCol_HeaderHovered] = ImVec4{0.215f, 0.254f, 0.317f, 1.0f};
     Style.Colors[ImGuiCol_HeaderActive] = ImVec4{0.066f, 0.094f, 0.152f, 1.0f};
 
     Style.Colors[ImGuiCol_Button] = ImVec4{0.215f, 0.254f, 0.317f, 1.0f};
     Style.Colors[ImGuiCol_ButtonHovered] = ImVec4{0.294f, 0.333f, 0.388f, 1.0f};
-    Style.Colors[ImGuiCol_ButtonActive] = ImVec4{0.121f, 0.160f, 0.215f, 1.0f};
+    Style.Colors[ImGuiCol_ButtonActive] = ImVec4{0.070f, 0.070f, 0.070f, 1.0f};
 
-    Style.Colors[ImGuiCol_FrameBg] = ImVec4{0.121f, 0.160f, 0.215f, 1.0f};
+    Style.Colors[ImGuiCol_FrameBg] = ImVec4{0.070f, 0.070f, 0.070f, 1.0f};
     Style.Colors[ImGuiCol_FrameBgHovered] = ImVec4{0.215f, 0.254f, 0.317f, 1.0f};
     Style.Colors[ImGuiCol_FrameBgActive] = ImVec4{0.066f, 0.094f, 0.152f, 1.0f};
 
     Style.Colors[ImGuiCol_Tab] = ImVec4{0.215f, 0.254f, 0.317f, 1.0f};
     Style.Colors[ImGuiCol_TabHovered] = ImVec4{0.294f, 0.333f, 0.388f, 1.0f};
-    Style.Colors[ImGuiCol_TabActive] = ImVec4{0.121f, 0.160f, 0.215f, 1.0f};
+    Style.Colors[ImGuiCol_TabActive] = ImVec4{0.070f, 0.070f, 0.070f, 1.0f};
     Style.Colors[ImGuiCol_TabUnfocused] = ImVec4{0.121f, 0.160f, 0.215f, 1.0f};
     Style.Colors[ImGuiCol_TabUnfocusedActive] = ImVec4{0.066f, 0.094f, 0.152f, 1.0f};
 
-    Style.Colors[ImGuiCol_TitleBg] = ImVec4{0.121f, 0.160f, 0.215f, 1.0f};
-    Style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4{0.121f, 0.160f, 0.215f, 1.0f};
-    Style.Colors[ImGuiCol_TitleBgActive] = ImVec4{0.121f, 0.160f, 0.215f, 1.0f};
+    Style.Colors[ImGuiCol_TitleBg] = ImVec4{0.070f, 0.070f, 0.070f, 1.0f};
+    Style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4{0.070f, 0.070f, 0.070f, 1.0f};
+    Style.Colors[ImGuiCol_TitleBgActive] = ImVec4{0.070f, 0.070f, 0.070f, 1.0f};
 }

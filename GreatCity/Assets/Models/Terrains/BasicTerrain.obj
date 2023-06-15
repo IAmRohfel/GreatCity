@@ -1,7 +1,7 @@
 # Blender 3.5.1
 # www.blender.org
 mtllib BasicTerrain.mtl
-o Terrain
+o BasicTerrain
 v -0.500000 -0.050000 -0.500000
 v 0.500000 -0.050000 -0.500000
 v -0.500000 -0.050000 0.500000

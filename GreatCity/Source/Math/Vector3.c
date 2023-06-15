@@ -135,11 +135,11 @@ GCVector3 GCVector3_Normalize(const GCVector3 Vector)
     return Result;
 }
 
-char *GCVector3_ToString(const GCVector3 Vector)
+char* GCVector3_ToString(const GCVector3 Vector)
 {
     const int32_t Length = snprintf(NULL, 0, "(%f, %f, %f)", Vector.X, Vector.Y, Vector.Z) + 1;
 
-    char *Buffer = (char *)GCMemory_Allocate(Length * sizeof(char));
+    char* Buffer = (char*)GCMemory_Allocate(Length * sizeof(char));
     snprintf(Buffer, Length, "(%f, %f, %f)", Vector.X, Vector.Y, Vector.Z);
 
     return Buffer;

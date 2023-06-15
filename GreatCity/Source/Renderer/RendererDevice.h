@@ -34,10 +34,10 @@ extern "C"
         float MaximumAnisotropy;
     } GCRendererDeviceCapabilities;
 
-    GCRendererDevice *GCRendererDevice_Create(void);
-    void GCRendererDevice_WaitIdle(const GCRendererDevice *const Device);
-    GCRendererDeviceCapabilities GCRendererDevice_GetDeviceCapabilities(const GCRendererDevice *const Device);
-    void GCRendererDevice_Destroy(GCRendererDevice *Device);
+    GCRendererDevice* GCRendererDevice_Create(void);
+    void GCRendererDevice_WaitIdle(const GCRendererDevice* const Device);
+    GCRendererDeviceCapabilities GCRendererDevice_GetDeviceCapabilities(const GCRendererDevice* const Device);
+    void GCRendererDevice_Destroy(GCRendererDevice* Device);
 
 #ifdef __cplusplus
 }

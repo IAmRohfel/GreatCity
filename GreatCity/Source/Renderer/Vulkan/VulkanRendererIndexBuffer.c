@@ -20,6 +20,7 @@
 #include "Core/Log.h"
 #include "Core/Memory/Allocator.h"
 #include "Renderer/RendererIndexBuffer.h"
+#include "Renderer/Vulkan/VulkanRendererCommandList.h"
 #include "Renderer/Vulkan/VulkanRendererDevice.h"
 #include "Renderer/Vulkan/VulkanUtilities.h"
 
@@ -31,23 +32,23 @@
 
 typedef struct GCRendererIndexBuffer
 {
-    const GCRendererDevice *Device;
-    const GCRendererCommandList *CommandList;
+    const GCRendererDevice* Device;
+    const GCRendererCommandList* CommandList;
 
     VkBuffer IndexBufferHandle;
     VkDeviceMemory IndexBufferMemoryHandle;
 
-    uint32_t *Indices;
+    uint32_t* Indices;
     uint32_t IndexCount;
     size_t IndexSize;
 } GCRendererIndexBuffer;
 
-static void GCRendererIndexBuffer_CreateIndexBuffer(GCRendererIndexBuffer *const IndexBuffer);
-static void GCRendererIndexBuffer_DestroyObjects(GCRendererIndexBuffer *const IndexBuffer);
+static void GCRendererIndexBuffer_CreateIndexBuffer(GCRendererIndexBuffer* const IndexBuffer);
+static void GCRendererIndexBuffer_DestroyObjects(GCRendererIndexBuffer* const IndexBuffer);
 
-GCRendererIndexBuffer *GCRendererIndexBuffer_Create(const GCRendererIndexBufferDescription *const Description)
+GCRendererIndexBuffer* GCRendererIndexBuffer_Create(const GCRendererIndexBufferDescription* const Description)
 {
-    GCRendererIndexBuffer *IndexBuffer = (GCRendererIndexBuffer *)GCMemory_Allocate(sizeof(GCRendererIndexBuffer));
+    GCRendererIndexBuffer* IndexBuffer = (GCRendererIndexBuffer*)GCMemory_Allocate(sizeof(GCRendererIndexBuffer));
     IndexBuffer->Device = Description->Device;
     IndexBuffer->CommandList = Description->CommandList;
     IndexBuffer->IndexBufferHandle = VK_NULL_HANDLE;
@@ -61,24 +62,24 @@ GCRendererIndexBuffer *GCRendererIndexBuffer_Create(const GCRendererIndexBufferD
     return IndexBuffer;
 }
 
-uint32_t GCRendererIndexBuffer_GetIndexCount(const GCRendererIndexBuffer *const indexBuffer)
+uint32_t GCRendererIndexBuffer_GetIndexCount(const GCRendererIndexBuffer* const indexBuffer)
 {
     return indexBuffer->IndexCount;
 }
 
-void GCRendererIndexBuffer_Destroy(GCRendererIndexBuffer *IndexBuffer)
+void GCRendererIndexBuffer_Destroy(GCRendererIndexBuffer* IndexBuffer)
 {
     GCRendererIndexBuffer_DestroyObjects(IndexBuffer);
 
     GCMemory_Free(IndexBuffer);
 }
 
-VkBuffer GCRendererIndexBuffer_GetHandle(const GCRendererIndexBuffer *const IndexBuffer)
+VkBuffer GCRendererIndexBuffer_GetHandle(const GCRendererIndexBuffer* const IndexBuffer)
 {
     return IndexBuffer->IndexBufferHandle;
 }
 
-void GCRendererIndexBuffer_CreateIndexBuffer(GCRendererIndexBuffer *const IndexBuffer)
+void GCRendererIndexBuffer_CreateIndexBuffer(GCRendererIndexBuffer* const IndexBuffer)
 {
     const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(IndexBuffer->Device);
 
@@ -89,7 +90,7 @@ void GCRendererIndexBuffer_CreateIndexBuffer(GCRendererIndexBuffer *const IndexB
                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                                    &StagingIndexBufferHandle, &StagingIndexBufferMemoryHandle);
 
-    void *IndexData = NULL;
+    void* IndexData = NULL;
     vkMapMemory(DeviceHandle, StagingIndexBufferMemoryHandle, 0, IndexBuffer->IndexSize, 0, &IndexData);
     memcpy(IndexData, IndexBuffer->Indices, IndexBuffer->IndexSize);
     vkUnmapMemory(DeviceHandle, StagingIndexBufferMemoryHandle);
@@ -99,17 +100,16 @@ void GCRendererIndexBuffer_CreateIndexBuffer(GCRendererIndexBuffer *const IndexB
                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &IndexBuffer->IndexBufferHandle,
                                    &IndexBuffer->IndexBufferMemoryHandle);
 
-    const VkCommandBuffer CommandBufferHandle =
-        GCVulkanUtilities_BeginSingleTimeCommands(IndexBuffer->Device, IndexBuffer->CommandList);
+    const VkCommandBuffer CommandBufferHandle = GCRendererCommandList_BeginSingleTimeCommands(IndexBuffer->CommandList);
     GCVulkanUtilities_CopyBuffer(CommandBufferHandle, StagingIndexBufferHandle, IndexBuffer->IndexBufferHandle,
                                  IndexBuffer->IndexSize);
-    GCVulkanUtilities_EndSingleTimeCommands(IndexBuffer->Device, IndexBuffer->CommandList, CommandBufferHandle);
+    GCRendererCommandList_EndSingleTimeCommands(IndexBuffer->CommandList, CommandBufferHandle);
 
     vkFreeMemory(DeviceHandle, StagingIndexBufferMemoryHandle, NULL);
     vkDestroyBuffer(DeviceHandle, StagingIndexBufferHandle, NULL);
 }
 
-void GCRendererIndexBuffer_DestroyObjects(GCRendererIndexBuffer *const IndexBuffer)
+void GCRendererIndexBuffer_DestroyObjects(GCRendererIndexBuffer* const IndexBuffer)
 {
     const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(IndexBuffer->Device);
 

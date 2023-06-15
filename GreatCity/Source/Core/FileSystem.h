@@ -48,11 +48,11 @@ extern "C"
         GCFileSystemFileTime LastWriteTime;
     } GCFileSystemFileAttributes;
 
-    bool GCFileSystem_Exists(const char *const Path);
-    char *GCFileSystem_GetFileName(const char *const Path);
-    void GCFileSystem_CreateDirectories(const char *const Path);
+    bool GCFileSystem_Exists(const char* const Path);
+    char* GCFileSystem_GetFileName(const char* const Path);
+    void GCFileSystem_CreateDirectories(const char* const Path);
 
-    GCFileSystemFileAttributes GCFileSystem_GetFileAttributes(const char *const Path);
+    GCFileSystemFileAttributes GCFileSystem_GetFileAttributes(const char* const Path);
 
     bool GCFileSystemFileTime_IsNewer(const GCFileSystemFileTime FileTime1, const GCFileSystemFileTime FileTime2);
     bool GCFileSystemFileTime_IsEqual(const GCFileSystemFileTime FileTime1, const GCFileSystemFileTime FileTime2);

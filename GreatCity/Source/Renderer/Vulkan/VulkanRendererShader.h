@@ -27,8 +27,8 @@ extern "C"
 
     typedef struct GCRendererShader GCRendererShader;
 
-    VkShaderModule GCRendererShader_GetVertexShaderModuleHandle(const GCRendererShader *const Shader);
-    VkShaderModule GCRendererShader_GetFragmentShaderModuleHandle(const GCRendererShader *const Shader);
+    VkShaderModule GCRendererShader_GetVertexShaderModuleHandle(const GCRendererShader* const Shader);
+    VkShaderModule GCRendererShader_GetFragmentShaderModuleHandle(const GCRendererShader* const Shader);
 
 #ifdef __cplusplus
 }

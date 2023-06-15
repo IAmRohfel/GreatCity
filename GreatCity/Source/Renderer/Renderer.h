@@ -39,7 +39,7 @@ extern "C"
         uint64_t EntityID;
 
 #ifdef __cplusplus
-        bool operator==(const GCRendererVertex &OtherVertex) const noexcept
+        bool operator==(const GCRendererVertex& OtherVertex) const noexcept
         {
             return GCVector3_IsEqual(Position, OtherVertex.Position) && GCVector3_IsEqual(Normal, OtherVertex.Normal) &&
                    GCVector4_IsEqual(Color, OtherVertex.Color) &&
@@ -59,9 +59,9 @@ extern "C"
 
     void GCRenderer_PreInitialize(void);
     void GCRenderer_Initialize(void);
-    void GCRenderer_SetTexture2Ds(GCRendererTexture2D **const Texture2Ds, const uint32_t Texture2DCount);
+    void GCRenderer_SetTexture2Ds(GCRendererTexture2D** const Texture2Ds, const uint32_t Texture2DCount);
 
-    void GCRenderer_BeginWorld(const GCWorldCamera *const WorldCamera);
+    void GCRenderer_BeginWorld(const GCWorldCamera* const WorldCamera);
     void GCRenderer_RenderEntity(const GCEntity Entity);
     void GCRenderer_EndWorld(void);
     void GCRenderer_BeginImGui(void);
@@ -70,11 +70,11 @@ extern "C"
     void GCRenderer_Resize(void);
     void GCRenderer_Terminate(void);
 
-    GCRendererDevice *const GCRenderer_GetDevice(void);
-    GCRendererSwapChain *const GCRenderer_GetSwapChain(void);
-    GCRendererCommandList *const GCRenderer_GetCommandList(void);
-    GCRendererGraphicsPipeline *const GCRenderer_GetGraphicsPipeline(void);
-    GCRendererFramebuffer *const GCRenderer_GetFramebuffer(void);
+    GCRendererDevice* const GCRenderer_GetDevice(void);
+    GCRendererSwapChain* const GCRenderer_GetSwapChain(void);
+    GCRendererCommandList* const GCRenderer_GetCommandList(void);
+    GCRendererGraphicsPipeline* const GCRenderer_GetGraphicsPipeline(void);
+    GCRendererFramebuffer* const GCRenderer_GetFramebuffer(void);
 
 #ifdef __cplusplus
 }

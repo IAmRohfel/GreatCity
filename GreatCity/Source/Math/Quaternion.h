@@ -45,7 +45,7 @@ extern "C"
     GCQuaternion GCQuaternion_Normalize(const GCQuaternion Quaternion);
     GCVector3 GCQuaternion_RotateVector(const GCQuaternion Quaternion, const GCVector3 Vector);
 
-    char *GCQuaternion_ToString(const GCQuaternion Quaternion);
+    char* GCQuaternion_ToString(const GCQuaternion Quaternion);
 
 #ifdef __cplusplus
 }

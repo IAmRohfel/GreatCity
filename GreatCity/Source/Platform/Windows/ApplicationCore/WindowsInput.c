@@ -27,7 +27,7 @@
 
 typedef struct GCPlatformWindow GCWindowsWindow;
 
-extern HWND GCWindowsWindow_GetWindowHandle(const GCWindowsWindow *const Window);
+extern HWND GCWindowsWindow_GetWindowHandle(const GCWindowsWindow* const Window);
 
 bool GCInput_IsKeyPressed(const GCKeyCode KeyCode)
 {

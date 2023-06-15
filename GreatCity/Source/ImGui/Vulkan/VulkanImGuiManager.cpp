@@ -40,14 +40,13 @@ static void GCImGuiManager_CreateDescriptorPool(void);
 static void GCImGuiManager_UpdateDescriptorSet(void);
 static void GCImGuiManager_CheckVulkanResult(VkResult Result);
 
-extern "C" void GCImGuiManager_InitializeRenderer(const GCRendererTexture2D *const *const Texture2Ds,
-                                                  void **const Texture2DData, const uint32_t Texture2DCount)
+extern "C" void GCImGuiManager_InitializeRenderer(void)
 {
-    const GCRendererDevice *const RendererDevice = GCRenderer_GetDevice();
-    const GCRendererSwapChain *const RendererSwapChain = GCRenderer_GetSwapChain();
-    const GCRendererCommandList *const RendererCommandList = GCRenderer_GetCommandList();
-    const GCRendererGraphicsPipeline *const RendererGraphicsPipeline = GCRenderer_GetGraphicsPipeline();
-    const GCRendererFramebuffer *const RendererFramebuffer = GCRenderer_GetFramebuffer();
+    const GCRendererDevice* const RendererDevice = GCRenderer_GetDevice();
+    const GCRendererSwapChain* const RendererSwapChain = GCRenderer_GetSwapChain();
+    const GCRendererCommandList* const RendererCommandList = GCRenderer_GetCommandList();
+    const GCRendererGraphicsPipeline* const RendererGraphicsPipeline = GCRenderer_GetGraphicsPipeline();
+    const GCRendererFramebuffer* const RendererFramebuffer = GCRenderer_GetFramebuffer();
 
     GCImGuiManager_CreateDescriptorPool();
 
@@ -69,10 +68,9 @@ extern "C" void GCImGuiManager_InitializeRenderer(const GCRendererTexture2D *con
     ImGui_ImplVulkan_Init(&VulkanInformation,
                           GCRendererGraphicsPipeline_GetSwapChainRenderPassHandle(RendererGraphicsPipeline));
 
-    const VkCommandBuffer CommandBufferHandle =
-        GCVulkanUtilities_BeginSingleTimeCommands(RendererDevice, RendererCommandList);
+    const VkCommandBuffer CommandBufferHandle = GCRendererCommandList_BeginSingleTimeCommands(RendererCommandList);
     ImGui_ImplVulkan_CreateFontsTexture(CommandBufferHandle);
-    GCVulkanUtilities_EndSingleTimeCommands(RendererDevice, RendererCommandList, CommandBufferHandle);
+    GCRendererCommandList_EndSingleTimeCommands(RendererCommandList, CommandBufferHandle);
 
     ImGui_ImplVulkan_DestroyFontUploadObjects();
 
@@ -80,13 +78,13 @@ extern "C" void GCImGuiManager_InitializeRenderer(const GCRendererTexture2D *con
         GCRendererFramebuffer_GetColorAttachmentSampledSamplerHandle(RendererFramebuffer, 0),
         GCRendererFramebuffer_GetColorAttachmentImageViewHandle(RendererFramebuffer, 0),
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+}
 
-    for (uint32_t Counter = 0; Counter < Texture2DCount; Counter++)
-    {
-        Texture2DData[Counter] = ImGui_ImplVulkan_AddTexture(
-            GCRendererTexture2D_GetSamplerHandle(Texture2Ds[Counter]),
-            GCRendererTexture2D_GetImageViewHandle(Texture2Ds[Counter]), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    }
+extern "C" void* GCImGuiManager_AddTexture(const GCRendererTexture2D* const Texture2D)
+{
+    return ImGui_ImplVulkan_AddTexture(GCRendererTexture2D_GetSamplerHandle(Texture2D),
+                                       GCRendererTexture2D_GetImageViewHandle(Texture2D),
+                                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 
 extern "C" void GCImGuiManager_BeginFrameRenderer(void)
@@ -94,7 +92,7 @@ extern "C" void GCImGuiManager_BeginFrameRenderer(void)
     ImGui_ImplVulkan_NewFrame();
 }
 
-extern "C" void *GCImGuiManager_GetTexturePlatform(void)
+extern "C" void* GCImGuiManager_GetTexturePlatform(void)
 {
     vkDeviceWaitIdle(GCRendererDevice_GetDeviceHandle(GCRenderer_GetDevice()));
     GCImGuiManager_UpdateDescriptorSet();
@@ -104,7 +102,7 @@ extern "C" void *GCImGuiManager_GetTexturePlatform(void)
 
 extern "C" void GCImGuiManager_RenderDrawData(void)
 {
-    const GCRendererCommandList *const RendererCommandList = GCRenderer_GetCommandList();
+    const GCRendererCommandList* const RendererCommandList = GCRenderer_GetCommandList();
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(),
                                     GCRendererCommandList_GetCurrentFrameCommandBufferHandle(RendererCommandList),
                                     VK_NULL_HANDLE);
@@ -149,10 +147,10 @@ void GCImGuiManager_CreateDescriptorPool(void)
 
 void GCImGuiManager_UpdateDescriptorSet(void)
 {
-    const GCRendererFramebuffer *const RendererFramebuffer = GCRenderer_GetFramebuffer();
+    const GCRendererFramebuffer* const RendererFramebuffer = GCRenderer_GetFramebuffer();
 
-    const ImGui_ImplVulkan_InitInfo *const VulkanInformation =
-        static_cast<const ImGui_ImplVulkan_InitInfo *const>(ImGui::GetIO().BackendRendererUserData);
+    const ImGui_ImplVulkan_InitInfo* const VulkanInformation =
+        static_cast<const ImGui_ImplVulkan_InitInfo* const>(ImGui::GetIO().BackendRendererUserData);
 
     VkDescriptorImageInfo DescriptorImageInformation{};
     DescriptorImageInformation.sampler =

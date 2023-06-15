@@ -21,6 +21,7 @@
 #include "Core/Memory/Allocator.h"
 #include "Renderer/RendererDevice.h"
 #include "Renderer/RendererTexture2D.h"
+#include "Renderer/Vulkan/VulkanRendererCommandList.h"
 #include "Renderer/Vulkan/VulkanRendererDevice.h"
 #include "Renderer/Vulkan/VulkanUtilities.h"
 
@@ -34,8 +35,8 @@
 
 typedef struct GCRendererTexture2D
 {
-    const GCRendererDevice *Device;
-    const GCRendererCommandList *CommandList;
+    const GCRendererDevice* Device;
+    const GCRendererCommandList* CommandList;
 
     VkImage ImageHandle;
     VkDeviceMemory ImageMemoryHandle;
@@ -45,14 +46,14 @@ typedef struct GCRendererTexture2D
     VkDescriptorSet DescriptorSetHandle;
 } GCRendererTexture2D;
 
-static uint8_t *GCRendererTexture2D_LoadImage(const char *const TexturePath, uint32_t *const Width,
-                                              uint32_t *const Height, uint32_t *const Channels);
-static void GCRendererTexture2D_CreateTexture(GCRendererTexture2D *const Texture2D, const char *const TexturePath);
-static void GCRendererTexture2D_DestroyObjects(GCRendererTexture2D *const Texture2D);
+static uint8_t* GCRendererTexture2D_LoadImage(const char* const TexturePath, uint32_t* const Width,
+                                              uint32_t* const Height, uint32_t* const Channels);
+static void GCRendererTexture2D_CreateTexture(GCRendererTexture2D* const Texture2D, const char* const TexturePath);
+static void GCRendererTexture2D_DestroyObjects(GCRendererTexture2D* const Texture2D);
 
-GCRendererTexture2D *GCRendererTexture2D_Create(const GCRendererTexture2DDescription *const Description)
+GCRendererTexture2D* GCRendererTexture2D_Create(const GCRendererTexture2DDescription* const Description)
 {
-    GCRendererTexture2D *Texture2D = (GCRendererTexture2D *)GCMemory_Allocate(sizeof(GCRendererTexture2D));
+    GCRendererTexture2D* Texture2D = (GCRendererTexture2D*)GCMemory_Allocate(sizeof(GCRendererTexture2D));
     Texture2D->Device = Description->Device;
     Texture2D->CommandList = Description->CommandList;
     Texture2D->ImageHandle = VK_NULL_HANDLE;
@@ -66,28 +67,28 @@ GCRendererTexture2D *GCRendererTexture2D_Create(const GCRendererTexture2DDescrip
     return Texture2D;
 }
 
-void GCRendererTexture2D_Destroy(GCRendererTexture2D *Texture2D)
+void GCRendererTexture2D_Destroy(GCRendererTexture2D* Texture2D)
 {
     GCRendererTexture2D_DestroyObjects(Texture2D);
 
     GCMemory_Free(Texture2D);
 }
 
-VkImageView GCRendererTexture2D_GetImageViewHandle(const GCRendererTexture2D *const Texture2D)
+VkImageView GCRendererTexture2D_GetImageViewHandle(const GCRendererTexture2D* const Texture2D)
 {
     return Texture2D->ImageViewHandle;
 }
 
-VkSampler GCRendererTexture2D_GetSamplerHandle(const GCRendererTexture2D *const Texture2D)
+VkSampler GCRendererTexture2D_GetSamplerHandle(const GCRendererTexture2D* const Texture2D)
 {
     return Texture2D->ImageSamplerHandle;
 }
 
-uint8_t *GCRendererTexture2D_LoadImage(const char *const TexturePath, uint32_t *const Width, uint32_t *const Height,
-                                       uint32_t *const Channels)
+uint8_t* GCRendererTexture2D_LoadImage(const char* const TexturePath, uint32_t* const Width, uint32_t* const Height,
+                                       uint32_t* const Channels)
 {
     int32_t TextureWidth = 0, TextureHeight = 0, TextureChannels = 0;
-    stbi_uc *TextureData = stbi_load(TexturePath, &TextureWidth, &TextureHeight, &TextureChannels, STBI_rgb_alpha);
+    stbi_uc* TextureData = stbi_load(TexturePath, &TextureWidth, &TextureHeight, &TextureChannels, STBI_rgb_alpha);
 
     if (!TextureData)
     {
@@ -101,12 +102,12 @@ uint8_t *GCRendererTexture2D_LoadImage(const char *const TexturePath, uint32_t *
     return TextureData;
 }
 
-void GCRendererTexture2D_CreateTexture(GCRendererTexture2D *const Texture2D, const char *const TexturePath)
+void GCRendererTexture2D_CreateTexture(GCRendererTexture2D* const Texture2D, const char* const TexturePath)
 {
     const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Texture2D->Device);
 
     uint32_t TextureWidth = 0, TextureHeight = 0, TextureChannels = 0;
-    uint8_t *TextureData = GCRendererTexture2D_LoadImage(TexturePath, &TextureWidth, &TextureHeight, &TextureChannels);
+    uint8_t* TextureData = GCRendererTexture2D_LoadImage(TexturePath, &TextureWidth, &TextureHeight, &TextureChannels);
 
     const size_t ImageSize = TextureWidth * TextureHeight * 4;
     const uint32_t MipLevels = (uint32_t)floorf(log2f(fmaxf((float)TextureWidth, (float)TextureHeight))) + 1;
@@ -118,7 +119,7 @@ void GCRendererTexture2D_CreateTexture(GCRendererTexture2D *const Texture2D, con
                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                                    &StagingImageBufferHandle, &StagingImageBufferMemoryHandle);
 
-    void *ImageData = NULL;
+    void* ImageData = NULL;
     vkMapMemory(DeviceHandle, StagingImageBufferMemoryHandle, 0, ImageSize, 0, &ImageData);
     memcpy(ImageData, TextureData, ImageSize);
     vkUnmapMemory(DeviceHandle, StagingImageBufferMemoryHandle);
@@ -131,15 +132,14 @@ void GCRendererTexture2D_CreateTexture(GCRendererTexture2D *const Texture2D, con
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &Texture2D->ImageHandle, &Texture2D->ImageMemoryHandle);
 
-    const VkCommandBuffer CommandBufferHandle =
-        GCVulkanUtilities_BeginSingleTimeCommands(Texture2D->Device, Texture2D->CommandList);
+    const VkCommandBuffer CommandBufferHandle = GCRendererCommandList_BeginSingleTimeCommands(Texture2D->CommandList);
     GCVulkanUtilities_TransitionImageLayout(CommandBufferHandle, Texture2D->ImageHandle, MipLevels,
                                             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     GCVulkanUtilities_CopyBufferToImage(CommandBufferHandle, StagingImageBufferHandle, Texture2D->ImageHandle,
                                         TextureWidth, TextureHeight);
     GCVulkanUtilities_GenerateMipmap(Texture2D->Device, CommandBufferHandle, Texture2D->ImageHandle, TextureWidth,
                                      TextureHeight, MipLevels, VK_FORMAT_R8G8B8A8_SRGB);
-    GCVulkanUtilities_EndSingleTimeCommands(Texture2D->Device, Texture2D->CommandList, CommandBufferHandle);
+    GCRendererCommandList_EndSingleTimeCommands(Texture2D->CommandList, CommandBufferHandle);
 
     vkFreeMemory(DeviceHandle, StagingImageBufferMemoryHandle, NULL);
     vkDestroyBuffer(DeviceHandle, StagingImageBufferHandle, NULL);
@@ -150,7 +150,7 @@ void GCRendererTexture2D_CreateTexture(GCRendererTexture2D *const Texture2D, con
                                     &Texture2D->ImageSamplerHandle);
 }
 
-void GCRendererTexture2D_DestroyObjects(GCRendererTexture2D *const Texture2D)
+void GCRendererTexture2D_DestroyObjects(GCRendererTexture2D* const Texture2D)
 {
     const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Texture2D->Device);
 

@@ -44,7 +44,7 @@ extern "C"
     float GCVector2_Magnitude(const GCVector2 Vector);
     GCVector2 GCVector2_Normalize(const GCVector2 Vector);
 
-    char *GCVector2_ToString(const GCVector2 Vector);
+    char* GCVector2_ToString(const GCVector2 Vector);
     bool GCVector2_IsEqual(const GCVector2 Vector1, const GCVector2 Vector2);
 
 #ifdef __cplusplus

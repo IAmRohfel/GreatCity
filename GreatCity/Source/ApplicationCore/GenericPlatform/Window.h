@@ -28,19 +28,19 @@ extern "C"
     typedef struct GCPlatformWindow GCWindow;
     typedef struct GCEvent GCEvent;
 
-    typedef void (*GCWindowEventCallbackFunction)(GCWindow *const, GCEvent *const);
+    typedef void (*GCWindowEventCallbackFunction)(GCWindow* const, GCEvent* const);
 
     typedef struct GCWindowProperties
     {
-        const char *Title;
+        const char* Title;
         uint32_t Width, Height;
         GCWindowEventCallbackFunction EventCallback;
     } GCWindowProperties;
 
-    GCWindow *GCWindow_Create(const GCWindowProperties *const Properties);
-    void GCWindow_ProcessEvents(GCWindow *const Window);
-    void GCWindow_GetWindowSize(const GCWindow *const Window, uint32_t *const Width, uint32_t *const Height);
-    void GCWindow_Destroy(GCWindow *Window);
+    GCWindow* GCWindow_Create(const GCWindowProperties* const Properties);
+    void GCWindow_ProcessEvents(GCWindow* const Window);
+    void GCWindow_GetWindowSize(const GCWindow* const Window, uint32_t* const Width, uint32_t* const Height);
+    void GCWindow_Destroy(GCWindow* Window);
 
 #ifdef __cplusplus
 }

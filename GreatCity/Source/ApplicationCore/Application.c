@@ -32,22 +32,22 @@
 
 typedef struct GCApplication
 {
-    GCWindow *Window;
-    GCWorld *World;
+    GCWindow* Window;
+    GCWorld* World;
 
     bool IsRunning;
     bool IsMinimized;
 } GCApplication;
 
-static GCApplication *Application = NULL;
+static GCApplication* Application = NULL;
 
-static void GCApplication_OnEvent(GCWindow *const Window, GCEvent *const Event);
-static bool GCApplication_OnWindowResized(GCEvent *const Event, void *CustomData);
-static bool GCApplication_OnWindowClosed(GCEvent *const Event, void *CustomData);
+static void GCApplication_OnEvent(GCWindow* const Window, GCEvent* const Event);
+static bool GCApplication_OnWindowResized(GCEvent* const Event, void* CustomData);
+static bool GCApplication_OnWindowClosed(GCEvent* const Event, void* CustomData);
 
 void GCApplication_Create(void)
 {
-    Application = (GCApplication *)GCMemory_Allocate(sizeof(GCApplication));
+    Application = (GCApplication*)GCMemory_Allocate(sizeof(GCApplication));
     Application->Window = NULL;
     Application->World = NULL;
     Application->IsRunning = true;
@@ -82,12 +82,12 @@ void GCApplication_Run(void)
     }
 }
 
-GCWindow *const GCApplication_GetWindow(void)
+GCWindow* const GCApplication_GetWindow(void)
 {
     return Application->Window;
 }
 
-GCWorld *GCApplication_GetWorld(void)
+GCWorld* GCApplication_GetWorld(void)
 {
     return Application->World;
 }
@@ -103,7 +103,7 @@ void GCApplication_Destroy(void)
     GCMemory_Free(Application);
 }
 
-void GCApplication_OnEvent(GCWindow *const Window, GCEvent *const Event)
+void GCApplication_OnEvent(GCWindow* const Window, GCEvent* const Event)
 {
     (void)Window;
 
@@ -118,11 +118,11 @@ void GCApplication_OnEvent(GCWindow *const Window, GCEvent *const Event)
     GCUI_OnEvent(Event);
 }
 
-bool GCApplication_OnWindowResized(GCEvent *const Event, void *CustomData)
+bool GCApplication_OnWindowResized(GCEvent* const Event, void* CustomData)
 {
     (void)CustomData;
 
-    const GCWindowResizedEvent *const EventDetail = (const GCWindowResizedEvent *const)Event->EventDetail;
+    const GCWindowResizedEvent* const EventDetail = (const GCWindowResizedEvent* const)Event->EventDetail;
 
     if (!EventDetail->Width || !EventDetail->Height)
     {
@@ -136,7 +136,7 @@ bool GCApplication_OnWindowResized(GCEvent *const Event, void *CustomData)
     return true;
 }
 
-bool GCApplication_OnWindowClosed(GCEvent *const Event, void *CustomData)
+bool GCApplication_OnWindowClosed(GCEvent* const Event, void* CustomData)
 {
     (void)Event;
     (void)CustomData;

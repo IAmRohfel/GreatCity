@@ -46,28 +46,28 @@ typedef struct GCWorldCamera
     float Width, Height;
 } GCWorldCamera;
 
-static void GCWorldCamera_UpdateView(GCWorldCamera *const WorldCamera);
-static void GCWorldCamera_UpdateProjection(GCWorldCamera *const WorldCamera);
+static void GCWorldCamera_UpdateView(GCWorldCamera* const WorldCamera);
+static void GCWorldCamera_UpdateProjection(GCWorldCamera* const WorldCamera);
 
-static bool GCWorldCamera_OnMouseScrolled(GCEvent *const Event, void *CustomData);
+static bool GCWorldCamera_OnMouseScrolled(GCEvent* const Event, void* CustomData);
 
-static void GCWorldCamera_Pan(GCWorldCamera *const WorldCamera, const GCVector2 MouseDelta);
-static void GCWorldCamera_Rotate(GCWorldCamera *const WorldCamera, const GCVector2 MouseDelta);
-static void GCWorldCamera_Zoom(GCWorldCamera *const WorldCamera, const float MouseDelta);
+static void GCWorldCamera_Pan(GCWorldCamera* const WorldCamera, const GCVector2 MouseDelta);
+static void GCWorldCamera_Rotate(GCWorldCamera* const WorldCamera, const GCVector2 MouseDelta);
+static void GCWorldCamera_Zoom(GCWorldCamera* const WorldCamera, const float MouseDelta);
 
-static void GCWorldCamera_GetPanSpeed(const GCWorldCamera *const WorldCamera, float *const XSpeed, float *const YSpeed);
-static float GCWorldCamera_GetRotationSpeed(const GCWorldCamera *const WorldCamera);
-static float GCWorldCamera_GetZoomSpeed(const GCWorldCamera *const WorldCamera);
+static void GCWorldCamera_GetPanSpeed(const GCWorldCamera* const WorldCamera, float* const XSpeed, float* const YSpeed);
+static float GCWorldCamera_GetRotationSpeed(const GCWorldCamera* const WorldCamera);
+static float GCWorldCamera_GetZoomSpeed(const GCWorldCamera* const WorldCamera);
 
-static GCVector3 GCWorldCamera_CalculatePosition(GCWorldCamera *const WorldCamera);
-static GCQuaternion GCWorldCamera_GetOrientation(GCWorldCamera *const WorldCamera);
-static GCVector3 GCWorldCamera_GetUpDirection(GCWorldCamera *const WorldCamera);
-static GCVector3 GCWorldCamera_GetRightDirection(GCWorldCamera *const WorldCamera);
-static GCVector3 GCWorldCamera_GetForwardDirection(GCWorldCamera *const WorldCamera);
+static GCVector3 GCWorldCamera_CalculatePosition(GCWorldCamera* const WorldCamera);
+static GCQuaternion GCWorldCamera_GetOrientation(GCWorldCamera* const WorldCamera);
+static GCVector3 GCWorldCamera_GetUpDirection(GCWorldCamera* const WorldCamera);
+static GCVector3 GCWorldCamera_GetRightDirection(GCWorldCamera* const WorldCamera);
+static GCVector3 GCWorldCamera_GetForwardDirection(GCWorldCamera* const WorldCamera);
 
-GCWorldCamera *GCWorldCamera_Create(const float FoV, const float AspectRatio, const float Near, const float Far)
+GCWorldCamera* GCWorldCamera_Create(const float FoV, const float AspectRatio, const float Near, const float Far)
 {
-    GCWorldCamera *WorldCamera = (GCWorldCamera *)GCMemory_Allocate(sizeof(GCWorldCamera));
+    GCWorldCamera* WorldCamera = (GCWorldCamera*)GCMemory_Allocate(sizeof(GCWorldCamera));
 
     uint32_t WindowWidth = 0, WindowHeight = 0;
     GCWindow_GetWindowSize(GCApplication_GetWindow(), &WindowWidth, &WindowHeight);
@@ -93,7 +93,7 @@ GCWorldCamera *GCWorldCamera_Create(const float FoV, const float AspectRatio, co
     return WorldCamera;
 }
 
-void GCWorldCamera_Update(GCWorldCamera *const WorldCamera)
+void GCWorldCamera_Update(GCWorldCamera* const WorldCamera)
 {
     if (GCInput_IsKeyPressed(GCKeyCode_LeftAlt))
     {
@@ -115,12 +115,12 @@ void GCWorldCamera_Update(GCWorldCamera *const WorldCamera)
     GCWorldCamera_UpdateView(WorldCamera);
 }
 
-void GCWorldCemera_OnEvent(GCWorldCamera *const WorldCamera, GCEvent *const Event)
+void GCWorldCemera_OnEvent(GCWorldCamera* const WorldCamera, GCEvent* const Event)
 {
-    GCEvent_Dispatch(GCEventType_MouseScrolled, Event, GCWorldCamera_OnMouseScrolled, (void *)WorldCamera);
+    GCEvent_Dispatch(GCEventType_MouseScrolled, Event, GCWorldCamera_OnMouseScrolled, (void*)WorldCamera);
 }
 
-void GCWorldCamera_SetSize(GCWorldCamera *const WorldCamera, const uint32_t Width, const uint32_t Height)
+void GCWorldCamera_SetSize(GCWorldCamera* const WorldCamera, const uint32_t Width, const uint32_t Height)
 {
     WorldCamera->Width = (float)Width;
     WorldCamera->Height = (float)Height;
@@ -128,27 +128,27 @@ void GCWorldCamera_SetSize(GCWorldCamera *const WorldCamera, const uint32_t Widt
     GCWorldCamera_UpdateProjection(WorldCamera);
 }
 
-GCVector3 GCWorldCamera_GetPosition(const GCWorldCamera *const WorldCamera)
+GCVector3 GCWorldCamera_GetPosition(const GCWorldCamera* const WorldCamera)
 {
     return WorldCamera->Position;
 }
 
-const GCMatrix4x4 *const GCWorldCamera_GetViewMatrix(const GCWorldCamera *const WorldCamera)
+const GCMatrix4x4* const GCWorldCamera_GetViewMatrix(const GCWorldCamera* const WorldCamera)
 {
     return &WorldCamera->ViewMatrix;
 }
 
-const GCMatrix4x4 *const GCWorldCamera_GetProjectionMatrix(const GCWorldCamera *const WorldCamera)
+const GCMatrix4x4* const GCWorldCamera_GetProjectionMatrix(const GCWorldCamera* const WorldCamera)
 {
     return &WorldCamera->ProjectionMatrix;
 }
 
-GCMatrix4x4 GCWorldCamera_GetViewProjectionMatrix(const GCWorldCamera *const WorldCamera)
+GCMatrix4x4 GCWorldCamera_GetViewProjectionMatrix(const GCWorldCamera* const WorldCamera)
 {
     return GCMatrix4x4_Multiply(&WorldCamera->ProjectionMatrix, &WorldCamera->ViewMatrix);
 }
 
-void GCWorldCamera_UpdateView(GCWorldCamera *const WorldCamera)
+void GCWorldCamera_UpdateView(GCWorldCamera* const WorldCamera)
 {
     WorldCamera->Position = GCWorldCamera_CalculatePosition(WorldCamera);
 
@@ -160,7 +160,7 @@ void GCWorldCamera_UpdateView(GCWorldCamera *const WorldCamera)
     WorldCamera->ViewMatrix = GCMatrix4x4_Inverse(&WorldCamera->ViewMatrix);
 }
 
-void GCWorldCamera_UpdateProjection(GCWorldCamera *const WorldCamera)
+void GCWorldCamera_UpdateProjection(GCWorldCamera* const WorldCamera)
 {
     WorldCamera->AspectRatio = WorldCamera->Width / WorldCamera->Height;
     WorldCamera->ProjectionMatrix =
@@ -168,10 +168,10 @@ void GCWorldCamera_UpdateProjection(GCWorldCamera *const WorldCamera)
                                       WorldCamera->Near, WorldCamera->Far);
 }
 
-bool GCWorldCamera_OnMouseScrolled(GCEvent *const Event, void *CustomData)
+bool GCWorldCamera_OnMouseScrolled(GCEvent* const Event, void* CustomData)
 {
-    const GCMouseScrolledEvent *const EventDetail = (const GCMouseScrolledEvent *const)Event->EventDetail;
-    GCWorldCamera *const WorldCamera = (GCWorldCamera *const)CustomData;
+    const GCMouseScrolledEvent* const EventDetail = (const GCMouseScrolledEvent* const)Event->EventDetail;
+    GCWorldCamera* const WorldCamera = (GCWorldCamera* const)CustomData;
 
     const float MouseDelta = EventDetail->YOffset * 0.1f;
     GCWorldCamera_Zoom(WorldCamera, MouseDelta);
@@ -180,7 +180,7 @@ bool GCWorldCamera_OnMouseScrolled(GCEvent *const Event, void *CustomData)
     return false;
 }
 
-void GCWorldCamera_Pan(GCWorldCamera *const WorldCamera, const GCVector2 MouseDelta)
+void GCWorldCamera_Pan(GCWorldCamera* const WorldCamera, const GCVector2 MouseDelta)
 {
     float XSpeed = 0.0f, YSpeed = 0.0f;
     GCWorldCamera_GetPanSpeed(WorldCamera, &XSpeed, &YSpeed);
@@ -201,7 +201,7 @@ void GCWorldCamera_Pan(GCWorldCamera *const WorldCamera, const GCVector2 MouseDe
             WorldCamera->Distance));
 }
 
-void GCWorldCamera_Rotate(GCWorldCamera *const WorldCamera, const GCVector2 MouseDelta)
+void GCWorldCamera_Rotate(GCWorldCamera* const WorldCamera, const GCVector2 MouseDelta)
 {
     const float YawSign = GCWorldCamera_GetUpDirection(WorldCamera).Y < 0.0f ? 1.0f : -1.0f;
 
@@ -209,7 +209,7 @@ void GCWorldCamera_Rotate(GCWorldCamera *const WorldCamera, const GCVector2 Mous
     WorldCamera->Yaw += YawSign * MouseDelta.X * GCWorldCamera_GetRotationSpeed(WorldCamera);
 }
 
-void GCWorldCamera_Zoom(GCWorldCamera *const WorldCamera, const float MouseDelta)
+void GCWorldCamera_Zoom(GCWorldCamera* const WorldCamera, const float MouseDelta)
 {
     WorldCamera->Distance -= MouseDelta * GCWorldCamera_GetZoomSpeed(WorldCamera);
 
@@ -221,7 +221,7 @@ void GCWorldCamera_Zoom(GCWorldCamera *const WorldCamera, const float MouseDelta
     }
 }
 
-void GCWorldCamera_GetPanSpeed(const GCWorldCamera *const WorldCamera, float *const XSpeed, float *const YSpeed)
+void GCWorldCamera_GetPanSpeed(const GCWorldCamera* const WorldCamera, float* const XSpeed, float* const YSpeed)
 {
     const float X = fminf(WorldCamera->Width / 1000.0f, 5.0f);
     *XSpeed = 0.025f * (X * X) - (0.0f * X) + 0.0f;
@@ -230,14 +230,14 @@ void GCWorldCamera_GetPanSpeed(const GCWorldCamera *const WorldCamera, float *co
     *YSpeed = 0.075f * (Y * Y) - (0.0f * Y) + 0.0f;
 }
 
-float GCWorldCamera_GetRotationSpeed(const GCWorldCamera *const WorldCamera)
+float GCWorldCamera_GetRotationSpeed(const GCWorldCamera* const WorldCamera)
 {
     (void)WorldCamera;
 
     return 0.8f;
 }
 
-float GCWorldCamera_GetZoomSpeed(const GCWorldCamera *const WorldCamera)
+float GCWorldCamera_GetZoomSpeed(const GCWorldCamera* const WorldCamera)
 {
     float Distance = WorldCamera->Distance * 0.2f;
     Distance = fmaxf(Distance, 0.0f);
@@ -248,29 +248,29 @@ float GCWorldCamera_GetZoomSpeed(const GCWorldCamera *const WorldCamera)
     return Speed;
 }
 
-GCVector3 GCWorldCamera_CalculatePosition(GCWorldCamera *const WorldCamera)
+GCVector3 GCWorldCamera_CalculatePosition(GCWorldCamera* const WorldCamera)
 {
     return GCVector3_MultiplyByScalar(
         GCVector3_Subtract(WorldCamera->FocalPoint, GCWorldCamera_GetForwardDirection(WorldCamera)),
         WorldCamera->Distance);
 }
 
-GCQuaternion GCWorldCamera_GetOrientation(GCWorldCamera *const WorldCamera)
+GCQuaternion GCWorldCamera_GetOrientation(GCWorldCamera* const WorldCamera)
 {
     return GCQuaternion_CreateFromEulerAngles(-WorldCamera->Pitch, -WorldCamera->Yaw, 0.0f);
 }
 
-GCVector3 GCWorldCamera_GetUpDirection(GCWorldCamera *const WorldCamera)
+GCVector3 GCWorldCamera_GetUpDirection(GCWorldCamera* const WorldCamera)
 {
     return GCQuaternion_RotateVector(GCWorldCamera_GetOrientation(WorldCamera), GCVector3_Create(0.0f, -1.0f, 0.0f));
 }
 
-GCVector3 GCWorldCamera_GetRightDirection(GCWorldCamera *const WorldCamera)
+GCVector3 GCWorldCamera_GetRightDirection(GCWorldCamera* const WorldCamera)
 {
     return GCQuaternion_RotateVector(GCWorldCamera_GetOrientation(WorldCamera), GCVector3_Create(1.0f, 0.0f, 0.0f));
 }
 
-GCVector3 GCWorldCamera_GetForwardDirection(GCWorldCamera *const WorldCamera)
+GCVector3 GCWorldCamera_GetForwardDirection(GCWorldCamera* const WorldCamera)
 {
     return GCQuaternion_RotateVector(GCWorldCamera_GetOrientation(WorldCamera), GCVector3_Create(0.0f, 0.0f, -1.0f));
 }

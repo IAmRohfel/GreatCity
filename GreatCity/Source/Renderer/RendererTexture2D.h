@@ -29,14 +29,14 @@ extern "C"
 
     typedef struct GCRendererTexture2DDescription
     {
-        const GCRendererDevice *Device;
-        const GCRendererCommandList *CommandList;
+        const GCRendererDevice* Device;
+        const GCRendererCommandList* CommandList;
 
-        const char *TexturePath;
+        const char* TexturePath;
     } GCRendererTexture2DDescription;
 
-    GCRendererTexture2D *GCRendererTexture2D_Create(const GCRendererTexture2DDescription *const Description);
-    void GCRendererTexture2D_Destroy(GCRendererTexture2D *Texture2D);
+    GCRendererTexture2D* GCRendererTexture2D_Create(const GCRendererTexture2DDescription* const Description);
+    void GCRendererTexture2D_Destroy(GCRendererTexture2D* Texture2D);
 
 #ifdef __cplusplus
 }

@@ -29,15 +29,15 @@ extern "C"
 
     typedef struct GCRendererDevice GCRendererDevice;
 
-    VkInstance GCRendererDevice_GetInstanceHandle(const GCRendererDevice *const Device);
-    VkSurfaceKHR GCRendererDevice_GetSurfaceHandle(const GCRendererDevice *const Device);
-    VkPhysicalDevice GCRendererDevice_GetPhysicalDeviceHandle(const GCRendererDevice *const Device);
-    VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice *const Device);
-    uint32_t GCRendererDevice_GetGraphicsFamilyQueueIndex(const GCRendererDevice *const Device);
-    uint32_t GCRendererDevice_GetPresentFamilyQueueIndex(const GCRendererDevice *const Device);
-    VkQueue GCRendererDevice_GetGraphicsQueueHandle(const GCRendererDevice *const Device);
-    VkQueue GCRendererDevice_GetPresentQueueHandle(const GCRendererDevice *const Device);
-    uint32_t GCRendererDevice_GetMemoryTypeIndex(const GCRendererDevice *const Device, const uint32_t TypeFilter,
+    VkInstance GCRendererDevice_GetInstanceHandle(const GCRendererDevice* const Device);
+    VkSurfaceKHR GCRendererDevice_GetSurfaceHandle(const GCRendererDevice* const Device);
+    VkPhysicalDevice GCRendererDevice_GetPhysicalDeviceHandle(const GCRendererDevice* const Device);
+    VkDevice GCRendererDevice_GetDeviceHandle(const GCRendererDevice* const Device);
+    uint32_t GCRendererDevice_GetGraphicsFamilyQueueIndex(const GCRendererDevice* const Device);
+    uint32_t GCRendererDevice_GetPresentFamilyQueueIndex(const GCRendererDevice* const Device);
+    VkQueue GCRendererDevice_GetGraphicsQueueHandle(const GCRendererDevice* const Device);
+    VkQueue GCRendererDevice_GetPresentQueueHandle(const GCRendererDevice* const Device);
+    uint32_t GCRendererDevice_GetMemoryTypeIndex(const GCRendererDevice* const Device, const uint32_t TypeFilter,
                                                  const VkMemoryPropertyFlags PropertyFlags);
 
 #ifdef __cplusplus

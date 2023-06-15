@@ -18,8 +18,6 @@
 #ifndef GC_IMGUI_IMGUI_MANAGER_H
 #define GC_IMGUI_IMGUI_MANAGER_H
 
-#include <stdint.h>
-
 #ifdef __cplusplus
 extern "C"
 {
@@ -33,11 +31,11 @@ extern "C"
 
     void GCImGuiManager_InitializePlatform(void);
     void GCImGuiManager_TerminatePlatform(void);
-    void GCImGuiManager_InitializeRenderer(const GCRendererTexture2D *const *const Texture2Ds,
-                                           void **const Texture2DData, const uint32_t Texture2DCount);
+    void GCImGuiManager_InitializeRenderer(void);
+    void* GCImGuiManager_AddTexture(const GCRendererTexture2D* const Texture2D);
     void GCImGuiManager_BeginFramePlatform(void);
     void GCImGuiManager_BeginFrameRenderer(void);
-    void *GCImGuiManager_GetTexturePlatform(void);
+    void* GCImGuiManager_GetTexturePlatform(void);
     void GCImGuiManager_TerminateRenderer(void);
 
 #ifdef __cplusplus

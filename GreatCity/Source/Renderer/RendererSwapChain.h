@@ -28,12 +28,12 @@ extern "C"
 
     typedef struct GCRendererSwapChainDescription
     {
-        const GCRendererDevice *Device;
+        const GCRendererDevice* Device;
     } GCRendererSwapChainDescription;
 
-    GCRendererSwapChain *GCRendererSwapChain_Create(const GCRendererSwapChainDescription *const Description);
-    void GCRendererSwapChain_Recreate(GCRendererSwapChain *const SwapChain);
-    void GCRendererSwapChain_Destroy(GCRendererSwapChain *SwapChain);
+    GCRendererSwapChain* GCRendererSwapChain_Create(const GCRendererSwapChainDescription* const Description);
+    void GCRendererSwapChain_Recreate(GCRendererSwapChain* const SwapChain);
+    void GCRendererSwapChain_Destroy(GCRendererSwapChain* SwapChain);
 
 #ifdef __cplusplus
 }

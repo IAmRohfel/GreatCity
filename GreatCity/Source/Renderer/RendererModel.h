@@ -32,17 +32,17 @@ extern "C"
 
     typedef struct GCRendererModel
     {
-        GCRendererVertex *Vertices;
+        GCRendererVertex* Vertices;
         uint32_t VertexCount;
 
-        uint32_t *Indices;
+        uint32_t* Indices;
         uint32_t IndexCount;
     } GCRendererModel;
 
-    GCRendererModel *GCRendererModel_CreateFromFile(const char *const ModelPath, const char *const MaterialPath);
-    GCRendererModel *GCRendererModel_CreateFromFiles(const char *const *const ModelPaths,
-                                                     const char *const *const MaterialPaths, const uint32_t ModelCount);
-    void GCRendererModel_Destroy(GCRendererModel *Model);
+    GCRendererModel* GCRendererModel_CreateFromFile(const char* const ModelPath, const char* const MaterialPath);
+    GCRendererModel* GCRendererModel_CreateFromFiles(const char* const* const ModelPaths,
+                                                     const char* const* const MaterialPaths, const uint32_t ModelCount);
+    void GCRendererModel_Destroy(GCRendererModel* Model);
 
 #ifdef __cplusplus
 }

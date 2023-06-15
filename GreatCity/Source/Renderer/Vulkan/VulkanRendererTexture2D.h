@@ -27,8 +27,8 @@ extern "C"
 
     typedef struct GCRendererTexture2D GCRendererTexture2D;
 
-    VkImageView GCRendererTexture2D_GetImageViewHandle(const GCRendererTexture2D *const Texture2D);
-    VkSampler GCRendererTexture2D_GetSamplerHandle(const GCRendererTexture2D *const Texture2D);
+    VkImageView GCRendererTexture2D_GetImageViewHandle(const GCRendererTexture2D* const Texture2D);
+    VkSampler GCRendererTexture2D_GetSamplerHandle(const GCRendererTexture2D* const Texture2D);
 
 #ifdef __cplusplus
 }

@@ -28,20 +28,20 @@
 
 typedef struct GCWorld
 {
-    GCWorldCamera *WorldCamera;
+    GCWorldCamera* WorldCamera;
     GCEntity TerrainEntity;
 
-    ecs_world_t *World;
+    ecs_world_t* World;
 } GCWorld;
 
-ecs_world_t *GWorldECSWorld = NULL;
+ecs_world_t* GWorldECSWorld = NULL;
 
 ECS_COMPONENT_DECLARE(GCTransformComponent);
 ECS_COMPONENT_DECLARE(GCMeshComponent);
 
-GCWorld *GCWorld_Create(void)
+GCWorld* GCWorld_Create(void)
 {
-    GCWorld *World = (GCWorld *)GCMemory_Allocate(sizeof(GCWorld));
+    GCWorld* World = (GCWorld*)GCMemory_Allocate(sizeof(GCWorld));
     World->WorldCamera = GCWorldCamera_Create(30.0f, 1280.0f / 720.0f, 0.1f, 1000.0f);
     World->World = ecs_init();
 
@@ -52,10 +52,10 @@ GCWorld *GCWorld_Create(void)
 
     {
         World->TerrainEntity = GCWorld_CreateEntity(World, "Basic Terrain");
-        GCRendererModel *BasicTerrainModel =
+        GCRendererModel* BasicTerrainModel =
             GCRendererModel_CreateFromFile("Assets/Models/Terrains/BasicTerrain.obj", "Assets/Models/Terrains");
 
-        GCTransformComponent *const TransformComponent = GCEntity_GetTransformComponent(World->TerrainEntity);
+        GCTransformComponent* const TransformComponent = GCEntity_GetTransformComponent(World->TerrainEntity);
         TransformComponent->Scale = GCVector3_Create(50.0f, 50.0f, 50.0f);
 
         GCEntity_AddMeshComponent(World->TerrainEntity, BasicTerrainModel);
@@ -65,7 +65,7 @@ GCWorld *GCWorld_Create(void)
     return World;
 }
 
-GCEntity GCWorld_CreateEntity(GCWorld *const World, const char *const Name)
+GCEntity GCWorld_CreateEntity(GCWorld* const World, const char* const Name)
 {
     ecs_entity_t Entity = ecs_new_id(World->World);
     ecs_set_name(World->World, Entity, Name);
@@ -75,14 +75,14 @@ GCEntity GCWorld_CreateEntity(GCWorld *const World, const char *const Name)
     return (GCEntity)Entity;
 }
 
-bool GCWorld_CheckCollision(const GCWorld *const World, const GCEntity Entity)
+bool GCWorld_CheckCollision(const GCWorld* const World, const GCEntity Entity)
 {
-    const GCTransformComponent *const TransformComponent = GCEntity_GetTransformComponent(Entity);
+    const GCTransformComponent* const TransformComponent = GCEntity_GetTransformComponent(Entity);
 
     ecs_filter_desc_t FilterDescription = {0};
     FilterDescription.terms->id = ecs_id(GCTransformComponent);
 
-    ecs_filter_t *Filter = ecs_filter_init(World->World, &FilterDescription);
+    ecs_filter_t* Filter = ecs_filter_init(World->World, &FilterDescription);
     ecs_iter_t FilterIterator = ecs_filter_iter(World->World, Filter);
 
     bool IsColliding = false;
@@ -93,7 +93,7 @@ bool GCWorld_CheckCollision(const GCWorld *const World, const GCEntity Entity)
         {
             if (FilterIterator.entities[Counter] != Entity)
             {
-                const GCTransformComponent *const OtherTransformComponent =
+                const GCTransformComponent* const OtherTransformComponent =
                     GCEntity_GetTransformComponent(FilterIterator.entities[Counter]);
 
                 if (TransformComponent->Translation.X < OtherTransformComponent->Translation.X + 1.0f &&
@@ -115,7 +115,7 @@ bool GCWorld_CheckCollision(const GCWorld *const World, const GCEntity Entity)
     return IsColliding;
 }
 
-void GCWorld_OnUpdate(GCWorld *const World)
+void GCWorld_OnUpdate(GCWorld* const World)
 {
     GCRenderer_BeginWorld(World->WorldCamera);
     {
@@ -123,7 +123,7 @@ void GCWorld_OnUpdate(GCWorld *const World)
         FilterDescriptions[0].terms->id = ecs_id(GCTransformComponent);
         FilterDescriptions[1].terms->id = ecs_id(GCMeshComponent);
 
-        ecs_filter_t *Filter = ecs_filter_init(World->World, FilterDescriptions);
+        ecs_filter_t* Filter = ecs_filter_init(World->World, FilterDescriptions);
         ecs_iter_t FilterIterator = ecs_filter_iter(World->World, Filter);
 
         while (ecs_filter_next(&FilterIterator))
@@ -140,29 +140,29 @@ void GCWorld_OnUpdate(GCWorld *const World)
     GCRenderer_EndWorld();
 }
 
-void GCWorld_OnEvent(GCWorld *const World, GCEvent *const Event)
+void GCWorld_OnEvent(GCWorld* const World, GCEvent* const Event)
 {
     (void)World;
 
     GCWorldCemera_OnEvent(World->WorldCamera, Event);
 }
 
-GCWorldCamera *GCWorld_GetCamera(const GCWorld *const World)
+GCWorldCamera* GCWorld_GetCamera(const GCWorld* const World)
 {
     return World->WorldCamera;
 }
 
-GCEntity GCWorld_GetTerrainEntity(const GCWorld *const World)
+GCEntity GCWorld_GetTerrainEntity(const GCWorld* const World)
 {
     return World->TerrainEntity;
 }
 
-void GCWorld_Destroy(GCWorld *World)
+void GCWorld_Destroy(GCWorld* World)
 {
     ecs_filter_desc_t FilterDescription = {0};
     FilterDescription.terms->id = ecs_id(GCMeshComponent);
 
-    ecs_filter_t *Filter = ecs_filter_init(World->World, &FilterDescription);
+    ecs_filter_t* Filter = ecs_filter_init(World->World, &FilterDescription);
     ecs_iter_t FilterIterator = ecs_filter_iter(World->World, Filter);
 
     while (ecs_filter_next(&FilterIterator))

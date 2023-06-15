@@ -28,8 +28,8 @@ extern "C"
 
     void GCApplication_Create(void);
     void GCApplication_Run(void);
-    GCWindow *const GCApplication_GetWindow(void);
-    GCWorld *GCApplication_GetWorld(void);
+    GCWindow* const GCApplication_GetWindow(void);
+    GCWorld* GCApplication_GetWorld(void);
     void GCApplication_Destroy(void);
 
 #ifdef __cplusplus

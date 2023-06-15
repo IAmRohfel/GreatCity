@@ -28,7 +28,7 @@ extern "C"
     void GCUI_Initialize(void);
     void GCUI_Render(void);
     void GCUI_OnUpdate(void);
-    void GCUI_OnEvent(GCEvent *const Event);
+    void GCUI_OnEvent(GCEvent* const Event);
     void GCUI_Terminate(void);
 
 #ifdef __cplusplus

@@ -161,12 +161,12 @@ GCVector3 GCQuaternion_RotateVector(const GCQuaternion Quaternion, const GCVecto
     return Result;
 }
 
-char *GCQuaternion_ToString(const GCQuaternion Quaternion)
+char* GCQuaternion_ToString(const GCQuaternion Quaternion)
 {
     const int32_t Length =
         snprintf(NULL, 0, "(%f, %f, %f, %f)", Quaternion.W, Quaternion.X, Quaternion.Y, Quaternion.Z) + 1;
 
-    char *Buffer = (char *)GCMemory_Allocate(Length * sizeof(char));
+    char* Buffer = (char*)GCMemory_Allocate(Length * sizeof(char));
     snprintf(Buffer, Length, "(%f, %f, %f, %f)", Quaternion.W, Quaternion.X, Quaternion.Y, Quaternion.Z);
 
     return Buffer;

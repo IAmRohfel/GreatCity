@@ -33,7 +33,7 @@ extern "C"
         float Data[4][4];
     } GCMatrix4x4;
 
-    GCMatrix4x4 GCMatrix4x4_Create(const float *const Data);
+    GCMatrix4x4 GCMatrix4x4_Create(const float* const Data);
     GCMatrix4x4 GCMatrix4x4_CreateZero(void);
     GCMatrix4x4 GCMatrix4x4_CreateIdentity(void);
 
@@ -44,20 +44,20 @@ extern "C"
     GCMatrix4x4 GCMatrix4x4_CreatePerspective(const float FoV, const float AspectRatio, const float Near,
                                               const float Far);
 
-    GCMatrix4x4 GCMatrix4x4_Multiply(const GCMatrix4x4 *const Matrix1, const GCMatrix4x4 *const Matrix2);
-    GCMatrix4x4 GCMatrix4x4_MultiplyByScalar(const GCMatrix4x4 *const Matrix, const float Scalar);
-    GCVector4 GCMatrix4x4_MultiplyByVector(const GCMatrix4x4 *const Matrix, const GCVector4 Vector);
+    GCMatrix4x4 GCMatrix4x4_Multiply(const GCMatrix4x4* const Matrix1, const GCMatrix4x4* const Matrix2);
+    GCMatrix4x4 GCMatrix4x4_MultiplyByScalar(const GCMatrix4x4* const Matrix, const float Scalar);
+    GCVector4 GCMatrix4x4_MultiplyByVector(const GCMatrix4x4* const Matrix, const GCVector4 Vector);
 
-    float GCMatrix4x4_Determinant(const GCMatrix4x4 *const Matrix);
-    GCMatrix4x4 GCMatrix4x4_Inverse(const GCMatrix4x4 *const Matrix);
-    GCMatrix4x4 GCMatrix4x4_Transpose(const GCMatrix4x4 *const Matrix);
+    float GCMatrix4x4_Determinant(const GCMatrix4x4* const Matrix);
+    GCMatrix4x4 GCMatrix4x4_Inverse(const GCMatrix4x4* const Matrix);
+    GCMatrix4x4 GCMatrix4x4_Transpose(const GCMatrix4x4* const Matrix);
 
-    void GCMatrix4x4_Decompose(const GCMatrix4x4 *const Matrix, GCVector3 *const Translation, GCVector3 *const Rotation,
-                               GCVector3 *const Scale);
+    void GCMatrix4x4_Decompose(const GCMatrix4x4* const Matrix, GCVector3* const Translation, GCVector3* const Rotation,
+                               GCVector3* const Scale);
 
-    bool GCMatrix4x4_IsEqual(const GCMatrix4x4 *const Matrix1, const GCMatrix4x4 *const Matrix2);
+    bool GCMatrix4x4_IsEqual(const GCMatrix4x4* const Matrix1, const GCMatrix4x4* const Matrix2);
 
-    char *GCMatrix4x4_ToString(const GCMatrix4x4 *const Matrix);
+    char* GCMatrix4x4_ToString(const GCMatrix4x4* const Matrix);
 
 #ifdef __cplusplus
 }

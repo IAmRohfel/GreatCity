@@ -27,7 +27,7 @@ extern "C"
 
     typedef struct GCRendererVertexBuffer GCRendererVertexBuffer;
 
-    VkBuffer GCRendererVertexBuffer_GetHandle(const GCRendererVertexBuffer *const VertexBuffer);
+    VkBuffer GCRendererVertexBuffer_GetHandle(const GCRendererVertexBuffer* const VertexBuffer);
 
 #ifdef __cplusplus
 }
