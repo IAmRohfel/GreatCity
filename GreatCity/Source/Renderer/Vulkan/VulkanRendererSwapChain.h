@@ -35,7 +35,7 @@ extern "C"
     VkFormat GCRendererSwapChain_GetFormat(const GCRendererSwapChain* const SwapChain);
     VkExtent2D GCRendererSwapChain_GetExtent(const GCRendererSwapChain* const SwapChain);
     VkSwapchainKHR GCRendererSwapChain_GetHandle(const GCRendererSwapChain* const SwapChain);
-    VkImageView* GCRendererSwapChain_GetImageViewHandles(const GCRendererSwapChain* const SwapChain);
+    const VkImage* const GCRendererSwapChain_GetImageHandles(const GCRendererSwapChain* const SwapChain);
     uint32_t GCRendererSwapChain_GetImageCount(const GCRendererSwapChain* const SwapChain);
     VkFormat GCRendererSwapChain_GetDepthFormat(const GCRendererSwapChain* const SwapChain);
 

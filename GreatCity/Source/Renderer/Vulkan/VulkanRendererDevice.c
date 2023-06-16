@@ -28,6 +28,10 @@
 #include <string.h>
 
 #include <vulkan/vulkan.h>
+#ifndef VMA_VULKAN_VERSION
+#define VMA_VULKAN_VERSION 1000000
+#endif
+#include <vk_mem_alloc.h>
 
 #ifdef GC_PLATFORM_WINDOWS
 #define GC_VULKAN_PLATFORM_REQUIRED_EXTENSION_NAME "VK_KHR_win32_surface"
@@ -42,6 +46,7 @@ typedef struct GCRendererDevice
     VkDevice DeviceHandle;
     VkQueue GraphicsQueueHandle;
     VkQueue PresentQueueHandle;
+    VmaAllocator AllocatorHandle;
 
     bool IsValidationLayerEnabled;
     uint32_t GraphicsFamilyQueueIndex, PresentFamilyQueueIndex;
@@ -69,6 +74,7 @@ static void GCRendererDevice_CreateDebugMessenger(GCRendererDevice* const Device
 extern void GCRendererDevice_CreateSurface(const VkInstance InstanceHandle, VkSurfaceKHR* SurfaceHandle);
 static void GCRendererDevice_SelectPhysicalDevice(GCRendererDevice* const Device);
 static void GCRendererDevice_CreateDevice(GCRendererDevice* const Device);
+static void GCRendererDevice_CreateAllocator(GCRendererDevice* const Device);
 static void GCRendererDevice_QueryDeviceCapabilities(GCRendererDevice* const Device);
 static VKAPI_ATTR VkBool32 VKAPI_CALL
 GCRendererDevice_DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT Severity, VkDebugUtilsMessageTypeFlagsEXT Type,
@@ -84,14 +90,7 @@ static void GCRendererDevice_vkDestroyDebugUtilsMessengerEXT(VkInstance instance
 
 GCRendererDevice* GCRendererDevice_Create(void)
 {
-    GCRendererDevice* Device = (GCRendererDevice*)GCMemory_Allocate(sizeof(GCRendererDevice));
-    Device->InstanceHandle = VK_NULL_HANDLE;
-    Device->DebugMessengerHandle = VK_NULL_HANDLE;
-    Device->SurfaceHandle = VK_NULL_HANDLE;
-    Device->PhysicalDeviceHandle = VK_NULL_HANDLE;
-    Device->DeviceHandle = VK_NULL_HANDLE;
-    Device->GraphicsQueueHandle = VK_NULL_HANDLE;
-    Device->PresentQueueHandle = VK_NULL_HANDLE;
+    GCRendererDevice* Device = (GCRendererDevice*)GCMemory_AllocateZero(sizeof(GCRendererDevice));
 
 #ifndef GC_BUILD_TYPE_DISTRIBUTION
     Device->IsValidationLayerEnabled = true;
@@ -99,13 +98,9 @@ GCRendererDevice* GCRendererDevice_Create(void)
     Device->IsValidationLayerEnabled = false;
 #endif
 
-    Device->GraphicsFamilyQueueIndex = 0;
-    Device->PresentFamilyQueueIndex = 0;
-    Device->Capabilities = (GCRendererDeviceCapabilities){0};
-
     if (Device->IsValidationLayerEnabled && !GCRendererDevice_IsValidationLayerSupported())
     {
-        GC_ASSERT_WITH_MESSAGE(false, "Vulkan validation layer is not supported");
+        GC_ASSERT_WITH_MESSAGE(false, "Validation layer is not supported.");
     }
 
     GCRendererDevice_CreateInstance(Device);
@@ -118,6 +113,7 @@ GCRendererDevice* GCRendererDevice_Create(void)
     GCRendererDevice_CreateSurface(Device->InstanceHandle, &Device->SurfaceHandle);
     GCRendererDevice_SelectPhysicalDevice(Device);
     GCRendererDevice_CreateDevice(Device);
+    GCRendererDevice_CreateAllocator(Device);
     GCRendererDevice_QueryDeviceCapabilities(Device);
 
     return Device;
@@ -136,7 +132,6 @@ GCRendererDeviceCapabilities GCRendererDevice_GetDeviceCapabilities(const GCRend
 void GCRendererDevice_Destroy(GCRendererDevice* Device)
 {
     GCRendererDevice_WaitIdle(Device);
-
     GCRendererDevice_DestroyObjects(Device);
 
     GCMemory_Free(Device);
@@ -182,6 +177,11 @@ VkQueue GCRendererDevice_GetPresentQueueHandle(const GCRendererDevice* const Dev
     return Device->PresentQueueHandle;
 }
 
+VmaAllocator GCRendererDevice_GetAllocatorHandle(const GCRendererDevice* const Device)
+{
+    return Device->AllocatorHandle;
+}
+
 uint32_t GCRendererDevice_GetMemoryTypeIndex(const GCRendererDevice* const Device, const uint32_t TypeFilter,
                                              const VkMemoryPropertyFlags PropertyFlags)
 {
@@ -197,7 +197,7 @@ uint32_t GCRendererDevice_GetMemoryTypeIndex(const GCRendererDevice* const Devic
         }
     }
 
-    GC_ASSERT_WITH_MESSAGE(false, "Failed to find a suitable Vulkan memory type");
+    GC_ASSERT_WITH_MESSAGE(false, "Failed to find a suitable memory type.");
     return 0;
 }
 
@@ -206,14 +206,15 @@ bool GCRendererDevice_IsValidationLayerSupported(void)
     uint32_t LayerCount = 0;
     vkEnumerateInstanceLayerProperties(&LayerCount, NULL);
 
-    VkLayerProperties* AvailableLayers = (VkLayerProperties*)GCMemory_Allocate(LayerCount * sizeof(VkLayerProperties));
+    VkLayerProperties* AvailableLayers =
+        (VkLayerProperties*)GCMemory_AllocateZero(LayerCount * sizeof(VkLayerProperties));
     vkEnumerateInstanceLayerProperties(&LayerCount, AvailableLayers);
 
     bool IsLayerFound = false;
 
     for (uint32_t Counter = 0; Counter < LayerCount; Counter++)
     {
-        if (!strcmp("VK_LAYER_KHRONOS_validation", AvailableLayers[Counter].layerName))
+        if (strcmp("VK_LAYER_KHRONOS_validation", AvailableLayers[Counter].layerName) == 0)
         {
             IsLayerFound = true;
 
@@ -251,7 +252,7 @@ GCRendererDeviceQueueFamilyIndices GCRendererDevice_FindQueueFamilies(const VkPh
     vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDeviceHandle, &QueueFamilyCount, NULL);
 
     VkQueueFamilyProperties* QueueFamilies =
-        (VkQueueFamilyProperties*)GCMemory_Allocate(QueueFamilyCount * sizeof(VkQueueFamilyProperties));
+        (VkQueueFamilyProperties*)GCMemory_AllocateZero(QueueFamilyCount * sizeof(VkQueueFamilyProperties));
     vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDeviceHandle, &QueueFamilyCount, QueueFamilies);
 
     for (uint32_t Counter = 0; Counter < QueueFamilyCount; Counter++)
@@ -288,7 +289,7 @@ bool GCRendererDevice_CheckDeviceExtensionSupport(const VkPhysicalDevice Physica
     vkEnumerateDeviceExtensionProperties(PhysicalDeviceHandle, NULL, &ExtensionCount, NULL);
 
     VkExtensionProperties* AvailableExtensions =
-        (VkExtensionProperties*)GCMemory_Allocate(ExtensionCount * sizeof(VkExtensionProperties));
+        (VkExtensionProperties*)GCMemory_AllocateZero(ExtensionCount * sizeof(VkExtensionProperties));
     vkEnumerateDeviceExtensionProperties(PhysicalDeviceHandle, NULL, &ExtensionCount, AvailableExtensions);
 
     bool IsExtensionFound = false;
@@ -357,7 +358,7 @@ void GCRendererDevice_CreateInstance(GCRendererDevice* const Device)
     InstanceInformation.ppEnabledExtensionNames = RequiredExtensionNames;
 
     GC_VULKAN_VALIDATE(vkCreateInstance(&InstanceInformation, NULL, &Device->InstanceHandle),
-                       "Failed to create a Vulkan instance");
+                       "Failed to create an instance.");
 }
 
 void GCRendererDevice_CreateDebugMessenger(GCRendererDevice* const Device)
@@ -367,7 +368,7 @@ void GCRendererDevice_CreateDebugMessenger(GCRendererDevice* const Device)
 
     GC_VULKAN_VALIDATE(GCRendererDevice_vkCreateDebugUtilsMessengerEXT(
                            Device->InstanceHandle, &DebugMessengerInformation, NULL, &Device->DebugMessengerHandle),
-                       "Failed to create a Vulkan debug messenger");
+                       "Failed to create a debug messenger.");
 }
 
 void GCRendererDevice_SelectPhysicalDevice(GCRendererDevice* const Device)
@@ -377,11 +378,11 @@ void GCRendererDevice_SelectPhysicalDevice(GCRendererDevice* const Device)
 
     if (!DeviceCount)
     {
-        GC_ASSERT_WITH_MESSAGE(false, "Failed to find GPUs with Vulkan support");
+        GC_ASSERT_WITH_MESSAGE(false, "Failed to find GPUs with Vulkan support.");
     }
 
     VkPhysicalDevice* PhysicalDeviceHandles =
-        (VkPhysicalDevice*)GCMemory_Allocate(DeviceCount * sizeof(VkPhysicalDevice));
+        (VkPhysicalDevice*)GCMemory_AllocateZero(DeviceCount * sizeof(VkPhysicalDevice));
     vkEnumeratePhysicalDevices(Device->InstanceHandle, &DeviceCount, PhysicalDeviceHandles);
 
     for (uint32_t Counter = 0; Counter < DeviceCount; Counter++)
@@ -396,7 +397,7 @@ void GCRendererDevice_SelectPhysicalDevice(GCRendererDevice* const Device)
 
     if (!Device->PhysicalDeviceHandle)
     {
-        GC_ASSERT_WITH_MESSAGE(false, "Failed to find a suitable GPU");
+        GC_ASSERT_WITH_MESSAGE(false, "Failed to find a suitable GPU.");
     }
 
     GCMemory_Free(PhysicalDeviceHandles);
@@ -464,10 +465,20 @@ void GCRendererDevice_CreateDevice(GCRendererDevice* const Device)
     DeviceInformation.pEnabledFeatures = &DeviceFeatures;
 
     GC_VULKAN_VALIDATE(vkCreateDevice(Device->PhysicalDeviceHandle, &DeviceInformation, NULL, &Device->DeviceHandle),
-                       "Failed to create a Vulkan device");
+                       "Failed to create a device.");
 
     vkGetDeviceQueue(Device->DeviceHandle, QueueFamilyIndices.GraphicsFamily, 0, &Device->GraphicsQueueHandle);
     vkGetDeviceQueue(Device->DeviceHandle, QueueFamilyIndices.PresentFamily, 0, &Device->PresentQueueHandle);
+}
+
+void GCRendererDevice_CreateAllocator(GCRendererDevice* const Device)
+{
+    VmaAllocatorCreateInfo AllocatorInformation = {0};
+    AllocatorInformation.physicalDevice = Device->PhysicalDeviceHandle;
+    AllocatorInformation.instance = Device->InstanceHandle;
+    AllocatorInformation.device = Device->DeviceHandle;
+    AllocatorInformation.vulkanApiVersion = VK_API_VERSION_1_0;
+    vmaCreateAllocator(&AllocatorInformation, &Device->AllocatorHandle);
 }
 
 void GCRendererDevice_QueryDeviceCapabilities(GCRendererDevice* const Device)
@@ -514,6 +525,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL GCRendererDevice_DebugCallback(VkDebugUtilsMessag
 
 void GCRendererDevice_DestroyObjects(GCRendererDevice* const Device)
 {
+    vmaDestroyAllocator(Device->AllocatorHandle);
+
     vkDestroyDevice(Device->DeviceHandle, NULL);
     vkDestroySurfaceKHR(Device->InstanceHandle, Device->SurfaceHandle, NULL);
 

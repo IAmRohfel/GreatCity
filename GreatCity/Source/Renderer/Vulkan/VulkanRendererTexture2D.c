@@ -33,6 +33,10 @@
 
 #include <png.h>
 #include <vulkan/vulkan.h>
+#ifndef VMA_VULKAN_VERSION
+#define VMA_VULKAN_VERSION 1000000
+#endif
+#include <vk_mem_alloc.h>
 
 typedef struct GCRendererTexture2D
 {
@@ -40,7 +44,7 @@ typedef struct GCRendererTexture2D
     const GCRendererCommandList* CommandList;
 
     VkImage ImageHandle;
-    VkDeviceMemory ImageMemoryHandle;
+    VmaAllocation ImageAllocationHandle;
     VkImageView ImageViewHandle;
     VkSampler ImageSamplerHandle;
 } GCRendererTexture2D;
@@ -52,13 +56,9 @@ static void GCRendererTexture2D_DestroyObjects(GCRendererTexture2D* const Textur
 
 GCRendererTexture2D* GCRendererTexture2D_Create(const GCRendererTexture2DDescription* const Description)
 {
-    GCRendererTexture2D* Texture2D = (GCRendererTexture2D*)GCMemory_Allocate(sizeof(GCRendererTexture2D));
+    GCRendererTexture2D* Texture2D = (GCRendererTexture2D*)GCMemory_AllocateZero(sizeof(GCRendererTexture2D));
     Texture2D->Device = Description->Device;
     Texture2D->CommandList = Description->CommandList;
-    Texture2D->ImageHandle = VK_NULL_HANDLE;
-    Texture2D->ImageMemoryHandle = VK_NULL_HANDLE;
-    Texture2D->ImageViewHandle = VK_NULL_HANDLE;
-    Texture2D->ImageSamplerHandle = VK_NULL_HANDLE;
 
     GCRendererTexture2D_CreateTexture(Texture2D, Description->TexturePath);
 
@@ -143,8 +143,8 @@ void GCRendererTexture2D_LoadPNG(const char* const TexturePath, uint32_t* const 
         png_read_update_info(PNGReadStruct, PNGInfoStruct);
 
         const size_t RowBytes = png_get_rowbytes(PNGReadStruct, PNGInfoStruct);
-        *Data = (uint8_t*)GCMemory_Allocate(RowBytes * *Height * sizeof(uint8_t));
-        *RowPointers = (uint8_t**)GCMemory_Allocate(*Height * sizeof(uint8_t*));
+        *Data = (uint8_t*)GCMemory_AllocateZero(RowBytes * *Height * sizeof(uint8_t));
+        *RowPointers = (uint8_t**)GCMemory_AllocateZero(*Height * sizeof(uint8_t*));
 
         for (uint32_t Counter = 0; Counter < *Height; Counter++)
         {
@@ -161,7 +161,7 @@ void GCRendererTexture2D_LoadPNG(const char* const TexturePath, uint32_t* const 
 
 void GCRendererTexture2D_CreateTexture(GCRendererTexture2D* const Texture2D, const char* const TexturePath)
 {
-    const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Texture2D->Device);
+    const VmaAllocator AllocatorHandle = GCRendererDevice_GetAllocatorHandle(Texture2D->Device);
 
     uint32_t TextureWidth = 0, TextureHeight = 0, TextureChannels = 0;
     uint8_t* TextureData = NULL;
@@ -173,35 +173,35 @@ void GCRendererTexture2D_CreateTexture(GCRendererTexture2D* const Texture2D, con
     const size_t ImageSize = TextureWidth * TextureHeight * TextureChannels;
     const uint32_t MipLevels = (uint32_t)floorf(log2f(fmaxf((float)TextureWidth, (float)TextureHeight))) + 1;
 
-    VkBuffer StagingImageBufferHandle = VK_NULL_HANDLE;
-    VkDeviceMemory StagingImageBufferMemoryHandle = VK_NULL_HANDLE;
+    VkBuffer StagingBufferHandle = VK_NULL_HANDLE;
+    VmaAllocation StagingBufferAllocationHandle = VK_NULL_HANDLE;
+    VmaAllocationInfo StagingBufferAllocationInformation = {0};
 
     GCVulkanUtilities_CreateBuffer(Texture2D->Device, ImageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                   &StagingImageBufferHandle, &StagingImageBufferMemoryHandle);
+                                   VMA_ALLOCATION_CREATE_MAPPED_BIT |
+                                       VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+                                   VMA_MEMORY_USAGE_AUTO, &StagingBufferHandle, &StagingBufferAllocationHandle,
+                                   &StagingBufferAllocationInformation);
 
-    void* ImageData = NULL;
-    vkMapMemory(DeviceHandle, StagingImageBufferMemoryHandle, 0, ImageSize, 0, &ImageData);
-    memcpy(ImageData, TextureData, ImageSize);
-    vkUnmapMemory(DeviceHandle, StagingImageBufferMemoryHandle);
+    memcpy(StagingBufferAllocationInformation.pMappedData, TextureData, ImageSize);
+    vmaFlushAllocation(AllocatorHandle, StagingBufferAllocationHandle, 0, VK_WHOLE_SIZE);
 
     GCVulkanUtilities_CreateImage(
         Texture2D->Device, TextureWidth, TextureHeight, MipLevels, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
         VK_SAMPLE_COUNT_1_BIT,
-        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &Texture2D->ImageHandle, &Texture2D->ImageMemoryHandle);
+        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 0,
+        VMA_MEMORY_USAGE_AUTO, &Texture2D->ImageHandle, &Texture2D->ImageAllocationHandle, NULL);
 
     const VkCommandBuffer CommandBufferHandle = GCRendererCommandList_BeginSingleTimeCommands(Texture2D->CommandList);
     GCVulkanUtilities_TransitionImageLayout(CommandBufferHandle, Texture2D->ImageHandle, MipLevels,
                                             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    GCVulkanUtilities_CopyBufferToImage(CommandBufferHandle, StagingImageBufferHandle, Texture2D->ImageHandle,
-                                        TextureWidth, TextureHeight);
+    GCVulkanUtilities_CopyBufferToImage(CommandBufferHandle, StagingBufferHandle, Texture2D->ImageHandle, TextureWidth,
+                                        TextureHeight);
     GCVulkanUtilities_GenerateMipmap(Texture2D->Device, CommandBufferHandle, Texture2D->ImageHandle, TextureWidth,
                                      TextureHeight, MipLevels, VK_FORMAT_R8G8B8A8_SRGB);
     GCRendererCommandList_EndSingleTimeCommands(Texture2D->CommandList, CommandBufferHandle);
 
-    vkFreeMemory(DeviceHandle, StagingImageBufferMemoryHandle, NULL);
-    vkDestroyBuffer(DeviceHandle, StagingImageBufferHandle, NULL);
+    vmaDestroyBuffer(AllocatorHandle, StagingBufferHandle, StagingBufferAllocationHandle);
 
     GCVulkanUtilities_CreateImageView(Texture2D->Device, Texture2D->ImageHandle, VK_FORMAT_R8G8B8A8_SRGB,
                                       VK_IMAGE_ASPECT_COLOR_BIT, MipLevels, &Texture2D->ImageViewHandle);
@@ -215,11 +215,9 @@ void GCRendererTexture2D_CreateTexture(GCRendererTexture2D* const Texture2D, con
 void GCRendererTexture2D_DestroyObjects(GCRendererTexture2D* const Texture2D)
 {
     const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Texture2D->Device);
+    const VmaAllocator AllocatorHandle = GCRendererDevice_GetAllocatorHandle(Texture2D->Device);
 
     vkDestroySampler(DeviceHandle, Texture2D->ImageSamplerHandle, NULL);
-
     vkDestroyImageView(DeviceHandle, Texture2D->ImageViewHandle, NULL);
-
-    vkFreeMemory(DeviceHandle, Texture2D->ImageMemoryHandle, NULL);
-    vkDestroyImage(DeviceHandle, Texture2D->ImageHandle, NULL);
+    vmaDestroyImage(AllocatorHandle, Texture2D->ImageHandle, Texture2D->ImageAllocationHandle);
 }

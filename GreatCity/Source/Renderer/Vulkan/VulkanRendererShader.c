@@ -70,15 +70,9 @@ static void GCRendererShader_DestroyObjects(GCRendererShader* const Shader);
 
 GCRendererShader* GCRendererShader_Create(const GCRendererShaderDescription* const Description)
 {
-    GCRendererShader* Shader = (GCRendererShader*)GCMemory_Allocate(sizeof(GCRendererShader));
+    GCRendererShader* Shader = (GCRendererShader*)GCMemory_AllocateZero(sizeof(GCRendererShader));
     Shader->Device = Description->Device;
-    Shader->VertexShaderModuleHandle = VK_NULL_HANDLE;
-    Shader->FragmentShaderModuleHandle = VK_NULL_HANDLE;
     Shader->ShaderCacheDirectory = "Assets/Cache/Shaders/Vulkan/";
-    Shader->VertexShaderData = NULL;
-    Shader->VertexShaderDataSize = 0;
-    Shader->FragmentShaderData = NULL;
-    Shader->FragmentShaderDataSize = 0;
 
     GCRendererShader_CreateCacheDirectoryIfNeeded(Shader);
     GCRendererShader_CompileOrGetBinaries(Shader, Description->VertexShaderPath, Description->FragmentShaderPath);
@@ -157,7 +151,7 @@ size_t GCRendererShader_ReadShaderBinaryFile(const char* const Path, char** Data
         ShaderCacheFileLength = ftell(ShaderCacheFile);
         fseek(ShaderCacheFile, 0, SEEK_SET);
 
-        *Data = (char*)GCMemory_Allocate(ShaderCacheFileLength * sizeof(char));
+        *Data = (char*)GCMemory_AllocateZero(ShaderCacheFileLength * sizeof(char));
         fread(*Data, ShaderCacheFileLength * sizeof(char), 1, ShaderCacheFile);
 
         fclose(ShaderCacheFile);
@@ -199,7 +193,7 @@ char* GCRendererShader_GetShaderCachePath(const GCRendererShader* const Shader, 
 {
     char* ShaderName = GCRendererShader_GetShaderName(Path);
     const char* const ShaderFileExtension = Type == GCRendererShaderType_Vertex ? ".cached.vert" : ".cached.frag";
-    char* ShaderCachePath = (char*)GCMemory_Allocate(
+    char* ShaderCachePath = (char*)GCMemory_AllocateZero(
         (strlen(Shader->ShaderCacheDirectory) + strlen(ShaderName) + strlen(ShaderFileExtension) + 1) * sizeof(char));
 
     strcpy(ShaderCachePath, Shader->ShaderCacheDirectory);
@@ -287,8 +281,8 @@ void GCRendererShader_CompileOrGetBinaries(GCRendererShader* const Shader, const
         GCRendererShader_WriteShaderBinaryFile(FragmentShaderCachePath, FragmentShaderCacheData,
                                                Shader->FragmentShaderDataSize);
 
-        Shader->VertexShaderData = (uint32_t*)GCMemory_Allocate(Shader->VertexShaderDataSize);
-        Shader->FragmentShaderData = (uint32_t*)GCMemory_Allocate(Shader->FragmentShaderDataSize);
+        Shader->VertexShaderData = (uint32_t*)GCMemory_AllocateZero(Shader->VertexShaderDataSize);
+        Shader->FragmentShaderData = (uint32_t*)GCMemory_AllocateZero(Shader->FragmentShaderDataSize);
 
         memcpy(Shader->VertexShaderData, VertexShaderCacheData, Shader->VertexShaderDataSize);
         memcpy(Shader->FragmentShaderData, FragmentShaderCacheData, Shader->FragmentShaderDataSize);
@@ -322,10 +316,10 @@ void GCRendererShader_CreateShaderModule(GCRendererShader* const Shader)
 
     GC_VULKAN_VALIDATE(
         vkCreateShaderModule(DeviceHandle, &VertexShaderModuleInformation, NULL, &Shader->VertexShaderModuleHandle),
-        "Failed to create a Vulkan vertex shader module");
+        "Failed to create a vertex shader module.");
     GC_VULKAN_VALIDATE(
         vkCreateShaderModule(DeviceHandle, &FragmentShaderModuleInformation, NULL, &Shader->FragmentShaderModuleHandle),
-        "Failed to create a Vulkan fragment shader module");
+        "Failed to create a fragment shader module.");
 
     GCMemory_Free(Shader->FragmentShaderData);
     GCMemory_Free(Shader->VertexShaderData);

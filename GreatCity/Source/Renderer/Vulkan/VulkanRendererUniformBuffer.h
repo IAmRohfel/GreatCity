@@ -30,7 +30,6 @@ extern "C"
     typedef struct GCRendererUniformBuffer GCRendererUniformBuffer;
 
     VkBuffer GCRendererUniformBuffer_GetBufferHandle(const GCRendererUniformBuffer* const UniformBuffer);
-    void* GCRendererUniformBuffer_GetData(const GCRendererUniformBuffer* const UniformBuffer);
     size_t GCRendererUniformBuffer_GetDataSize(const GCRendererUniformBuffer* const UniformBuffer);
 
 #ifdef __cplusplus

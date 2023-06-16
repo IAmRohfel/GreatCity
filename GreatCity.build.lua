@@ -38,11 +38,13 @@ project "GreatCity"
         "%{wks.location}/GreatCity/Source",
 
         "$(VULKAN_SDK)/Include",
+        "%{wks.location}/GreatCity/Source/ThirdParty/VulkanMemoryAllocator/Include",
         "%{wks.location}/GreatCity/Source/ThirdParty/libpng/Include",
+        "%{wks.location}/GreatCity/Source/ThirdParty/zlib/Include",
         "%{wks.location}/GreatCity/Source/ThirdParty/TinyObjLoader/Include",
         "%{wks.location}/GreatCity/Source/ThirdParty/Flecs/Include",
         "%{wks.location}/GreatCity/Source/ThirdParty/ImGui/Include",
-        "%{wks.location}/GreatCity/Source/ThirdParty/ImGuizmo/Include",
+        "%{wks.location}/GreatCity/Source/ThirdParty/ImGuizmo/Include"
     }
 
     libdirs
@@ -54,7 +56,9 @@ project "GreatCity"
     {
         "vulkan-1",
 
+        "VulkanMemoryAllocator",
         "libpng",
+        "TinyObjLoader",
         "Flecs",
         "ImGui",
         "ImGuizmo"
@@ -114,8 +118,10 @@ project "GreatCity"
         optimize "On"
 
 group "Dependencies"
+    include "GreatCity/Source/ThirdParty/VulkanMemoryAllocator/VulkanMemoryAllocator.build.lua"
     include "GreatCity/Source/ThirdParty/libpng/libpng.build.lua"
     include "GreatCity/Source/ThirdParty/zlib/zlib.build.lua"
+    include "GreatCity/Source/ThirdParty/TinyObjLoader/TinyObjLoader.build.lua"
     include "GreatCity/Source/ThirdParty/Flecs/Flecs.build.lua"
     include "GreatCity/Source/ThirdParty/ImGui/ImGui.build.lua"
     include "GreatCity/Source/ThirdParty/ImGuizmo/ImGuizmo.build.lua"

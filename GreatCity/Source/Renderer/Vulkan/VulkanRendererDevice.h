@@ -20,6 +20,7 @@
 
 #include <stdint.h>
 
+#include <vk_mem_alloc.h>
 #include <vulkan/vulkan.h>
 
 #ifdef __cplusplus
@@ -37,6 +38,7 @@ extern "C"
     uint32_t GCRendererDevice_GetPresentFamilyQueueIndex(const GCRendererDevice* const Device);
     VkQueue GCRendererDevice_GetGraphicsQueueHandle(const GCRendererDevice* const Device);
     VkQueue GCRendererDevice_GetPresentQueueHandle(const GCRendererDevice* const Device);
+    VmaAllocator GCRendererDevice_GetAllocatorHandle(const GCRendererDevice* const Device);
     uint32_t GCRendererDevice_GetMemoryTypeIndex(const GCRendererDevice* const Device, const uint32_t TypeFilter,
                                                  const VkMemoryPropertyFlags PropertyFlags);
 

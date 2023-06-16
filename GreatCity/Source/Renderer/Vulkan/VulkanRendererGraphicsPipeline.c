@@ -79,20 +79,13 @@ GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(
     const GCRendererGraphicsPipelineDescription* const Description)
 {
     GCRendererGraphicsPipeline* GraphicsPipeline =
-        (GCRendererGraphicsPipeline*)GCMemory_Allocate(sizeof(GCRendererGraphicsPipeline));
+        (GCRendererGraphicsPipeline*)GCMemory_AllocateZero(sizeof(GCRendererGraphicsPipeline));
     GraphicsPipeline->Device = Description->Device;
     GraphicsPipeline->SwapChain = Description->SwapChain;
     GraphicsPipeline->CommandList = Description->CommandList;
     GraphicsPipeline->UniformBuffer = Description->UniformBuffer;
     GraphicsPipeline->Texture2Ds = Description->Texture2Ds;
     GraphicsPipeline->Shader = Description->Shader;
-    GraphicsPipeline->SwapChainRenderPassHandle = VK_NULL_HANDLE;
-    GraphicsPipeline->AttachmentRenderPassHandle = VK_NULL_HANDLE;
-    GraphicsPipeline->DescriptorSetLayoutHandle = VK_NULL_HANDLE;
-    GraphicsPipeline->DescriptorPoolHandle = VK_NULL_HANDLE;
-    GraphicsPipeline->DescriptorSetHandle = VK_NULL_HANDLE;
-    GraphicsPipeline->PipelineLayoutHandle = VK_NULL_HANDLE;
-    GraphicsPipeline->PipelineHandle = VK_NULL_HANDLE;
     GraphicsPipeline->Texture2DCount = Description->Texture2DCount;
     GraphicsPipeline->DescriptorCount = 1 + GraphicsPipeline->Texture2DCount;
 
@@ -238,7 +231,7 @@ void GCRendererGraphicsPipeline_CreateSwapChainRenderPass(GCRendererGraphicsPipe
 
     GC_VULKAN_VALIDATE(
         vkCreateRenderPass(DeviceHandle, &RenderPassInformation, NULL, &GraphicsPipeline->SwapChainRenderPassHandle),
-        "Failed to create a Vulkan swap chain render pass");
+        "Failed to create a swap chain render pass.");
 }
 
 static void GCRendererGraphicsPipeline_CreateAttachmentRenderPass(
@@ -361,7 +354,7 @@ static void GCRendererGraphicsPipeline_CreateAttachmentRenderPass(
 
     GC_VULKAN_VALIDATE(
         vkCreateRenderPass(DeviceHandle, &RenderPassInformation, NULL, &GraphicsPipeline->AttachmentRenderPassHandle),
-        "Failed to create a Vulkan attachment render pass");
+        "Failed to create an attachment render pass.");
 
     if (ColorResolveAttachmentCount > 0)
     {
@@ -398,7 +391,7 @@ void GCRendererGraphicsPipeline_CreateDescriptorSetLayout(GCRendererGraphicsPipe
 
     GC_VULKAN_VALIDATE(vkCreateDescriptorSetLayout(DeviceHandle, &DescriptorSetLayoutInformation, NULL,
                                                    &GraphicsPipeline->DescriptorSetLayoutHandle),
-                       "Failed to create a Vulkan descriptor set layout");
+                       "Failed to create a descriptor set layout.");
 
     GCMemory_Free(DescriptorSetLayoutBindings);
 }
@@ -416,7 +409,7 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
 
     GC_VULKAN_VALIDATE(
         vkCreatePipelineLayout(DeviceHandle, &PipelineLayoutInformation, NULL, &GraphicsPipeline->PipelineLayoutHandle),
-        "Failed to create a Vulkan pipeline layout");
+        "Failed to create a pipeline layout.");
 
     VkPipelineShaderStageCreateInfo PipelineVertexShaderStageInformation = {0};
     PipelineVertexShaderStageInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -436,8 +429,8 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
                                                                                PipelineFragmentShaderStageInformation};
 
     VkVertexInputBindingDescription* VertexInputBindingDescriptions =
-        (VkVertexInputBindingDescription*)GCMemory_Allocate(VertexInput->BindingCount *
-                                                            sizeof(VkVertexInputBindingDescription));
+        (VkVertexInputBindingDescription*)GCMemory_AllocateZero(VertexInput->BindingCount *
+                                                                sizeof(VkVertexInputBindingDescription));
 
     for (uint32_t Counter = 0; Counter < VertexInput->BindingCount; Counter++)
     {
@@ -447,8 +440,8 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
     }
 
     VkVertexInputAttributeDescription* VertexInputAttributeDescriptions =
-        (VkVertexInputAttributeDescription*)GCMemory_Allocate(VertexInput->AttributeCount *
-                                                              sizeof(VkVertexInputAttributeDescription));
+        (VkVertexInputAttributeDescription*)GCMemory_AllocateZero(VertexInput->AttributeCount *
+                                                                  sizeof(VkVertexInputAttributeDescription));
 
     for (uint32_t Counter = 0; Counter < VertexInput->AttributeCount; Counter++)
     {
@@ -553,7 +546,7 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
 
     GC_VULKAN_VALIDATE(vkCreateGraphicsPipelines(DeviceHandle, VK_NULL_HANDLE, 1, &GraphicsPipelineInformation, NULL,
                                                  &GraphicsPipeline->PipelineHandle),
-                       "Failed to create a Vulkan graphics pipeline");
+                       "Failed to create a graphics pipeline.");
 
     GCMemory_Free(VertexInputAttributeDescriptions);
     GCMemory_Free(VertexInputBindingDescriptions);
@@ -582,7 +575,7 @@ void GCRendererGraphicsPipeline_CreateDescriptorPool(GCRendererGraphicsPipeline*
 
     GC_VULKAN_VALIDATE(
         vkCreateDescriptorPool(DeviceHandle, &DescriptorPoolInformation, NULL, &GraphicsPipeline->DescriptorPoolHandle),
-        "Failed to create a Vulkan descriptor pool");
+        "Failed to create a descriptor pool.");
 
     GCMemory_Free(DescriptorPoolSizes);
 }
@@ -599,7 +592,7 @@ void GCRendererGraphicsPipeline_CreateDescriptorSets(GCRendererGraphicsPipeline*
 
     GC_VULKAN_VALIDATE(vkAllocateDescriptorSets(DeviceHandle, &DescriptorSetAllocateInformation,
                                                 &GraphicsPipeline->DescriptorSetHandle),
-                       "Failed to allocate a Vulkan descriptor set");
+                       "Failed to allocate a descriptor set.");
 
     VkWriteDescriptorSet* WriteDescriptorSets =
         (VkWriteDescriptorSet*)GCMemory_AllocateZero(GraphicsPipeline->DescriptorCount * sizeof(VkWriteDescriptorSet));

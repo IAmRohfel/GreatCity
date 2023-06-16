@@ -25,6 +25,10 @@
 #include <stdint.h>
 
 #include <vulkan/vulkan.h>
+#ifndef VMA_VULKAN_VERSION
+#define VMA_VULKAN_VERSION 1000000
+#endif
+#include <vk_mem_alloc.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -53,13 +57,16 @@ extern "C"
     typedef enum GCRendererAttachmentSampleCount GCRendererAttachmentSampleCount;
 
     void GCVulkanUtilities_CreateBuffer(const GCRendererDevice* const Device, const size_t Size,
-                                        const VkBufferUsageFlags Usage, const VkMemoryPropertyFlags MemoryProperty,
-                                        VkBuffer* BufferHandle, VkDeviceMemory* BufferMemoryHandle);
+                                        const VkBufferUsageFlags Usage, const VmaAllocationCreateFlags AllocationFlags,
+                                        const VmaMemoryUsage MemoryUsage, VkBuffer* BufferHandle,
+                                        VmaAllocation* BufferAllocationHandle,
+                                        VmaAllocationInfo* AllocationInformation);
     void GCVulkanUtilities_CreateImage(const GCRendererDevice* const Device, const uint32_t Width,
                                        const uint32_t Height, const uint32_t MipLevels, const VkFormat Format,
                                        const VkImageTiling Tiling, const VkSampleCountFlagBits SampleCount,
-                                       const VkImageUsageFlags Usage, const VkMemoryPropertyFlags MemoryProperty,
-                                       VkImage* ImageHandle, VkDeviceMemory* ImageMemoryHandle);
+                                       const VkImageUsageFlags Usage, const VmaAllocationCreateFlags AllocationFlags,
+                                       const VmaMemoryUsage MemoryUsage, VkImage* ImageHandle,
+                                       VmaAllocation* ImageAllocationHandle, VmaAllocationInfo* AllocationInformation);
     void GCVulkanUtilities_CreateImageView(const GCRendererDevice* const Device, const VkImage ImageHandle,
                                            const VkFormat Format, const VkImageAspectFlags ImageAspect,
                                            const uint32_t MipLevels, VkImageView* ImageViewHandle);

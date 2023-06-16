@@ -29,16 +29,20 @@
 #include <string.h>
 
 #include <vulkan/vulkan.h>
+#ifndef VMA_VULKAN_VERSION
+#define VMA_VULKAN_VERSION 1000000
+#endif
+#include <vk_mem_alloc.h>
 
 typedef struct GCRendererUniformBuffer
 {
     const GCRendererDevice* Device;
     const GCRendererCommandList* CommandList;
 
-    VkBuffer UniformBufferHandle;
-    VkDeviceMemory UniformBufferMemoryHandle;
+    VkBuffer BufferHandle;
+    VmaAllocation BufferAllocationHandle;
+    VmaAllocationInfo BufferAllocationInformation;
 
-    void* Data;
     size_t DataSize;
 } GCRendererUniformBuffer;
 
@@ -48,12 +52,9 @@ static void GCRendererUniformBuffer_DestroyObjects(GCRendererUniformBuffer* cons
 GCRendererUniformBuffer* GCRendererUniformBuffer_Create(const GCRendererUniformBufferDescription* const Description)
 {
     GCRendererUniformBuffer* UniformBuffer =
-        (GCRendererUniformBuffer*)GCMemory_Allocate(sizeof(GCRendererUniformBuffer));
+        (GCRendererUniformBuffer*)GCMemory_AllocateZero(sizeof(GCRendererUniformBuffer));
     UniformBuffer->Device = Description->Device;
     UniformBuffer->CommandList = Description->CommandList;
-    UniformBuffer->UniformBufferHandle = VK_NULL_HANDLE;
-    UniformBuffer->UniformBufferMemoryHandle = VK_NULL_HANDLE;
-    UniformBuffer->Data = NULL;
     UniformBuffer->DataSize = Description->DataSize;
 
     GCRendererUniformBuffer_CreateUniformBuffer(UniformBuffer);
@@ -64,7 +65,10 @@ GCRendererUniformBuffer* GCRendererUniformBuffer_Create(const GCRendererUniformB
 void GCRendererUniformBuffer_UpdateUniformBuffer(const GCRendererUniformBuffer* const UniformBuffer,
                                                  const void* const Data, const size_t DataSize)
 {
-    memcpy(UniformBuffer->Data, Data, DataSize);
+    const VmaAllocator AllocatorHandle = GCRendererDevice_GetAllocatorHandle(UniformBuffer->Device);
+
+    memcpy(UniformBuffer->BufferAllocationInformation.pMappedData, Data, DataSize);
+    vmaFlushAllocation(AllocatorHandle, UniformBuffer->BufferAllocationHandle, 0, VK_WHOLE_SIZE);
 }
 
 void GCRendererUniformBuffer_Destroy(GCRendererUniformBuffer* UniformBuffer)
@@ -78,12 +82,7 @@ void GCRendererUniformBuffer_Destroy(GCRendererUniformBuffer* UniformBuffer)
 
 VkBuffer GCRendererUniformBuffer_GetBufferHandle(const GCRendererUniformBuffer* const UniformBuffer)
 {
-    return UniformBuffer->UniformBufferHandle;
-}
-
-void* GCRendererUniformBuffer_GetData(const GCRendererUniformBuffer* const UniformBuffer)
-{
-    return UniformBuffer->Data;
+    return UniformBuffer->BufferHandle;
 }
 
 size_t GCRendererUniformBuffer_GetDataSize(const GCRendererUniformBuffer* const UniformBuffer)
@@ -93,20 +92,16 @@ size_t GCRendererUniformBuffer_GetDataSize(const GCRendererUniformBuffer* const 
 
 void GCRendererUniformBuffer_CreateUniformBuffer(GCRendererUniformBuffer* const UniformBuffer)
 {
-    const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(UniformBuffer->Device);
-
     GCVulkanUtilities_CreateBuffer(UniformBuffer->Device, UniformBuffer->DataSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                   &UniformBuffer->UniformBufferHandle, &UniformBuffer->UniformBufferMemoryHandle);
-
-    vkMapMemory(DeviceHandle, UniformBuffer->UniformBufferMemoryHandle, 0, UniformBuffer->DataSize, 0,
-                &UniformBuffer->Data);
+                                   VMA_ALLOCATION_CREATE_MAPPED_BIT |
+                                       VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+                                   VMA_MEMORY_USAGE_AUTO, &UniformBuffer->BufferHandle,
+                                   &UniformBuffer->BufferAllocationHandle, &UniformBuffer->BufferAllocationInformation);
 }
 
 void GCRendererUniformBuffer_DestroyObjects(GCRendererUniformBuffer* const UniformBuffer)
 {
-    const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(UniformBuffer->Device);
+    const VmaAllocator AllocatorHandle = GCRendererDevice_GetAllocatorHandle(UniformBuffer->Device);
 
-    vkFreeMemory(DeviceHandle, UniformBuffer->UniformBufferMemoryHandle, NULL);
-    vkDestroyBuffer(DeviceHandle, UniformBuffer->UniformBufferHandle, NULL);
+    vmaDestroyBuffer(AllocatorHandle, UniformBuffer->BufferHandle, UniformBuffer->BufferAllocationHandle);
 }

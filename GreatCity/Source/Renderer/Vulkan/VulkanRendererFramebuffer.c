@@ -33,6 +33,10 @@
 #include <string.h>
 
 #include <vulkan/vulkan.h>
+#ifndef VMA_VULKAN_VERSION
+#define VMA_VULKAN_VERSION 1000000
+#endif
+#include <vk_mem_alloc.h>
 
 typedef struct GCRendererFramebuffer
 {
@@ -42,19 +46,20 @@ typedef struct GCRendererFramebuffer
 
     GCRendererFramebufferAttachment* Attachments;
     uint32_t AttachmentCount;
-
     uint32_t Width, Height;
 
+    VkImageView* SwapChainImageViewHandles;
+
     VkImage* ColorAttachmentImageHandles;
-    VkDeviceMemory* ColorAttachmentImageMemoryHandles;
+    VmaAllocation* ColorAttachmentImageAllocationHandles;
     VkImageView* ColorAttachmentImageViewHandles;
 
     VkImage* ColorResolveAttachmentImageHandles;
-    VkDeviceMemory* ColorResolveAttachmentImageMemoryHandles;
+    VmaAllocation* ColorResolveAttachmentImageAllocationHandles;
     VkImageView* ColorResolveAttachmentImageViewHandles;
 
     VkImage* DepthAttachmentImageHandles;
-    VkDeviceMemory* DepthAttachmentImageMemoryHandles;
+    VmaAllocation* DepthAttachmentImageAllocationHandles;
     VkImageView* DepthAttachmentImageViewHandles;
 
     VkSampler* ColorAttachmentSampledSamplerHandles;
@@ -70,6 +75,7 @@ static uint32_t GCRendererFramebuffer_GetColorAttachmentCount(const GCRendererFr
 static uint32_t GCRendererFramebuffer_GetColorAttachmentSampledCount(const GCRendererFramebuffer* const Framebuffer);
 static uint32_t GCRendererFramebuffer_GetColorResolveAttachmentCount(const GCRendererFramebuffer* const Framebuffer);
 static uint32_t GCRendererFramebuffer_GetDepthAttachmentCount(const GCRendererFramebuffer* const Framebuffer);
+static void GCRendererFramebuffer_CreateSwapChainImages(GCRendererFramebuffer* const Framebuffer);
 static void GCRendererFramebuffer_CreateAttachments(GCRendererFramebuffer* const Framebuffer);
 static void GCRendererFramebuffer_CreateSwapChainFramebuffers(GCRendererFramebuffer* const Framebuffer);
 static void GCRendererFramebuffer_CreateAttachmentFramebuffer(GCRendererFramebuffer* const Framebuffer);
@@ -78,43 +84,19 @@ static void GCRendererFramebuffer_DestroyObjectsAttachments(GCRendererFramebuffe
 
 GCRendererFramebuffer* GCRendererFramebuffer_Create(const GCRendererFramebufferDescription* const Description)
 {
-    GCRendererFramebuffer* Framebuffer = (GCRendererFramebuffer*)GCMemory_Allocate(sizeof(GCRendererFramebuffer));
+    GCRendererFramebuffer* Framebuffer = (GCRendererFramebuffer*)GCMemory_AllocateZero(sizeof(GCRendererFramebuffer));
     Framebuffer->Device = Description->Device;
     Framebuffer->SwapChain = Description->SwapChain;
     Framebuffer->GraphicsPipeline = Description->GraphicsPipeline;
-    Framebuffer->Attachments = NULL;
     Framebuffer->AttachmentCount = Description->AttachmentCount;
     Framebuffer->Width = Description->Width;
     Framebuffer->Height = Description->Height;
-    Framebuffer->ColorAttachmentImageHandles = NULL;
-    Framebuffer->ColorAttachmentImageMemoryHandles = NULL;
-    Framebuffer->ColorAttachmentImageViewHandles = NULL;
-
-    Framebuffer->ColorResolveAttachmentImageHandles = NULL;
-    Framebuffer->ColorResolveAttachmentImageMemoryHandles = NULL;
-    Framebuffer->ColorResolveAttachmentImageViewHandles = NULL;
-
-    Framebuffer->DepthAttachmentImageHandles = NULL;
-    Framebuffer->DepthAttachmentImageMemoryHandles = NULL;
-    Framebuffer->DepthAttachmentImageViewHandles = NULL;
-
-    Framebuffer->ColorAttachmentSampledSamplerHandles = NULL;
-
-    Framebuffer->SwapChainFramebufferHandles = NULL;
-    Framebuffer->AttachmentFramebufferHandle = VK_NULL_HANDLE;
-
-    Framebuffer->HasColorAttachment = false;
-    Framebuffer->HasColorAttachmentSampled = false;
-    Framebuffer->HasColorAttachmentMapped = false;
-    Framebuffer->HasColorResolveAttachment = false;
-    Framebuffer->HasDepthAtachment = false;
-    Framebuffer->HasDepthAtachment = false;
 
     GC_ASSERT_WITH_MESSAGE(Description->Attachments && (Description->AttachmentCount > 0),
                            "Invalid GCRendererFramebufferAttachment array. Either Description->Attachments is null or "
                            "Description->AttachmentCount is less than or equal to 0.");
 
-    Framebuffer->Attachments = (GCRendererFramebufferAttachment*)GCMemory_Allocate(
+    Framebuffer->Attachments = (GCRendererFramebufferAttachment*)GCMemory_AllocateZero(
         Framebuffer->AttachmentCount * sizeof(GCRendererFramebufferAttachment));
     memcpy(Framebuffer->Attachments, Description->Attachments,
            Framebuffer->AttachmentCount * sizeof(GCRendererFramebufferAttachment));
@@ -128,11 +110,12 @@ GCRendererFramebuffer* GCRendererFramebuffer_Create(const GCRendererFramebufferD
     {
         Framebuffer->HasColorAttachment = true;
 
-        Framebuffer->ColorAttachmentImageHandles = (VkImage*)GCMemory_Allocate(ColorAttachmentCount * sizeof(VkImage));
-        Framebuffer->ColorAttachmentImageMemoryHandles =
-            (VkDeviceMemory*)GCMemory_Allocate(ColorAttachmentCount * sizeof(VkDeviceMemory));
+        Framebuffer->ColorAttachmentImageHandles =
+            (VkImage*)GCMemory_AllocateZero(ColorAttachmentCount * sizeof(VkImage));
+        Framebuffer->ColorAttachmentImageAllocationHandles =
+            (VmaAllocation*)GCMemory_AllocateZero(ColorAttachmentCount * sizeof(VmaAllocation));
         Framebuffer->ColorAttachmentImageViewHandles =
-            (VkImageView*)GCMemory_Allocate(ColorAttachmentCount * sizeof(VkImageView));
+            (VkImageView*)GCMemory_AllocateZero(ColorAttachmentCount * sizeof(VkImageView));
     }
 
     if (ColorResolveAttachmentCount > 0)
@@ -140,22 +123,23 @@ GCRendererFramebuffer* GCRendererFramebuffer_Create(const GCRendererFramebufferD
         Framebuffer->HasColorResolveAttachment = true;
 
         Framebuffer->ColorResolveAttachmentImageHandles =
-            (VkImage*)GCMemory_Allocate(ColorResolveAttachmentCount * sizeof(VkImage));
-        Framebuffer->ColorResolveAttachmentImageMemoryHandles =
-            (VkDeviceMemory*)GCMemory_Allocate(ColorResolveAttachmentCount * sizeof(VkDeviceMemory));
+            (VkImage*)GCMemory_AllocateZero(ColorResolveAttachmentCount * sizeof(VkImage));
+        Framebuffer->ColorResolveAttachmentImageAllocationHandles =
+            (VmaAllocation*)GCMemory_AllocateZero(ColorResolveAttachmentCount * sizeof(VmaAllocation));
         Framebuffer->ColorResolveAttachmentImageViewHandles =
-            (VkImageView*)GCMemory_Allocate(ColorResolveAttachmentCount * sizeof(VkImageView));
+            (VkImageView*)GCMemory_AllocateZero(ColorResolveAttachmentCount * sizeof(VkImageView));
     }
 
     if (DepthAttachmentCount > 0)
     {
         Framebuffer->HasDepthAtachment = true;
 
-        Framebuffer->DepthAttachmentImageHandles = (VkImage*)GCMemory_Allocate(DepthAttachmentCount * sizeof(VkImage));
-        Framebuffer->DepthAttachmentImageMemoryHandles =
-            (VkDeviceMemory*)GCMemory_Allocate(DepthAttachmentCount * sizeof(VkDeviceMemory));
+        Framebuffer->DepthAttachmentImageHandles =
+            (VkImage*)GCMemory_AllocateZero(DepthAttachmentCount * sizeof(VkImage));
+        Framebuffer->DepthAttachmentImageAllocationHandles =
+            (VmaAllocation*)GCMemory_AllocateZero(DepthAttachmentCount * sizeof(VmaAllocation));
         Framebuffer->DepthAttachmentImageViewHandles =
-            (VkImageView*)GCMemory_Allocate(DepthAttachmentCount * sizeof(VkImageView));
+            (VkImageView*)GCMemory_AllocateZero(DepthAttachmentCount * sizeof(VkImageView));
     }
 
     if (ColorAttachmentSampledCount > 0)
@@ -163,9 +147,10 @@ GCRendererFramebuffer* GCRendererFramebuffer_Create(const GCRendererFramebufferD
         Framebuffer->HasColorAttachmentSampled = true;
 
         Framebuffer->ColorAttachmentSampledSamplerHandles =
-            (VkSampler*)GCMemory_Allocate(ColorAttachmentSampledCount * sizeof(VkSampler));
+            (VkSampler*)GCMemory_AllocateZero(ColorAttachmentSampledCount * sizeof(VkSampler));
     }
 
+    GCRendererFramebuffer_CreateSwapChainImages(Framebuffer);
     GCRendererFramebuffer_CreateAttachments(Framebuffer);
     GCRendererFramebuffer_CreateSwapChainFramebuffers(Framebuffer);
     GCRendererFramebuffer_CreateAttachmentFramebuffer(Framebuffer);
@@ -178,7 +163,9 @@ void GCRendererFramebuffer_RecreateSwapChainFramebuffer(GCRendererFramebuffer* c
     GCRendererDevice_WaitIdle(Framebuffer->Device);
     GCRendererFramebuffer_DestroyObjectsSwapChain(Framebuffer);
     GCMemory_Free(Framebuffer->SwapChainFramebufferHandles);
+    GCMemory_Free(Framebuffer->SwapChainImageViewHandles);
 
+    GCRendererFramebuffer_CreateSwapChainImages(Framebuffer);
     GCRendererFramebuffer_CreateSwapChainFramebuffers(Framebuffer);
 }
 
@@ -205,14 +192,17 @@ int32_t GCRendererFramebuffer_GetPixel(const GCRendererFramebuffer* const Frameb
                                        const GCRendererCommandList* const CommandList, const uint32_t AttachmentIndex,
                                        const int32_t X, const int32_t Y)
 {
-    const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Framebuffer->Device);
+    VmaAllocator AllocatorHandle = GCRendererDevice_GetAllocatorHandle(Framebuffer->Device);
 
     VkBuffer ColorAttachmentDataBufferHandle = VK_NULL_HANDLE;
-    VkDeviceMemory ColorAttachmentDataBufferMemoryHandle = VK_NULL_HANDLE;
+    VmaAllocation ColorAttachmentDataBufferAllocationHandle = VK_NULL_HANDLE;
+    VmaAllocationInfo ColorAttachmentDataBufferAllocationInformation = {0};
 
-    GCVulkanUtilities_CreateBuffer(Framebuffer->Device, 4, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                   &ColorAttachmentDataBufferHandle, &ColorAttachmentDataBufferMemoryHandle);
+    GCVulkanUtilities_CreateBuffer(
+        Framebuffer->Device, 4, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        VMA_MEMORY_USAGE_AUTO, &ColorAttachmentDataBufferHandle, &ColorAttachmentDataBufferAllocationHandle,
+        &ColorAttachmentDataBufferAllocationInformation);
 
     const VkCommandBuffer CommandBufferHandle = GCRendererCommandList_BeginSingleTimeCommands(CommandList);
     GCVulkanUtilities_CopyImageToBuffer(CommandBufferHandle, Framebuffer->ColorAttachmentImageHandles[AttachmentIndex],
@@ -220,14 +210,11 @@ int32_t GCRendererFramebuffer_GetPixel(const GCRendererFramebuffer* const Frameb
                                         Y);
     GCRendererCommandList_EndSingleTimeCommands(CommandList, CommandBufferHandle);
 
-    void* ColorAttachmentData = NULL;
     int32_t Pixel = 0;
-    vkMapMemory(DeviceHandle, ColorAttachmentDataBufferMemoryHandle, 0, 4, 0, &ColorAttachmentData);
-    Pixel = *(int32_t*)ColorAttachmentData;
-    vkUnmapMemory(DeviceHandle, ColorAttachmentDataBufferMemoryHandle);
+    vmaInvalidateAllocation(AllocatorHandle, ColorAttachmentDataBufferAllocationHandle, 0, VK_WHOLE_SIZE);
+    Pixel = *(int32_t*)ColorAttachmentDataBufferAllocationInformation.pMappedData;
 
-    vkFreeMemory(DeviceHandle, ColorAttachmentDataBufferMemoryHandle, NULL);
-    vkDestroyBuffer(DeviceHandle, ColorAttachmentDataBufferHandle, NULL);
+    vmaDestroyBuffer(AllocatorHandle, ColorAttachmentDataBufferHandle, ColorAttachmentDataBufferAllocationHandle);
 
     return Pixel;
 }
@@ -235,7 +222,6 @@ int32_t GCRendererFramebuffer_GetPixel(const GCRendererFramebuffer* const Frameb
 void GCRendererFramebuffer_Destroy(GCRendererFramebuffer* Framebuffer)
 {
     GCRendererDevice_WaitIdle(Framebuffer->Device);
-
     GCRendererFramebuffer_DestroyObjectsAttachments(Framebuffer);
     GCRendererFramebuffer_DestroyObjectsSwapChain(Framebuffer);
 
@@ -249,24 +235,25 @@ void GCRendererFramebuffer_Destroy(GCRendererFramebuffer* Framebuffer)
     if (Framebuffer->HasDepthAtachment)
     {
         GCMemory_Free(Framebuffer->DepthAttachmentImageViewHandles);
-        GCMemory_Free(Framebuffer->DepthAttachmentImageMemoryHandles);
+        GCMemory_Free(Framebuffer->DepthAttachmentImageAllocationHandles);
         GCMemory_Free(Framebuffer->DepthAttachmentImageHandles);
     }
 
     if (Framebuffer->HasColorResolveAttachment)
     {
         GCMemory_Free(Framebuffer->ColorResolveAttachmentImageViewHandles);
-        GCMemory_Free(Framebuffer->ColorResolveAttachmentImageMemoryHandles);
+        GCMemory_Free(Framebuffer->ColorResolveAttachmentImageAllocationHandles);
         GCMemory_Free(Framebuffer->ColorResolveAttachmentImageHandles);
     }
 
     if (Framebuffer->HasColorAttachment)
     {
         GCMemory_Free(Framebuffer->ColorAttachmentImageViewHandles);
-        GCMemory_Free(Framebuffer->ColorAttachmentImageMemoryHandles);
+        GCMemory_Free(Framebuffer->ColorAttachmentImageAllocationHandles);
         GCMemory_Free(Framebuffer->ColorAttachmentImageHandles);
     }
 
+    GCMemory_Free(Framebuffer->SwapChainImageViewHandles);
     GCMemory_Free(Framebuffer->Attachments);
     GCMemory_Free(Framebuffer);
 }
@@ -370,6 +357,23 @@ uint32_t GCRendererFramebuffer_GetDepthAttachmentCount(const GCRendererFramebuff
     return Count;
 }
 
+void GCRendererFramebuffer_CreateSwapChainImages(GCRendererFramebuffer* const Framebuffer)
+{
+    const VkImage* const SwapChainImageHandles = GCRendererSwapChain_GetImageHandles(Framebuffer->SwapChain);
+    const uint32_t SwapChainImageCount = GCRendererSwapChain_GetImageCount(Framebuffer->SwapChain);
+    const VkFormat SwapChainFormat = GCRendererSwapChain_GetFormat(Framebuffer->SwapChain);
+
+    Framebuffer->SwapChainImageViewHandles =
+        (VkImageView*)GCMemory_AllocateZero(SwapChainImageCount * sizeof(VkImageView));
+
+    for (uint32_t Counter = 0; Counter < SwapChainImageCount; Counter++)
+    {
+        GCVulkanUtilities_CreateImageView(Framebuffer->Device, SwapChainImageHandles[Counter], SwapChainFormat,
+                                          VK_IMAGE_ASPECT_COLOR_BIT, 1,
+                                          &Framebuffer->SwapChainImageViewHandles[Counter]);
+    }
+}
+
 void GCRendererFramebuffer_CreateAttachments(GCRendererFramebuffer* const Framebuffer)
 {
     uint32_t ColorAttachmentIndex = 0, ColorAttachmentSampledIndex = 0, ColorResolveAttachmentIndex = 0;
@@ -383,18 +387,17 @@ void GCRendererFramebuffer_CreateAttachments(GCRendererFramebuffer* const Frameb
             GCVulkanUtilities_ToVkSampleCountFlagBits(Framebuffer->Device, Attachment.SampleCount);
 
         VkImage* AttachmentImageHandle = NULL;
-        VkDeviceMemory* AttachmentImageMemoryHandle = NULL;
+        VmaAllocation* AttachmentImageAllocationHandle = NULL;
         VkImageView* AttachmentImageViewHandle = NULL;
 
         VkImageUsageFlagBits AttachmentImageUsage = 0;
         VkImageTiling AttachmentImageTiling = VK_IMAGE_TILING_OPTIMAL;
-        VkMemoryPropertyFlagBits AttachmentMemoryProperty = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         VkImageAspectFlagBits AttachmentImageAspect = VK_IMAGE_ASPECT_NONE;
 
         if (Attachment.Type == GCRendererAttachmentType_Color)
         {
             AttachmentImageHandle = &Framebuffer->ColorAttachmentImageHandles[ColorAttachmentIndex];
-            AttachmentImageMemoryHandle = &Framebuffer->ColorAttachmentImageMemoryHandles[ColorAttachmentIndex];
+            AttachmentImageAllocationHandle = &Framebuffer->ColorAttachmentImageAllocationHandles[ColorAttachmentIndex];
             AttachmentImageViewHandle = &Framebuffer->ColorAttachmentImageViewHandles[ColorAttachmentIndex];
 
             AttachmentImageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
@@ -421,9 +424,9 @@ void GCRendererFramebuffer_CreateAttachments(GCRendererFramebuffer* const Frameb
                     Framebuffer->Device, Framebuffer->Width, Framebuffer->Height, 1, AttachmentFormat,
                     VK_IMAGE_TILING_OPTIMAL, AttachmentSampleCount,
                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
-                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                    VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VMA_MEMORY_USAGE_AUTO,
                     &Framebuffer->ColorResolveAttachmentImageHandles[ColorResolveAttachmentIndex],
-                    &Framebuffer->ColorResolveAttachmentImageMemoryHandles[ColorResolveAttachmentIndex]);
+                    &Framebuffer->ColorResolveAttachmentImageAllocationHandles[ColorResolveAttachmentIndex], NULL);
                 GCVulkanUtilities_CreateImageView(
                     Framebuffer->Device, Framebuffer->ColorResolveAttachmentImageHandles[Counter], AttachmentFormat,
                     AttachmentImageAspect, 1,
@@ -437,7 +440,7 @@ void GCRendererFramebuffer_CreateAttachments(GCRendererFramebuffer* const Frameb
         else if (Attachment.Type == GCRendererAttachmentType_DepthStencil)
         {
             AttachmentImageHandle = &Framebuffer->DepthAttachmentImageHandles[DepthAttachmentIndex];
-            AttachmentImageMemoryHandle = &Framebuffer->DepthAttachmentImageMemoryHandles[DepthAttachmentIndex];
+            AttachmentImageAllocationHandle = &Framebuffer->DepthAttachmentImageAllocationHandles[DepthAttachmentIndex];
             AttachmentImageViewHandle = &Framebuffer->DepthAttachmentImageViewHandles[DepthAttachmentIndex];
 
             AttachmentImageUsage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
@@ -449,7 +452,8 @@ void GCRendererFramebuffer_CreateAttachments(GCRendererFramebuffer* const Frameb
         GCVulkanUtilities_CreateImage(
             Framebuffer->Device, Framebuffer->Width, Framebuffer->Height, 1, AttachmentFormat, AttachmentImageTiling,
             Attachment.Type == GCRendererAttachmentType_Color ? VK_SAMPLE_COUNT_1_BIT : AttachmentSampleCount,
-            AttachmentImageUsage, AttachmentMemoryProperty, AttachmentImageHandle, AttachmentImageMemoryHandle);
+            AttachmentImageUsage, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VMA_MEMORY_USAGE_AUTO,
+            AttachmentImageHandle, AttachmentImageAllocationHandle, NULL);
         GCVulkanUtilities_CreateImageView(Framebuffer->Device, *AttachmentImageHandle, AttachmentFormat,
                                           AttachmentImageAspect, 1, AttachmentImageViewHandle);
     }
@@ -459,11 +463,9 @@ void GCRendererFramebuffer_CreateSwapChainFramebuffers(GCRendererFramebuffer* co
 {
     const uint32_t SwapChainImageCount = GCRendererSwapChain_GetImageCount(Framebuffer->SwapChain);
     Framebuffer->SwapChainFramebufferHandles =
-        (VkFramebuffer*)GCMemory_Allocate(SwapChainImageCount * sizeof(VkFramebuffer));
+        (VkFramebuffer*)GCMemory_AllocateZero(SwapChainImageCount * sizeof(VkFramebuffer));
 
     const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Framebuffer->Device);
-    const VkImageView* const SwapChainImageViewHandles =
-        GCRendererSwapChain_GetImageViewHandles(Framebuffer->SwapChain);
     const VkRenderPass RenderPassHandle =
         GCRendererGraphicsPipeline_GetSwapChainRenderPassHandle(Framebuffer->GraphicsPipeline);
 
@@ -471,7 +473,7 @@ void GCRendererFramebuffer_CreateSwapChainFramebuffers(GCRendererFramebuffer* co
 
     for (uint32_t Counter = 0; Counter < SwapChainImageCount; Counter++)
     {
-        const VkImageView AttachmentHandles[1] = {SwapChainImageViewHandles[Counter]};
+        const VkImageView AttachmentHandles[1] = {Framebuffer->SwapChainImageViewHandles[Counter]};
 
         VkFramebufferCreateInfo FramebufferInformation = {0};
         FramebufferInformation.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -484,7 +486,7 @@ void GCRendererFramebuffer_CreateSwapChainFramebuffers(GCRendererFramebuffer* co
 
         GC_VULKAN_VALIDATE(vkCreateFramebuffer(DeviceHandle, &FramebufferInformation, NULL,
                                                &Framebuffer->SwapChainFramebufferHandles[Counter]),
-                           "Failed to create a Vulkan swap chain framebuffer");
+                           "Failed to create a swap chain framebuffer.");
     }
 }
 
@@ -494,7 +496,7 @@ void GCRendererFramebuffer_CreateAttachmentFramebuffer(GCRendererFramebuffer* co
     const VkRenderPass RenderPassHandle =
         GCRendererGraphicsPipeline_GetAttachmentRenderPassHandle(Framebuffer->GraphicsPipeline);
 
-    VkImageView* AttachmentHandles = (VkImageView*)GCMemory_Allocate(
+    VkImageView* AttachmentHandles = (VkImageView*)GCMemory_AllocateZero(
         (Framebuffer->AttachmentCount + GCRendererFramebuffer_GetColorResolveAttachmentCount(Framebuffer)) *
         sizeof(VkImageView));
     uint32_t AttachmentCounter = 0;
@@ -545,7 +547,7 @@ void GCRendererFramebuffer_CreateAttachmentFramebuffer(GCRendererFramebuffer* co
 
     GC_VULKAN_VALIDATE(
         vkCreateFramebuffer(DeviceHandle, &FramebufferInformation, NULL, &Framebuffer->AttachmentFramebufferHandle),
-        "Failed to create a Vulkan attachment framebuffer.");
+        "Failed to create an attachment framebuffer.");
 
     GCMemory_Free(AttachmentHandles);
 }
@@ -553,6 +555,7 @@ void GCRendererFramebuffer_CreateAttachmentFramebuffer(GCRendererFramebuffer* co
 void GCRendererFramebuffer_DestroyObjectsAttachments(GCRendererFramebuffer* const Framebuffer)
 {
     const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Framebuffer->Device);
+    const VmaAllocator AllocatorHandle = GCRendererDevice_GetAllocatorHandle(Framebuffer->Device);
 
     vkDestroyFramebuffer(DeviceHandle, Framebuffer->AttachmentFramebufferHandle, NULL);
 
@@ -564,22 +567,22 @@ void GCRendererFramebuffer_DestroyObjectsAttachments(GCRendererFramebuffer* cons
     for (uint32_t Counter = 0; Counter < GCRendererFramebuffer_GetDepthAttachmentCount(Framebuffer); Counter++)
     {
         vkDestroyImageView(DeviceHandle, Framebuffer->DepthAttachmentImageViewHandles[Counter], NULL);
-        vkFreeMemory(DeviceHandle, Framebuffer->DepthAttachmentImageMemoryHandles[Counter], NULL);
-        vkDestroyImage(DeviceHandle, Framebuffer->DepthAttachmentImageHandles[Counter], NULL);
+        vmaDestroyImage(AllocatorHandle, Framebuffer->DepthAttachmentImageHandles[Counter],
+                        Framebuffer->DepthAttachmentImageAllocationHandles[Counter]);
     }
 
     for (uint32_t Counter = 0; Counter < GCRendererFramebuffer_GetColorResolveAttachmentCount(Framebuffer); Counter++)
     {
         vkDestroyImageView(DeviceHandle, Framebuffer->ColorResolveAttachmentImageViewHandles[Counter], NULL);
-        vkFreeMemory(DeviceHandle, Framebuffer->ColorResolveAttachmentImageMemoryHandles[Counter], NULL);
-        vkDestroyImage(DeviceHandle, Framebuffer->ColorResolveAttachmentImageHandles[Counter], NULL);
+        vmaDestroyImage(AllocatorHandle, Framebuffer->ColorResolveAttachmentImageHandles[Counter],
+                        Framebuffer->ColorResolveAttachmentImageAllocationHandles[Counter]);
     }
 
     for (uint32_t Counter = 0; Counter < GCRendererFramebuffer_GetColorAttachmentCount(Framebuffer); Counter++)
     {
         vkDestroyImageView(DeviceHandle, Framebuffer->ColorAttachmentImageViewHandles[Counter], NULL);
-        vkFreeMemory(DeviceHandle, Framebuffer->ColorAttachmentImageMemoryHandles[Counter], NULL);
-        vkDestroyImage(DeviceHandle, Framebuffer->ColorAttachmentImageHandles[Counter], NULL);
+        vmaDestroyImage(AllocatorHandle, Framebuffer->ColorAttachmentImageHandles[Counter],
+                        Framebuffer->ColorAttachmentImageAllocationHandles[Counter]);
     }
 }
 
@@ -591,5 +594,6 @@ void GCRendererFramebuffer_DestroyObjectsSwapChain(GCRendererFramebuffer* const 
     for (uint32_t Counter = 0; Counter < SwapChainImageCount; Counter++)
     {
         vkDestroyFramebuffer(DeviceHandle, Framebuffer->SwapChainFramebufferHandles[Counter], NULL);
+        vkDestroyImageView(DeviceHandle, Framebuffer->SwapChainImageViewHandles[Counter], NULL);
     }
 }

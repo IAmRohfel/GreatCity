@@ -27,12 +27,17 @@
 #include <stdint.h>
 
 #include <vulkan/vulkan.h>
+#ifndef VMA_VULKAN_VERSION
+#define VMA_VULKAN_VERSION 1000000
+#endif
+#include <vk_mem_alloc.h>
 
 void GCVulkanUtilities_CreateBuffer(const GCRendererDevice* const Device, const size_t Size,
-                                    const VkBufferUsageFlags Usage, const VkMemoryPropertyFlags MemoryProperty,
-                                    VkBuffer* BufferHandle, VkDeviceMemory* BufferMemoryHandle)
+                                    const VkBufferUsageFlags Usage, const VmaAllocationCreateFlags AllocationFlags,
+                                    const VmaMemoryUsage MemoryUsage, VkBuffer* BufferHandle,
+                                    VmaAllocation* BufferAllocationHandle, VmaAllocationInfo* AllocationInformation)
 {
-    const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Device);
+    const VmaAllocator AllocatorHandle = GCRendererDevice_GetAllocatorHandle(Device);
 
     VkBufferCreateInfo BufferInformation = {0};
     BufferInformation.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -40,30 +45,23 @@ void GCVulkanUtilities_CreateBuffer(const GCRendererDevice* const Device, const 
     BufferInformation.usage = Usage;
     BufferInformation.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    GC_VULKAN_VALIDATE(vkCreateBuffer(DeviceHandle, &BufferInformation, NULL, BufferHandle),
-                       "Failed to create a Vulkan buffer");
+    VmaAllocationCreateInfo BufferAllocationInformation = {0};
+    BufferAllocationInformation.flags = AllocationFlags;
+    BufferAllocationInformation.usage = MemoryUsage;
 
-    VkMemoryRequirements MemoryRequirements = {0};
-    vkGetBufferMemoryRequirements(DeviceHandle, *BufferHandle, &MemoryRequirements);
-
-    VkMemoryAllocateInfo MemoryAllocateInformation = {0};
-    MemoryAllocateInformation.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    MemoryAllocateInformation.allocationSize = MemoryRequirements.size;
-    MemoryAllocateInformation.memoryTypeIndex =
-        GCRendererDevice_GetMemoryTypeIndex(Device, MemoryRequirements.memoryTypeBits, MemoryProperty);
-
-    GC_VULKAN_VALIDATE(vkAllocateMemory(DeviceHandle, &MemoryAllocateInformation, NULL, BufferMemoryHandle),
-                       "Failed to allocate a Vulkan buffer memory");
-    vkBindBufferMemory(DeviceHandle, *BufferHandle, *BufferMemoryHandle, 0);
+    GC_VULKAN_VALIDATE(vmaCreateBuffer(AllocatorHandle, &BufferInformation, &BufferAllocationInformation, BufferHandle,
+                                       BufferAllocationHandle, AllocationInformation),
+                       "Failed to create and allocate a buffer.");
 }
 
 void GCVulkanUtilities_CreateImage(const GCRendererDevice* const Device, const uint32_t Width, const uint32_t Height,
                                    const uint32_t MipLevels, const VkFormat Format, const VkImageTiling Tiling,
                                    const VkSampleCountFlagBits SampleCount, const VkImageUsageFlags Usage,
-                                   const VkMemoryPropertyFlags MemoryProperty, VkImage* ImageHandle,
-                                   VkDeviceMemory* ImageMemoryHandle)
+                                   const VmaAllocationCreateFlags AllocationFlags, const VmaMemoryUsage MemoryUsage,
+                                   VkImage* ImageHandle, VmaAllocation* ImageAllocationHandle,
+                                   VmaAllocationInfo* AllocationInformation)
 {
-    const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Device);
+    const VmaAllocator AllocatorHandle = GCRendererDevice_GetAllocatorHandle(Device);
 
     VkImageCreateInfo ImageInformation = {0};
     ImageInformation.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -80,21 +78,13 @@ void GCVulkanUtilities_CreateImage(const GCRendererDevice* const Device, const u
     ImageInformation.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     ImageInformation.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    GC_VULKAN_VALIDATE(vkCreateImage(DeviceHandle, &ImageInformation, NULL, ImageHandle),
-                       "Failed to create a Vulkan image");
+    VmaAllocationCreateInfo ImageAllocationInformation = {0};
+    ImageAllocationInformation.flags = AllocationFlags;
+    ImageAllocationInformation.usage = MemoryUsage;
 
-    VkMemoryRequirements MemoryRequirements = {0};
-    vkGetImageMemoryRequirements(DeviceHandle, *ImageHandle, &MemoryRequirements);
-
-    VkMemoryAllocateInfo MemoryAllocateInformation = {0};
-    MemoryAllocateInformation.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    MemoryAllocateInformation.allocationSize = MemoryRequirements.size;
-    MemoryAllocateInformation.memoryTypeIndex =
-        GCRendererDevice_GetMemoryTypeIndex(Device, MemoryRequirements.memoryTypeBits, MemoryProperty);
-
-    GC_VULKAN_VALIDATE(vkAllocateMemory(DeviceHandle, &MemoryAllocateInformation, NULL, ImageMemoryHandle),
-                       "Failed to allocate a Vulkan image memory");
-    vkBindImageMemory(DeviceHandle, *ImageHandle, *ImageMemoryHandle, 0);
+    GC_VULKAN_VALIDATE(vmaCreateImage(AllocatorHandle, &ImageInformation, &ImageAllocationInformation, ImageHandle,
+                                      ImageAllocationHandle, AllocationInformation),
+                       "Failed to create and allocate an image.");
 }
 
 void GCVulkanUtilities_CreateImageView(const GCRendererDevice* const Device, const VkImage ImageHandle,
@@ -119,7 +109,7 @@ void GCVulkanUtilities_CreateImageView(const GCRendererDevice* const Device, con
     ImageViewInformation.subresourceRange.layerCount = 1;
 
     GC_VULKAN_VALIDATE(vkCreateImageView(DeviceHandle, &ImageViewInformation, NULL, ImageViewHandle),
-                       "Failed to create a Vulkan image view");
+                       "Failed to create an image view.");
 }
 
 void GCVulkanUtilities_CreateSampler(const GCRendererDevice* const Device, const VkFilter Filter,
@@ -158,7 +148,7 @@ void GCVulkanUtilities_CreateSampler(const GCRendererDevice* const Device, const
     SamplerInformation.unnormalizedCoordinates = VK_FALSE;
 
     GC_VULKAN_VALIDATE(vkCreateSampler(DeviceHandle, &SamplerInformation, NULL, SamplerHandle),
-                       "Failed to create a Vulkan sampler");
+                       "Failed to create a sampler.");
 }
 
 void GCVulkanUtilities_TransitionImageLayout(const VkCommandBuffer CommandBufferHandle, const VkImage ImageHandle,
@@ -207,7 +197,7 @@ void GCVulkanUtilities_TransitionImageLayout(const VkCommandBuffer CommandBuffer
         break;
     }
     default: {
-        GC_ASSERT_WITH_MESSAGE(false, "Unsupported Vulkan image layout transition");
+        GC_ASSERT_WITH_MESSAGE(false, "Unsupported image layout transition.");
 
         break;
     }
@@ -246,7 +236,7 @@ void GCVulkanUtilities_TransitionImageLayout(const VkCommandBuffer CommandBuffer
         break;
     }
     default: {
-        GC_ASSERT_WITH_MESSAGE(false, "Unsupported Vulkan image layout transition");
+        GC_ASSERT_WITH_MESSAGE(false, "Unsupported image layout transition.");
 
         break;
     }
@@ -265,7 +255,7 @@ void GCVulkanUtilities_GenerateMipmap(const GCRendererDevice* const Device, cons
 
     if (!(FormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
     {
-        GC_ASSERT_WITH_MESSAGE(false, "Image format does not support linear blitting");
+        GC_ASSERT_WITH_MESSAGE(false, "Image format does not support linear blitting.");
     }
 
     VkImageMemoryBarrier ImageMemoryBarrier = {0};
@@ -469,7 +459,7 @@ VkFormat GCVulkanUtilities_ToVkFormat(const GCRendererDevice* const Device, cons
     }
     }
 
-    GC_ASSERT_WITH_MESSAGE(false, "'%d': Invalid GCRendererAttachmentFormat");
+    GC_ASSERT_WITH_MESSAGE(false, "'%d': Invalid GCRendererAttachmentFormat.");
     return VK_FORMAT_UNDEFINED;
 }
 
@@ -505,6 +495,6 @@ VkSampleCountFlagBits GCVulkanUtilities_ToVkSampleCountFlagBits(const GCRenderer
     }
     }
 
-    GC_ASSERT_WITH_MESSAGE(false, "'%d': Invalid GCRendererAttachmentSampleCount");
+    GC_ASSERT_WITH_MESSAGE(false, "'%d': Invalid GCRendererAttachmentSampleCount.");
     return (VkSampleCountFlagBits)-1;
 }
