@@ -38,7 +38,7 @@ GCRendererMesh* GCRendererMesh_Create(const GCEntity Entity, const GCRendererMod
 
     for (uint32_t Counter = 0; Counter < Model->VertexCount; Counter++)
     {
-        Model->Vertices[Counter].EntityID = (uint64_t)Entity;
+        Model->Vertices[Counter].EntityID = (uint32_t)Entity;
     }
 
     GCRendererVertexBufferDescription VertexBufferDescription = {0};

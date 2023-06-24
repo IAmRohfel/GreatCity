@@ -130,7 +130,7 @@ void GCWorld_OnUpdate(GCWorld* const World)
         {
             for (int32_t Counter = 0; Counter < FilterIterator.count; Counter++)
             {
-                GCRenderer_RenderEntity(FilterIterator.entities[Counter]);
+                GCRenderer_DrawEntity(FilterIterator.entities[Counter]);
             }
         }
 

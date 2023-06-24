@@ -30,7 +30,7 @@
 
 #include <vulkan/vulkan.h>
 #ifndef VMA_VULKAN_VERSION
-#define VMA_VULKAN_VERSION 1000000
+#define VMA_VULKAN_VERSION 1001000
 #endif
 #include <vk_mem_alloc.h>
 
@@ -92,19 +92,22 @@ void GCRendererIndexBuffer_CreateIndexBuffer(GCRendererIndexBuffer* const IndexB
     GCVulkanUtilities_CreateBuffer(
         IndexBuffer->Device, IndexBuffer->IndexSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-        VMA_MEMORY_USAGE_AUTO, &StagingBufferHandle, &StagingAllocationHandle, &StagingAllocationInformation);
+        VMA_MEMORY_USAGE_AUTO, &StagingBufferHandle, &StagingAllocationHandle, &StagingAllocationInformation
+    );
 
     memcpy(StagingAllocationInformation.pMappedData, IndexBuffer->Indices, IndexBuffer->IndexSize);
     vmaFlushAllocation(AllocatorHandle, StagingAllocationHandle, 0, VK_WHOLE_SIZE);
 
-    GCVulkanUtilities_CreateBuffer(IndexBuffer->Device, IndexBuffer->IndexSize,
-                                   VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 0,
-                                   VMA_MEMORY_USAGE_AUTO, &IndexBuffer->BufferHandle,
-                                   &IndexBuffer->BufferAllocationHandle, NULL);
+    GCVulkanUtilities_CreateBuffer(
+        IndexBuffer->Device, IndexBuffer->IndexSize,
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 0, VMA_MEMORY_USAGE_AUTO,
+        &IndexBuffer->BufferHandle, &IndexBuffer->BufferAllocationHandle, NULL
+    );
 
     const VkCommandBuffer CommandBufferHandle = GCRendererCommandList_BeginSingleTimeCommands(IndexBuffer->CommandList);
-    GCVulkanUtilities_CopyBuffer(CommandBufferHandle, StagingBufferHandle, IndexBuffer->BufferHandle,
-                                 IndexBuffer->IndexSize);
+    GCVulkanUtilities_CopyBuffer(
+        CommandBufferHandle, StagingBufferHandle, IndexBuffer->BufferHandle, IndexBuffer->IndexSize
+    );
     GCRendererCommandList_EndSingleTimeCommands(IndexBuffer->CommandList, CommandBufferHandle);
 
     vmaDestroyBuffer(AllocatorHandle, StagingBufferHandle, StagingAllocationHandle);

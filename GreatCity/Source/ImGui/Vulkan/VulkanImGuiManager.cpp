@@ -65,8 +65,9 @@ extern "C" void GCImGuiManager_InitializeRenderer(void)
     VulkanInformation.Allocator = NULL;
     VulkanInformation.CheckVkResultFn = GCImGuiManager_CheckVulkanResult;
 
-    ImGui_ImplVulkan_Init(&VulkanInformation,
-                          GCRendererGraphicsPipeline_GetSwapChainRenderPassHandle(RendererGraphicsPipeline));
+    ImGui_ImplVulkan_Init(
+        &VulkanInformation, GCRendererGraphicsPipeline_GetSwapChainRenderPassHandle(RendererGraphicsPipeline)
+    );
 
     const VkCommandBuffer CommandBufferHandle = GCRendererCommandList_BeginSingleTimeCommands(RendererCommandList);
     ImGui_ImplVulkan_CreateFontsTexture(CommandBufferHandle);
@@ -77,14 +78,16 @@ extern "C" void GCImGuiManager_InitializeRenderer(void)
     ImGuiDescriptorSetHandle = ImGui_ImplVulkan_AddTexture(
         GCRendererFramebuffer_GetColorAttachmentSampledSamplerHandle(RendererFramebuffer, 0),
         GCRendererFramebuffer_GetColorAttachmentImageViewHandle(RendererFramebuffer, 0),
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    );
 }
 
 extern "C" void* GCImGuiManager_AddTexture(const GCRendererTexture2D* const Texture2D)
 {
-    return ImGui_ImplVulkan_AddTexture(GCRendererTexture2D_GetSamplerHandle(Texture2D),
-                                       GCRendererTexture2D_GetImageViewHandle(Texture2D),
-                                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    return ImGui_ImplVulkan_AddTexture(
+        GCRendererTexture2D_GetSamplerHandle(Texture2D), GCRendererTexture2D_GetImageViewHandle(Texture2D),
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    );
 }
 
 extern "C" void GCImGuiManager_BeginFrameRenderer(void)
@@ -103,9 +106,10 @@ extern "C" void* GCImGuiManager_GetTexturePlatform(void)
 extern "C" void GCImGuiManager_RenderDrawData(void)
 {
     const GCRendererCommandList* const RendererCommandList = GCRenderer_GetCommandList();
-    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(),
-                                    GCRendererCommandList_GetCurrentFrameCommandBufferHandle(RendererCommandList),
-                                    VK_NULL_HANDLE);
+    ImGui_ImplVulkan_RenderDrawData(
+        ImGui::GetDrawData(), GCRendererCommandList_GetCurrentFrameCommandBufferHandle(RendererCommandList),
+        VK_NULL_HANDLE
+    );
 }
 
 extern "C" void GCImGuiManager_TerminateRenderer(void)
@@ -142,7 +146,8 @@ void GCImGuiManager_CreateDescriptorPool(void)
 
     GC_VULKAN_VALIDATE(
         vkCreateDescriptorPool(DeviceHandle, &DescriptorPoolInformation, NULL, &ImGuiDescriptorPoolHandle),
-        "Failed to create a Vulkan ImGui descriptor pool");
+        "Failed to create a Vulkan ImGui descriptor pool"
+    );
 }
 
 void GCImGuiManager_UpdateDescriptorSet(void)

@@ -56,15 +56,17 @@ static void GCRendererShader_CreateCacheDirectoryIfNeeded(const GCRendererShader
 static void GCRendererShader_WriteShaderBinaryFile(const char* const Path, const char* const Data, const size_t Size);
 static char* GCRendererShader_ReadShaderSourceFile(const char* const Path);
 static size_t GCRendererShader_ReadShaderBinaryFile(const char* const Path, char** Data);
-static shaderc_compilation_result_t GCRendererShader_CompileShader(const shaderc_compiler_t Compiler,
-                                                                   const shaderc_compile_options_t CompileOptions,
-                                                                   const char* const Path, const char* const Source,
-                                                                   const GCRendererShaderType Type);
+static shaderc_compilation_result_t GCRendererShader_CompileShader(
+    const shaderc_compiler_t Compiler, const shaderc_compile_options_t CompileOptions, const char* const Path,
+    const char* const Source, const GCRendererShaderType Type
+);
 static char* GCRendererShader_GetShaderName(const char* const Path);
-static char* GCRendererShader_GetShaderCachePath(const GCRendererShader* const Shader, const char* const Path,
-                                                 const GCRendererShaderType Type);
-static void GCRendererShader_CompileOrGetBinaries(GCRendererShader* const Shader, const char* const VertexShaderPath,
-                                                  const char* const FragmentShaderPath);
+static char* GCRendererShader_GetShaderCachePath(
+    const GCRendererShader* const Shader, const char* const Path, const GCRendererShaderType Type
+);
+static void GCRendererShader_CompileOrGetBinaries(
+    GCRendererShader* const Shader, const char* const VertexShaderPath, const char* const FragmentShaderPath
+);
 static void GCRendererShader_CreateShaderModule(GCRendererShader* const Shader);
 static void GCRendererShader_DestroyObjects(GCRendererShader* const Shader);
 
@@ -160,23 +162,25 @@ size_t GCRendererShader_ReadShaderBinaryFile(const char* const Path, char** Data
     return ShaderCacheFileLength;
 }
 
-shaderc_compilation_result_t GCRendererShader_CompileShader(const shaderc_compiler_t Compiler,
-                                                            const shaderc_compile_options_t CompileOptions,
-                                                            const char* const Path, const char* const Source,
-                                                            const GCRendererShaderType Type)
+shaderc_compilation_result_t GCRendererShader_CompileShader(
+    const shaderc_compiler_t Compiler, const shaderc_compile_options_t CompileOptions, const char* const Path,
+    const char* const Source, const GCRendererShaderType Type
+)
 {
-    const shaderc_compilation_result_t ShaderCompilationResult =
-        shaderc_compile_into_spv(Compiler, Source, strlen(Source) * sizeof(char),
-                                 Type == GCRendererShaderType_Vertex ? shaderc_vertex_shader : shaderc_fragment_shader,
-                                 Path, "main", CompileOptions);
+    const shaderc_compilation_result_t ShaderCompilationResult = shaderc_compile_into_spv(
+        Compiler, Source, strlen(Source) * sizeof(char),
+        Type == GCRendererShaderType_Vertex ? shaderc_vertex_shader : shaderc_fragment_shader, Path, "main",
+        CompileOptions
+    );
     const shaderc_compilation_status ShaderCompilationStatus =
         shaderc_result_get_compilation_status(ShaderCompilationResult);
 
     if (ShaderCompilationStatus != shaderc_compilation_status_success)
     {
-        GC_ASSERT_WITH_MESSAGE(false, "Failed to compile GLSL %s shader:\n%s",
-                               Type == GCRendererShaderType_Vertex ? "vertex" : "fragment",
-                               shaderc_result_get_error_message(ShaderCompilationResult));
+        GC_ASSERT_WITH_MESSAGE(
+            false, "Failed to compile GLSL %s shader:\n%s", Type == GCRendererShaderType_Vertex ? "vertex" : "fragment",
+            shaderc_result_get_error_message(ShaderCompilationResult)
+        );
     }
 
     return ShaderCompilationResult;
@@ -188,13 +192,15 @@ char* GCRendererShader_GetShaderName(const char* const Path)
     return strtok(ShaderFileName, ".");
 }
 
-char* GCRendererShader_GetShaderCachePath(const GCRendererShader* const Shader, const char* const Path,
-                                          const GCRendererShaderType Type)
+char* GCRendererShader_GetShaderCachePath(
+    const GCRendererShader* const Shader, const char* const Path, const GCRendererShaderType Type
+)
 {
     char* ShaderName = GCRendererShader_GetShaderName(Path);
     const char* const ShaderFileExtension = Type == GCRendererShaderType_Vertex ? ".cached.vert" : ".cached.frag";
     char* ShaderCachePath = (char*)GCMemory_AllocateZero(
-        (strlen(Shader->ShaderCacheDirectory) + strlen(ShaderName) + strlen(ShaderFileExtension) + 1) * sizeof(char));
+        (strlen(Shader->ShaderCacheDirectory) + strlen(ShaderName) + strlen(ShaderFileExtension) + 1) * sizeof(char)
+    );
 
     strcpy(ShaderCachePath, Shader->ShaderCacheDirectory);
     strcat(ShaderCachePath, ShaderName);
@@ -205,8 +211,9 @@ char* GCRendererShader_GetShaderCachePath(const GCRendererShader* const Shader, 
     return ShaderCachePath;
 }
 
-void GCRendererShader_CompileOrGetBinaries(GCRendererShader* const Shader, const char* const VertexShaderPath,
-                                           const char* const FragmentShaderPath)
+void GCRendererShader_CompileOrGetBinaries(
+    GCRendererShader* const Shader, const char* const VertexShaderPath, const char* const FragmentShaderPath
+)
 {
     char* VertexShaderCachePath =
         GCRendererShader_GetShaderCachePath(Shader, VertexShaderPath, GCRendererShaderType_Vertex);
@@ -255,8 +262,9 @@ void GCRendererShader_CompileOrGetBinaries(GCRendererShader* const Shader, const
         shaderc_compiler_t ShaderCompiler = shaderc_compiler_initialize();
         shaderc_compile_options_t ShaderCompileOptions = shaderc_compile_options_initialize();
 
-        shaderc_compile_options_set_target_env(ShaderCompileOptions, shaderc_target_env_vulkan,
-                                               shaderc_env_version_vulkan_1_0);
+        shaderc_compile_options_set_target_env(
+            ShaderCompileOptions, shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_0
+        );
 
 #ifdef GC_BUILD_TYPE_DISTRIBUTION
         shaderc_compile_options_set_optimization_level(ShaderCompileOptions, shaderc_optimization_level_performance);
@@ -266,20 +274,24 @@ void GCRendererShader_CompileOrGetBinaries(GCRendererShader* const Shader, const
         char* FragmentShaderCacheData = NULL;
 
         const shaderc_compilation_result_t VertexShaderCompilationResult = GCRendererShader_CompileShader(
-            ShaderCompiler, ShaderCompileOptions, VertexShaderPath, VertexShaderSource, GCRendererShaderType_Vertex);
+            ShaderCompiler, ShaderCompileOptions, VertexShaderPath, VertexShaderSource, GCRendererShaderType_Vertex
+        );
         VertexShaderCacheData = (char*)shaderc_result_get_bytes(VertexShaderCompilationResult);
         Shader->VertexShaderDataSize = shaderc_result_get_length(VertexShaderCompilationResult);
 
-        const shaderc_compilation_result_t FragmentShaderCompilationResult =
-            GCRendererShader_CompileShader(ShaderCompiler, ShaderCompileOptions, FragmentShaderPath,
-                                           FragmentShaderSource, GCRendererShaderType_Fragment);
+        const shaderc_compilation_result_t FragmentShaderCompilationResult = GCRendererShader_CompileShader(
+            ShaderCompiler, ShaderCompileOptions, FragmentShaderPath, FragmentShaderSource,
+            GCRendererShaderType_Fragment
+        );
         FragmentShaderCacheData = (char*)shaderc_result_get_bytes(FragmentShaderCompilationResult);
         Shader->FragmentShaderDataSize = shaderc_result_get_length(FragmentShaderCompilationResult);
 
-        GCRendererShader_WriteShaderBinaryFile(VertexShaderCachePath, VertexShaderCacheData,
-                                               Shader->VertexShaderDataSize);
-        GCRendererShader_WriteShaderBinaryFile(FragmentShaderCachePath, FragmentShaderCacheData,
-                                               Shader->FragmentShaderDataSize);
+        GCRendererShader_WriteShaderBinaryFile(
+            VertexShaderCachePath, VertexShaderCacheData, Shader->VertexShaderDataSize
+        );
+        GCRendererShader_WriteShaderBinaryFile(
+            FragmentShaderCachePath, FragmentShaderCacheData, Shader->FragmentShaderDataSize
+        );
 
         Shader->VertexShaderData = (uint32_t*)GCMemory_AllocateZero(Shader->VertexShaderDataSize);
         Shader->FragmentShaderData = (uint32_t*)GCMemory_AllocateZero(Shader->FragmentShaderDataSize);
@@ -316,10 +328,12 @@ void GCRendererShader_CreateShaderModule(GCRendererShader* const Shader)
 
     GC_VULKAN_VALIDATE(
         vkCreateShaderModule(DeviceHandle, &VertexShaderModuleInformation, NULL, &Shader->VertexShaderModuleHandle),
-        "Failed to create a vertex shader module.");
+        "Failed to create a vertex shader module."
+    );
     GC_VULKAN_VALIDATE(
         vkCreateShaderModule(DeviceHandle, &FragmentShaderModuleInformation, NULL, &Shader->FragmentShaderModuleHandle),
-        "Failed to create a fragment shader module.");
+        "Failed to create a fragment shader module."
+    );
 
     GCMemory_Free(Shader->FragmentShaderData);
     GCMemory_Free(Shader->VertexShaderData);

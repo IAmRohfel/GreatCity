@@ -30,8 +30,9 @@ extern "C"
 
     typedef struct GCRendererSwapChain GCRendererSwapChain;
 
-    bool GCRendererSwapChain_IsSwapChainSupported(const VkPhysicalDevice PhysicalDeviceHandle,
-                                                  const VkSurfaceKHR SurfaceHandle);
+    bool GCRendererSwapChain_IsSwapChainSupported(
+        const VkPhysicalDevice PhysicalDeviceHandle, const VkSurfaceKHR SurfaceHandle
+    );
     VkFormat GCRendererSwapChain_GetFormat(const GCRendererSwapChain* const SwapChain);
     VkExtent2D GCRendererSwapChain_GetExtent(const GCRendererSwapChain* const SwapChain);
     VkSwapchainKHR GCRendererSwapChain_GetHandle(const GCRendererSwapChain* const SwapChain);

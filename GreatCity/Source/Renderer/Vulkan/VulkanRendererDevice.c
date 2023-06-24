@@ -29,7 +29,7 @@
 
 #include <vulkan/vulkan.h>
 #ifndef VMA_VULKAN_VERSION
-#define VMA_VULKAN_VERSION 1000000
+#define VMA_VULKAN_VERSION 1001000
 #endif
 #include <vk_mem_alloc.h>
 
@@ -62,10 +62,12 @@ typedef struct GCRendererDeviceQueueFamilyIndices
 } GCRendererDeviceQueueFamilyIndices;
 
 static bool GCRendererDevice_IsValidationLayerSupported(void);
-static bool GCRendererDevice_IsDeviceSuitable(const VkPhysicalDevice PhysicalDeviceHandle,
-                                              const VkSurfaceKHR SurfaceHandle);
+static bool GCRendererDevice_IsDeviceSuitable(
+    const VkPhysicalDevice PhysicalDeviceHandle, const VkSurfaceKHR SurfaceHandle
+);
 static GCRendererDeviceQueueFamilyIndices GCRendererDevice_FindQueueFamilies(
-    const VkPhysicalDevice PhysicalDeviceHandle, const VkSurfaceKHR SurfaceHandle);
+    const VkPhysicalDevice PhysicalDeviceHandle, const VkSurfaceKHR SurfaceHandle
+);
 static bool GCRendererDevice_CheckDeviceExtensionSupport(const VkPhysicalDevice PhysicalDeviceHandle);
 
 static VkDebugUtilsMessengerCreateInfoEXT GCRendererDevice_InitializeDebugMessengerInformation(void);
@@ -76,17 +78,19 @@ static void GCRendererDevice_SelectPhysicalDevice(GCRendererDevice* const Device
 static void GCRendererDevice_CreateDevice(GCRendererDevice* const Device);
 static void GCRendererDevice_CreateAllocator(GCRendererDevice* const Device);
 static void GCRendererDevice_QueryDeviceCapabilities(GCRendererDevice* const Device);
-static VKAPI_ATTR VkBool32 VKAPI_CALL
-GCRendererDevice_DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT Severity, VkDebugUtilsMessageTypeFlagsEXT Type,
-                               const VkDebugUtilsMessengerCallbackDataEXT* CallbackData, void* UserData);
+static VKAPI_ATTR VkBool32 VKAPI_CALL GCRendererDevice_DebugCallback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT Severity, VkDebugUtilsMessageTypeFlagsEXT Type,
+    const VkDebugUtilsMessengerCallbackDataEXT* CallbackData, void* UserData
+);
 static void GCRendererDevice_DestroyObjects(GCRendererDevice* const Device);
 
-static VkResult GCRendererDevice_vkCreateDebugUtilsMessengerEXT(VkInstance instance,
-                                                                const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-                                                                const VkAllocationCallbacks* pAllocator,
-                                                                VkDebugUtilsMessengerEXT* pMessenger);
-static void GCRendererDevice_vkDestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT messenger,
-                                                             const VkAllocationCallbacks* pAllocator);
+static VkResult GCRendererDevice_vkCreateDebugUtilsMessengerEXT(
+    VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator,
+    VkDebugUtilsMessengerEXT* pMessenger
+);
+static void GCRendererDevice_vkDestroyDebugUtilsMessengerEXT(
+    VkInstance instance, VkDebugUtilsMessengerEXT messenger, const VkAllocationCallbacks* pAllocator
+);
 
 GCRendererDevice* GCRendererDevice_Create(void)
 {
@@ -182,8 +186,9 @@ VmaAllocator GCRendererDevice_GetAllocatorHandle(const GCRendererDevice* const D
     return Device->AllocatorHandle;
 }
 
-uint32_t GCRendererDevice_GetMemoryTypeIndex(const GCRendererDevice* const Device, const uint32_t TypeFilter,
-                                             const VkMemoryPropertyFlags PropertyFlags)
+uint32_t GCRendererDevice_GetMemoryTypeIndex(
+    const GCRendererDevice* const Device, const uint32_t TypeFilter, const VkMemoryPropertyFlags PropertyFlags
+)
 {
     VkPhysicalDeviceMemoryProperties MemoryProperties = {0};
     vkGetPhysicalDeviceMemoryProperties(Device->PhysicalDeviceHandle, &MemoryProperties);
@@ -243,8 +248,9 @@ bool GCRendererDevice_IsDeviceSuitable(const VkPhysicalDevice PhysicalDeviceHand
            IsExtensionSupported && IsSwapChainSupported;
 }
 
-GCRendererDeviceQueueFamilyIndices GCRendererDevice_FindQueueFamilies(const VkPhysicalDevice PhysicalDeviceHandle,
-                                                                      const VkSurfaceKHR SurfaceHandle)
+GCRendererDeviceQueueFamilyIndices GCRendererDevice_FindQueueFamilies(
+    const VkPhysicalDevice PhysicalDeviceHandle, const VkSurfaceKHR SurfaceHandle
+)
 {
     GCRendererDeviceQueueFamilyIndices QueueFamilyIndices = {0};
 
@@ -332,7 +338,7 @@ void GCRendererDevice_CreateInstance(GCRendererDevice* const Device)
     ApplicationInformation.applicationVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
     ApplicationInformation.pEngineName = "Great City Engine";
     ApplicationInformation.engineVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
-    ApplicationInformation.apiVersion = VK_API_VERSION_1_0;
+    ApplicationInformation.apiVersion = VK_API_VERSION_1_1;
 
     VkInstanceCreateInfo InstanceInformation = {0};
     InstanceInformation.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -357,8 +363,9 @@ void GCRendererDevice_CreateInstance(GCRendererDevice* const Device)
     InstanceInformation.enabledExtensionCount = !Device->IsValidationLayerEnabled ? 2 : 3;
     InstanceInformation.ppEnabledExtensionNames = RequiredExtensionNames;
 
-    GC_VULKAN_VALIDATE(vkCreateInstance(&InstanceInformation, NULL, &Device->InstanceHandle),
-                       "Failed to create an instance.");
+    GC_VULKAN_VALIDATE(
+        vkCreateInstance(&InstanceInformation, NULL, &Device->InstanceHandle), "Failed to create an instance."
+    );
 }
 
 void GCRendererDevice_CreateDebugMessenger(GCRendererDevice* const Device)
@@ -366,9 +373,12 @@ void GCRendererDevice_CreateDebugMessenger(GCRendererDevice* const Device)
     const VkDebugUtilsMessengerCreateInfoEXT DebugMessengerInformation =
         GCRendererDevice_InitializeDebugMessengerInformation();
 
-    GC_VULKAN_VALIDATE(GCRendererDevice_vkCreateDebugUtilsMessengerEXT(
-                           Device->InstanceHandle, &DebugMessengerInformation, NULL, &Device->DebugMessengerHandle),
-                       "Failed to create a debug messenger.");
+    GC_VULKAN_VALIDATE(
+        GCRendererDevice_vkCreateDebugUtilsMessengerEXT(
+            Device->InstanceHandle, &DebugMessengerInformation, NULL, &Device->DebugMessengerHandle
+        ),
+        "Failed to create a debug messenger."
+    );
 }
 
 void GCRendererDevice_SelectPhysicalDevice(GCRendererDevice* const Device)
@@ -464,8 +474,10 @@ void GCRendererDevice_CreateDevice(GCRendererDevice* const Device)
     DeviceInformation.ppEnabledExtensionNames = &DeviceExtensionName;
     DeviceInformation.pEnabledFeatures = &DeviceFeatures;
 
-    GC_VULKAN_VALIDATE(vkCreateDevice(Device->PhysicalDeviceHandle, &DeviceInformation, NULL, &Device->DeviceHandle),
-                       "Failed to create a device.");
+    GC_VULKAN_VALIDATE(
+        vkCreateDevice(Device->PhysicalDeviceHandle, &DeviceInformation, NULL, &Device->DeviceHandle),
+        "Failed to create a device."
+    );
 
     vkGetDeviceQueue(Device->DeviceHandle, QueueFamilyIndices.GraphicsFamily, 0, &Device->GraphicsQueueHandle);
     vkGetDeviceQueue(Device->DeviceHandle, QueueFamilyIndices.PresentFamily, 0, &Device->PresentQueueHandle);
@@ -477,7 +489,7 @@ void GCRendererDevice_CreateAllocator(GCRendererDevice* const Device)
     AllocatorInformation.physicalDevice = Device->PhysicalDeviceHandle;
     AllocatorInformation.instance = Device->InstanceHandle;
     AllocatorInformation.device = Device->DeviceHandle;
-    AllocatorInformation.vulkanApiVersion = VK_API_VERSION_1_0;
+    AllocatorInformation.vulkanApiVersion = VK_API_VERSION_1_1;
     vmaCreateAllocator(&AllocatorInformation, &Device->AllocatorHandle);
 }
 
@@ -493,10 +505,10 @@ void GCRendererDevice_QueryDeviceCapabilities(GCRendererDevice* const Device)
     Device->Capabilities.MaximumAnisotropy = PhysicalDeviceProperties.limits.maxSamplerAnisotropy;
 }
 
-VKAPI_ATTR VkBool32 VKAPI_CALL GCRendererDevice_DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT Severity,
-                                                              VkDebugUtilsMessageTypeFlagsEXT Type,
-                                                              const VkDebugUtilsMessengerCallbackDataEXT* CallbackData,
-                                                              void* UserData)
+VKAPI_ATTR VkBool32 VKAPI_CALL GCRendererDevice_DebugCallback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT Severity, VkDebugUtilsMessageTypeFlagsEXT Type,
+    const VkDebugUtilsMessengerCallbackDataEXT* CallbackData, void* UserData
+)
 {
     (void)Type;
     (void)UserData;
@@ -538,10 +550,10 @@ void GCRendererDevice_DestroyObjects(GCRendererDevice* const Device)
     vkDestroyInstance(Device->InstanceHandle, NULL);
 }
 
-VkResult GCRendererDevice_vkCreateDebugUtilsMessengerEXT(VkInstance instance,
-                                                         const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-                                                         const VkAllocationCallbacks* pAllocator,
-                                                         VkDebugUtilsMessengerEXT* pMessenger)
+VkResult GCRendererDevice_vkCreateDebugUtilsMessengerEXT(
+    VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator,
+    VkDebugUtilsMessengerEXT* pMessenger
+)
 {
     const PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXTFunction =
         (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
@@ -556,8 +568,9 @@ VkResult GCRendererDevice_vkCreateDebugUtilsMessengerEXT(VkInstance instance,
     }
 }
 
-void GCRendererDevice_vkDestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT messenger,
-                                                      const VkAllocationCallbacks* pAllocator)
+void GCRendererDevice_vkDestroyDebugUtilsMessengerEXT(
+    VkInstance instance, VkDebugUtilsMessengerEXT messenger, const VkAllocationCallbacks* pAllocator
+)
 {
     const PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXTFunction =
         (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");

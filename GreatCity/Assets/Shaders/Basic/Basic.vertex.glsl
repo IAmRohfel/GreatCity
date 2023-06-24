@@ -21,7 +21,8 @@ layout(location = 0) in vec3 Position;
 layout(location = 1) in vec3 Normal;
 layout(location = 2) in vec4 Color;
 layout(location = 3) in vec2 TextureCoordinate;
-layout(location = 4) in int EntityID;
+layout(location = 4) in uint TextureIndex;
+layout(location = 5) in uint EntityID;
 
 layout(binding = 0) uniform UniformBuffer
 {
@@ -32,14 +33,16 @@ layout(location = 0) out vec3 FragmentPosition;
 layout(location = 1) out vec4 FragmentColor;
 layout(location = 2) out vec3 FragmentNormal;
 layout(location = 3) out vec2 FragmentTextureCoordinate;
-layout(location = 4) out int FragmentEntityID;
+layout(location = 4) out uint FragmentTextureIndex;
+layout(location = 5) out uint FragmentEntityID;
 
 void main()
 {
 	gl_Position = UniformBufferData.ViewProjectionMatrix * vec4(Position, 1.0);
 
-	FragmentTextureCoordinate = TextureCoordinate;
     FragmentNormal = Normal;
 	FragmentColor = Color;
+	FragmentTextureCoordinate = TextureCoordinate;
+    FragmentTextureIndex = TextureIndex;
     FragmentEntityID = EntityID;
 }

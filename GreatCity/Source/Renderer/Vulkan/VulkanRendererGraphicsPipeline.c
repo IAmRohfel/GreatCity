@@ -31,6 +31,7 @@
 #include "Renderer/Vulkan/VulkanUtilities.h"
 
 #include <stdbool.h>
+#include <string.h>
 
 #include <vulkan/vulkan.h>
 
@@ -39,9 +40,14 @@ typedef struct GCRendererGraphicsPipeline
     const GCRendererDevice* Device;
     const GCRendererSwapChain* SwapChain;
     const GCRendererCommandList* CommandList;
-    const GCRendererUniformBuffer* UniformBuffer;
-    const GCRendererTexture2D* const* Texture2Ds;
     const GCRendererShader* Shader;
+
+    GCRendererGraphicsPipelineAttachment* Attachments;
+    uint32_t AttachmentCount;
+    GCRendererSampleCount SampleCount;
+    GCRendererGraphicsPipelineVertexInput VertexInput;
+    GCRendererGraphicsPipelineDescriptor* Descriptors;
+    uint32_t DescriptorCount;
 
     VkRenderPass SwapChainRenderPassHandle, AttachmentRenderPassHandle;
     VkDescriptorSetLayout DescriptorSetLayoutHandle;
@@ -49,56 +55,84 @@ typedef struct GCRendererGraphicsPipeline
     VkDescriptorSet DescriptorSetHandle;
     VkPipelineLayout PipelineLayoutHandle;
     VkPipeline PipelineHandle;
-
-    uint32_t Texture2DCount;
-    uint32_t DescriptorCount;
 } GCRendererGraphicsPipeline;
 
 static uint32_t GCRendererGraphicsPipeline_GetColorAttachmentCount(
-    const GCRendererGraphicsPipelineAttachment* const Attachments, const uint32_t AttachmentCount);
+    const GCRendererGraphicsPipeline* const GraphicsPipeline
+);
 static uint32_t GCRendererGraphicsPipeline_GetColorResolveAttachmentCount(
-    const GCRendererGraphicsPipelineAttachment* const Attachments, const uint32_t AttachmentCount);
+    const GCRendererGraphicsPipeline* const GraphicsPipeline
+);
 static uint32_t GCRendererGraphicsPipeline_GetDepthAttachmentCount(
-    const GCRendererGraphicsPipelineAttachment* const Attachments, const uint32_t AttachmentCount);
+    const GCRendererGraphicsPipeline* const GraphicsPipeline
+);
 static void GCRendererGraphicsPipeline_CreateSwapChainRenderPass(GCRendererGraphicsPipeline* const GraphicsPipeline);
-static void GCRendererGraphicsPipeline_CreateAttachmentRenderPass(
-    GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererGraphicsPipelineAttachment* const Attachments,
-    const uint32_t AttachmentCount);
+static void GCRendererGraphicsPipeline_CreateAttachmentRenderPass(GCRendererGraphicsPipeline* const GraphicsPipeline);
 static void GCRendererGraphicsPipeline_CreateDescriptorSetLayout(GCRendererGraphicsPipeline* const GraphicsPipeline);
-static void GCRendererGraphicsPipeline_CreateGraphicsPipeline(
-    GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererGraphicsPipelineVertexInput* const VertexInput,
-    const VkSampleCountFlagBits SampleCount);
+static void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipeline* const GraphicsPipeline);
 static void GCRendererGraphicsPipeline_CreateDescriptorPool(GCRendererGraphicsPipeline* const GraphicsPipeline);
 static void GCRendererGraphicsPipeline_CreateDescriptorSets(GCRendererGraphicsPipeline* const GraphicsPipeline);
+static void GCRendererGraphicsPipeline_UpdateDescriptorSets(GCRendererGraphicsPipeline* const GraphicsPipeline);
 static void GCRendererGraphicsPipeline_DestroyObjects(GCRendererGraphicsPipeline* const GraphicsPipeline);
 
-static VkFormat GCRendererGraphicsPipeline_ToVkFormat(
-    const GCRendererGraphicsPipelineVertexInputAttributeFormat Format);
+static VkFormat GCRendererGraphicsPipeline_ToVkFormat(const GCRendererGraphicsPipelineVertexInputAttributeFormat Format
+);
+static VkDescriptorType GCRendererGraphicsPipeline_ToVkDescriptorType(
+    const GCRendererGraphicsPipelineDescriptorType Type
+);
 
 GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(
-    const GCRendererGraphicsPipelineDescription* const Description)
+    const GCRendererGraphicsPipelineDescription* const Description
+)
 {
     GCRendererGraphicsPipeline* GraphicsPipeline =
         (GCRendererGraphicsPipeline*)GCMemory_AllocateZero(sizeof(GCRendererGraphicsPipeline));
     GraphicsPipeline->Device = Description->Device;
     GraphicsPipeline->SwapChain = Description->SwapChain;
     GraphicsPipeline->CommandList = Description->CommandList;
-    GraphicsPipeline->UniformBuffer = Description->UniformBuffer;
-    GraphicsPipeline->Texture2Ds = Description->Texture2Ds;
     GraphicsPipeline->Shader = Description->Shader;
-    GraphicsPipeline->Texture2DCount = Description->Texture2DCount;
-    GraphicsPipeline->DescriptorCount = 1 + GraphicsPipeline->Texture2DCount;
+    GraphicsPipeline->Attachments = (GCRendererGraphicsPipelineAttachment*)GCMemory_AllocateZero(
+        Description->AttachmentCount * sizeof(GCRendererGraphicsPipelineAttachment)
+    );
+    memcpy(
+        GraphicsPipeline->Attachments, Description->Attachments,
+        Description->AttachmentCount * sizeof(GCRendererGraphicsPipelineAttachment)
+    );
+    GraphicsPipeline->AttachmentCount = Description->AttachmentCount;
+    GraphicsPipeline->SampleCount = Description->SampleCount;
+    GraphicsPipeline->VertexInput = Description->VertexInput;
+    GraphicsPipeline->Descriptors = (GCRendererGraphicsPipelineDescriptor*)GCMemory_AllocateZero(
+        Description->DescriptorCount * sizeof(GCRendererGraphicsPipelineDescriptor)
+    );
+    memcpy(
+        GraphicsPipeline->Descriptors, Description->Descriptors,
+        Description->DescriptorCount * sizeof(GCRendererGraphicsPipelineDescriptor)
+    );
+    GraphicsPipeline->DescriptorCount = Description->DescriptorCount;
 
     GCRendererGraphicsPipeline_CreateSwapChainRenderPass(GraphicsPipeline);
-    GCRendererGraphicsPipeline_CreateAttachmentRenderPass(GraphicsPipeline, Description->Attachments,
-                                                          Description->AttachmentCount);
+    GCRendererGraphicsPipeline_CreateAttachmentRenderPass(GraphicsPipeline);
     GCRendererGraphicsPipeline_CreateDescriptorSetLayout(GraphicsPipeline);
-    GCRendererGraphicsPipeline_CreateGraphicsPipeline(GraphicsPipeline, Description->VertexInput,
-                                                      Description->SampleCount);
+    GCRendererGraphicsPipeline_CreateGraphicsPipeline(GraphicsPipeline);
     GCRendererGraphicsPipeline_CreateDescriptorPool(GraphicsPipeline);
     GCRendererGraphicsPipeline_CreateDescriptorSets(GraphicsPipeline);
 
     return GraphicsPipeline;
+}
+
+void GCRendererGraphicsPipeline_UpdateDescriptors(
+    GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererGraphicsPipelineDescriptor* const Descriptors,
+    const uint32_t DescriptorCount
+)
+{
+    GC_ASSERT_WITH_MESSAGE(
+        DescriptorCount == GraphicsPipeline->DescriptorCount,
+        "DescriptorCount (%d) must be the same as GraphicsPipeline->DescriptorCount (%d).", DescriptorCount,
+        GraphicsPipeline->DescriptorCount
+    );
+
+    memcpy(GraphicsPipeline->Descriptors, Descriptors, DescriptorCount * sizeof(GCRendererGraphicsPipelineDescriptor));
+    GCRendererGraphicsPipeline_UpdateDescriptorSets(GraphicsPipeline);
 }
 
 void GCRendererGraphicsPipeline_Destroy(GCRendererGraphicsPipeline* GraphicsPipeline)
@@ -107,23 +141,28 @@ void GCRendererGraphicsPipeline_Destroy(GCRendererGraphicsPipeline* GraphicsPipe
 
     GCRendererGraphicsPipeline_DestroyObjects(GraphicsPipeline);
 
+    GCMemory_Free(GraphicsPipeline->Descriptors);
+    GCMemory_Free(GraphicsPipeline->Attachments);
     GCMemory_Free(GraphicsPipeline);
 }
 
 VkRenderPass GCRendererGraphicsPipeline_GetSwapChainRenderPassHandle(
-    const GCRendererGraphicsPipeline* const GraphicsPipeline)
+    const GCRendererGraphicsPipeline* const GraphicsPipeline
+)
 {
     return GraphicsPipeline->SwapChainRenderPassHandle;
 }
 
 VkRenderPass GCRendererGraphicsPipeline_GetAttachmentRenderPassHandle(
-    const GCRendererGraphicsPipeline* const GraphicsPipeline)
+    const GCRendererGraphicsPipeline* const GraphicsPipeline
+)
 {
     return GraphicsPipeline->AttachmentRenderPassHandle;
 }
 
 VkPipelineLayout GCRendererGraphicsPipeline_GetPipelineLayoutHandle(
-    const GCRendererGraphicsPipeline* const GraphicsPipeline)
+    const GCRendererGraphicsPipeline* const GraphicsPipeline
+)
 {
     return GraphicsPipeline->PipelineLayoutHandle;
 }
@@ -134,18 +173,18 @@ VkPipeline GCRendererGraphicsPipeline_GetPipelineHandle(const GCRendererGraphics
 }
 
 VkDescriptorSet GCRendererGraphicsPipeline_GetDescriptorSetHandle(
-    const GCRendererGraphicsPipeline* const GraphicsPipeline)
+    const GCRendererGraphicsPipeline* const GraphicsPipeline
+)
 {
     return GraphicsPipeline->DescriptorSetHandle;
 }
 
-uint32_t GCRendererGraphicsPipeline_GetColorAttachmentCount(
-    const GCRendererGraphicsPipelineAttachment* const Attachments, const uint32_t AttachmentCount)
+uint32_t GCRendererGraphicsPipeline_GetColorAttachmentCount(const GCRendererGraphicsPipeline* const GraphicsPipeline)
 {
     uint32_t Count = 0;
-    for (uint32_t Counter = 0; Counter < AttachmentCount; Counter++)
+    for (uint32_t Counter = 0; Counter < GraphicsPipeline->AttachmentCount; Counter++)
     {
-        if (Attachments[Counter].Type == GCRendererAttachmentType_Color)
+        if (GraphicsPipeline->Attachments[Counter].Type == GCRendererAttachmentType_Color)
         {
             Count++;
         }
@@ -155,14 +194,15 @@ uint32_t GCRendererGraphicsPipeline_GetColorAttachmentCount(
 }
 
 uint32_t GCRendererGraphicsPipeline_GetColorResolveAttachmentCount(
-    const GCRendererGraphicsPipelineAttachment* const Attachments, const uint32_t AttachmentCount)
+    const GCRendererGraphicsPipeline* const GraphicsPipeline
+)
 {
     uint32_t Count = 0;
-    for (uint32_t Counter = 0; Counter < AttachmentCount; Counter++)
+    for (uint32_t Counter = 0; Counter < GraphicsPipeline->AttachmentCount; Counter++)
     {
-        if (Attachments[Counter].Type == GCRendererAttachmentType_Color)
+        if (GraphicsPipeline->Attachments[Counter].Type == GCRendererAttachmentType_Color)
         {
-            if (Attachments[Counter].SampleCount > GCRendererAttachmentSampleCount_1)
+            if (GraphicsPipeline->Attachments[Counter].SampleCount > GCRendererSampleCount_1)
             {
                 Count++;
             }
@@ -172,13 +212,12 @@ uint32_t GCRendererGraphicsPipeline_GetColorResolveAttachmentCount(
     return Count;
 }
 
-uint32_t GCRendererGraphicsPipeline_GetDepthAttachmentCount(
-    const GCRendererGraphicsPipelineAttachment* const Attachments, const uint32_t AttachmentCount)
+uint32_t GCRendererGraphicsPipeline_GetDepthAttachmentCount(const GCRendererGraphicsPipeline* const GraphicsPipeline)
 {
     uint32_t Count = 0;
-    for (uint32_t Counter = 0; Counter < AttachmentCount; Counter++)
+    for (uint32_t Counter = 0; Counter < GraphicsPipeline->AttachmentCount; Counter++)
     {
-        if (Attachments[Counter].Type == GCRendererAttachmentType_DepthStencil)
+        if (GraphicsPipeline->Attachments[Counter].Type == GCRendererAttachmentType_DepthStencil)
         {
             Count++;
         }
@@ -231,22 +270,20 @@ void GCRendererGraphicsPipeline_CreateSwapChainRenderPass(GCRendererGraphicsPipe
 
     GC_VULKAN_VALIDATE(
         vkCreateRenderPass(DeviceHandle, &RenderPassInformation, NULL, &GraphicsPipeline->SwapChainRenderPassHandle),
-        "Failed to create a swap chain render pass.");
+        "Failed to create a swap chain render pass."
+    );
 }
 
-static void GCRendererGraphicsPipeline_CreateAttachmentRenderPass(
-    GCRendererGraphicsPipeline* const GraphicsPipeline, const GCRendererGraphicsPipelineAttachment* const Attachments,
-    const uint32_t AttachmentCount)
+static void GCRendererGraphicsPipeline_CreateAttachmentRenderPass(GCRendererGraphicsPipeline* const GraphicsPipeline)
 {
-    const uint32_t ColorAttachmentCount =
-        GCRendererGraphicsPipeline_GetColorAttachmentCount(Attachments, AttachmentCount);
+    const uint32_t ColorAttachmentCount = GCRendererGraphicsPipeline_GetColorAttachmentCount(GraphicsPipeline);
     const uint32_t ColorResolveAttachmentCount =
-        GCRendererGraphicsPipeline_GetColorResolveAttachmentCount(Attachments, AttachmentCount);
-    const uint32_t DepthAttachmentCount =
-        GCRendererGraphicsPipeline_GetDepthAttachmentCount(Attachments, AttachmentCount);
+        GCRendererGraphicsPipeline_GetColorResolveAttachmentCount(GraphicsPipeline);
+    const uint32_t DepthAttachmentCount = GCRendererGraphicsPipeline_GetDepthAttachmentCount(GraphicsPipeline);
 
     VkAttachmentDescription* AttachmentDescriptions = (VkAttachmentDescription*)GCMemory_AllocateZero(
-        (ColorAttachmentCount + ColorResolveAttachmentCount + DepthAttachmentCount) * sizeof(VkAttachmentDescription));
+        (ColorAttachmentCount + ColorResolveAttachmentCount + DepthAttachmentCount) * sizeof(VkAttachmentDescription)
+    );
     VkAttachmentReference* ColorAttachmentReferences =
         (VkAttachmentReference*)GCMemory_AllocateZero(ColorAttachmentCount * sizeof(VkAttachmentReference));
     VkAttachmentReference* ColorResolveAttachmentReferences = NULL;
@@ -260,9 +297,9 @@ static void GCRendererGraphicsPipeline_CreateAttachmentRenderPass(
     VkAttachmentReference DepthAttachmentReference = {0};
 
     uint32_t LastAttachmentIndex = 0;
-    for (uint32_t Counter = 0; Counter < AttachmentCount; Counter++, LastAttachmentIndex++)
+    for (uint32_t Counter = 0; Counter < GraphicsPipeline->AttachmentCount; Counter++, LastAttachmentIndex++)
     {
-        const GCRendererGraphicsPipelineAttachment Attachment = Attachments[Counter];
+        const GCRendererGraphicsPipelineAttachment Attachment = GraphicsPipeline->Attachments[Counter];
 
         AttachmentDescriptions[Counter].format =
             GCVulkanUtilities_ToVkFormat(GraphicsPipeline->Device, Attachment.Format);
@@ -277,7 +314,7 @@ static void GCRendererGraphicsPipeline_CreateAttachmentRenderPass(
         {
             AttachmentDescriptions[Counter].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 
-            if (Attachment.SampleCount > GCRendererAttachmentSampleCount_1)
+            if (Attachment.SampleCount > GCRendererSampleCount_1)
             {
                 AttachmentDescriptions[Counter].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
             }
@@ -299,12 +336,11 @@ static void GCRendererGraphicsPipeline_CreateAttachmentRenderPass(
         }
     }
 
-    for (uint32_t Counter = 0; Counter < AttachmentCount; Counter++, LastAttachmentIndex++)
+    for (uint32_t Counter = 0; Counter < GraphicsPipeline->AttachmentCount; Counter++, LastAttachmentIndex++)
     {
-        const GCRendererGraphicsPipelineAttachment Attachment = Attachments[Counter];
+        const GCRendererGraphicsPipelineAttachment Attachment = GraphicsPipeline->Attachments[Counter];
 
-        if (Attachment.Type == GCRendererAttachmentType_Color &&
-            Attachment.SampleCount > GCRendererAttachmentSampleCount_1)
+        if (Attachment.Type == GCRendererAttachmentType_Color && Attachment.SampleCount > GCRendererSampleCount_1)
         {
             AttachmentDescriptions[LastAttachmentIndex].format =
                 GCVulkanUtilities_ToVkFormat(GraphicsPipeline->Device, Attachment.Format);
@@ -315,7 +351,7 @@ static void GCRendererGraphicsPipeline_CreateAttachmentRenderPass(
             AttachmentDescriptions[LastAttachmentIndex].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
             AttachmentDescriptions[LastAttachmentIndex].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
             AttachmentDescriptions[LastAttachmentIndex].finalLayout =
-                AttachmentDescriptions[Counter].format != VK_FORMAT_R32_SINT ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                AttachmentDescriptions[Counter].format != VK_FORMAT_R32_UINT ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
                                                                              : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
             ColorResolveAttachmentReferences[Counter].attachment = LastAttachmentIndex;
@@ -354,7 +390,8 @@ static void GCRendererGraphicsPipeline_CreateAttachmentRenderPass(
 
     GC_VULKAN_VALIDATE(
         vkCreateRenderPass(DeviceHandle, &RenderPassInformation, NULL, &GraphicsPipeline->AttachmentRenderPassHandle),
-        "Failed to create an attachment render pass.");
+        "Failed to create an attachment render pass."
+    );
 
     if (ColorResolveAttachmentCount > 0)
     {
@@ -370,18 +407,20 @@ void GCRendererGraphicsPipeline_CreateDescriptorSetLayout(GCRendererGraphicsPipe
     const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(GraphicsPipeline->Device);
 
     VkDescriptorSetLayoutBinding* DescriptorSetLayoutBindings = (VkDescriptorSetLayoutBinding*)GCMemory_AllocateZero(
-        GraphicsPipeline->DescriptorCount * sizeof(VkDescriptorSetLayoutBinding));
-    DescriptorSetLayoutBindings[0].binding = 0;
-    DescriptorSetLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    DescriptorSetLayoutBindings[0].descriptorCount = 1;
-    DescriptorSetLayoutBindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        GraphicsPipeline->DescriptorCount * sizeof(VkDescriptorSetLayoutBinding)
+    );
 
-    for (uint32_t Counter = 0; Counter < GraphicsPipeline->Texture2DCount; Counter++)
+    for (uint32_t Counter = 0; Counter < GraphicsPipeline->DescriptorCount; Counter++)
     {
-        DescriptorSetLayoutBindings[Counter + 1].binding = Counter + 1;
-        DescriptorSetLayoutBindings[Counter + 1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        DescriptorSetLayoutBindings[Counter + 1].descriptorCount = 1;
-        DescriptorSetLayoutBindings[Counter + 1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        const GCRendererGraphicsPipelineDescriptor Descriptor = GraphicsPipeline->Descriptors[Counter];
+
+        DescriptorSetLayoutBindings[Counter].binding = Counter;
+        DescriptorSetLayoutBindings[Counter].descriptorType =
+            GCRendererGraphicsPipeline_ToVkDescriptorType(Descriptor.Type);
+        DescriptorSetLayoutBindings[Counter].descriptorCount = Descriptor.DescriptorCount;
+        DescriptorSetLayoutBindings[Counter].stageFlags =
+            Descriptor.Type == GCRendererGraphicsPipelineDescriptorType_UniformBuffer ? VK_SHADER_STAGE_VERTEX_BIT
+                                                                                      : VK_SHADER_STAGE_FRAGMENT_BIT;
     }
 
     VkDescriptorSetLayoutCreateInfo DescriptorSetLayoutInformation = {0};
@@ -389,16 +428,17 @@ void GCRendererGraphicsPipeline_CreateDescriptorSetLayout(GCRendererGraphicsPipe
     DescriptorSetLayoutInformation.bindingCount = GraphicsPipeline->DescriptorCount;
     DescriptorSetLayoutInformation.pBindings = DescriptorSetLayoutBindings;
 
-    GC_VULKAN_VALIDATE(vkCreateDescriptorSetLayout(DeviceHandle, &DescriptorSetLayoutInformation, NULL,
-                                                   &GraphicsPipeline->DescriptorSetLayoutHandle),
-                       "Failed to create a descriptor set layout.");
+    GC_VULKAN_VALIDATE(
+        vkCreateDescriptorSetLayout(
+            DeviceHandle, &DescriptorSetLayoutInformation, NULL, &GraphicsPipeline->DescriptorSetLayoutHandle
+        ),
+        "Failed to create a descriptor set layout."
+    );
 
     GCMemory_Free(DescriptorSetLayoutBindings);
 }
 
-void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipeline* const GraphicsPipeline,
-                                                       const GCRendererGraphicsPipelineVertexInput* const VertexInput,
-                                                       const VkSampleCountFlagBits SampleCount)
+void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipeline* const GraphicsPipeline)
 {
     const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(GraphicsPipeline->Device);
 
@@ -409,7 +449,8 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
 
     GC_VULKAN_VALIDATE(
         vkCreatePipelineLayout(DeviceHandle, &PipelineLayoutInformation, NULL, &GraphicsPipeline->PipelineLayoutHandle),
-        "Failed to create a pipeline layout.");
+        "Failed to create a pipeline layout."
+    );
 
     VkPipelineShaderStageCreateInfo PipelineVertexShaderStageInformation = {0};
     PipelineVertexShaderStageInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -425,38 +466,36 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
         GCRendererShader_GetFragmentShaderModuleHandle(GraphicsPipeline->Shader);
     PipelineFragmentShaderStageInformation.pName = "main";
 
-    const VkPipelineShaderStageCreateInfo PipelineShaderStageInformation[2] = {PipelineVertexShaderStageInformation,
-                                                                               PipelineFragmentShaderStageInformation};
+    const VkPipelineShaderStageCreateInfo PipelineShaderStageInformation[2] = {
+        PipelineVertexShaderStageInformation, PipelineFragmentShaderStageInformation};
 
-    VkVertexInputBindingDescription* VertexInputBindingDescriptions =
-        (VkVertexInputBindingDescription*)GCMemory_AllocateZero(VertexInput->BindingCount *
-                                                                sizeof(VkVertexInputBindingDescription));
+    VkVertexInputBindingDescription* VertexInputBindingDescriptions = (VkVertexInputBindingDescription*)
+        GCMemory_AllocateZero(GraphicsPipeline->VertexInput.BindingCount * sizeof(VkVertexInputBindingDescription));
 
-    for (uint32_t Counter = 0; Counter < VertexInput->BindingCount; Counter++)
+    for (uint32_t Counter = 0; Counter < GraphicsPipeline->VertexInput.BindingCount; Counter++)
     {
-        VertexInputBindingDescriptions[Counter].binding = VertexInput->Bindings[Counter].Binding;
-        VertexInputBindingDescriptions[Counter].stride = VertexInput->Bindings[Counter].Stride;
+        VertexInputBindingDescriptions[Counter].binding = GraphicsPipeline->VertexInput.Bindings[Counter].Binding;
+        VertexInputBindingDescriptions[Counter].stride = GraphicsPipeline->VertexInput.Bindings[Counter].Stride;
         VertexInputBindingDescriptions[Counter].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
     }
 
-    VkVertexInputAttributeDescription* VertexInputAttributeDescriptions =
-        (VkVertexInputAttributeDescription*)GCMemory_AllocateZero(VertexInput->AttributeCount *
-                                                                  sizeof(VkVertexInputAttributeDescription));
+    VkVertexInputAttributeDescription* VertexInputAttributeDescriptions = (VkVertexInputAttributeDescription*)
+        GCMemory_AllocateZero(GraphicsPipeline->VertexInput.AttributeCount * sizeof(VkVertexInputAttributeDescription));
 
-    for (uint32_t Counter = 0; Counter < VertexInput->AttributeCount; Counter++)
+    for (uint32_t Counter = 0; Counter < GraphicsPipeline->VertexInput.AttributeCount; Counter++)
     {
-        VertexInputAttributeDescriptions[Counter].location = VertexInput->Attributes[Counter].Location;
+        VertexInputAttributeDescriptions[Counter].location = GraphicsPipeline->VertexInput.Attributes[Counter].Location;
         VertexInputAttributeDescriptions[Counter].binding = 0;
         VertexInputAttributeDescriptions[Counter].format =
-            GCRendererGraphicsPipeline_ToVkFormat(VertexInput->Attributes[Counter].Format);
-        VertexInputAttributeDescriptions[Counter].offset = VertexInput->Attributes[Counter].Offset;
+            GCRendererGraphicsPipeline_ToVkFormat(GraphicsPipeline->VertexInput.Attributes[Counter].Format);
+        VertexInputAttributeDescriptions[Counter].offset = GraphicsPipeline->VertexInput.Attributes[Counter].Offset;
     }
 
     VkPipelineVertexInputStateCreateInfo PipelineVertexInputStateInformation = {0};
     PipelineVertexInputStateInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    PipelineVertexInputStateInformation.vertexBindingDescriptionCount = VertexInput->BindingCount;
+    PipelineVertexInputStateInformation.vertexBindingDescriptionCount = GraphicsPipeline->VertexInput.BindingCount;
     PipelineVertexInputStateInformation.pVertexBindingDescriptions = VertexInputBindingDescriptions;
-    PipelineVertexInputStateInformation.vertexAttributeDescriptionCount = VertexInput->AttributeCount;
+    PipelineVertexInputStateInformation.vertexAttributeDescriptionCount = GraphicsPipeline->VertexInput.AttributeCount;
     PipelineVertexInputStateInformation.pVertexAttributeDescriptions = VertexInputAttributeDescriptions;
 
     VkPipelineInputAssemblyStateCreateInfo PipelineInputAssemblyStateInformation = {0};
@@ -482,7 +521,7 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
     VkPipelineMultisampleStateCreateInfo PipelineMultisampleStateInformation = {0};
     PipelineMultisampleStateInformation.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     PipelineMultisampleStateInformation.rasterizationSamples =
-        GCVulkanUtilities_ToVkSampleCountFlagBits(GraphicsPipeline->Device, SampleCount);
+        GCVulkanUtilities_ToVkSampleCountFlagBits(GraphicsPipeline->Device, GraphicsPipeline->SampleCount);
     PipelineMultisampleStateInformation.sampleShadingEnable = VK_FALSE;
     PipelineMultisampleStateInformation.minSampleShading = 1.0f;
 
@@ -544,9 +583,12 @@ void GCRendererGraphicsPipeline_CreateGraphicsPipeline(GCRendererGraphicsPipelin
     GraphicsPipelineInformation.renderPass = GraphicsPipeline->AttachmentRenderPassHandle;
     GraphicsPipelineInformation.subpass = 0;
 
-    GC_VULKAN_VALIDATE(vkCreateGraphicsPipelines(DeviceHandle, VK_NULL_HANDLE, 1, &GraphicsPipelineInformation, NULL,
-                                                 &GraphicsPipeline->PipelineHandle),
-                       "Failed to create a graphics pipeline.");
+    GC_VULKAN_VALIDATE(
+        vkCreateGraphicsPipelines(
+            DeviceHandle, VK_NULL_HANDLE, 1, &GraphicsPipelineInformation, NULL, &GraphicsPipeline->PipelineHandle
+        ),
+        "Failed to create a graphics pipeline."
+    );
 
     GCMemory_Free(VertexInputAttributeDescriptions);
     GCMemory_Free(VertexInputBindingDescriptions);
@@ -558,13 +600,13 @@ void GCRendererGraphicsPipeline_CreateDescriptorPool(GCRendererGraphicsPipeline*
 
     VkDescriptorPoolSize* DescriptorPoolSizes =
         (VkDescriptorPoolSize*)GCMemory_AllocateZero(GraphicsPipeline->DescriptorCount * sizeof(VkDescriptorPoolSize));
-    DescriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    DescriptorPoolSizes[0].descriptorCount = 1;
 
-    for (uint32_t Counter = 0; Counter < GraphicsPipeline->Texture2DCount; Counter++)
+    for (uint32_t Counter = 0; Counter < GraphicsPipeline->DescriptorCount; Counter++)
     {
-        DescriptorPoolSizes[Counter + 1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        DescriptorPoolSizes[Counter + 1].descriptorCount = 1;
+        const GCRendererGraphicsPipelineDescriptor Descriptor = GraphicsPipeline->Descriptors[Counter];
+
+        DescriptorPoolSizes[Counter].type = GCRendererGraphicsPipeline_ToVkDescriptorType(Descriptor.Type);
+        DescriptorPoolSizes[Counter].descriptorCount = Descriptor.DescriptorCount;
     }
 
     VkDescriptorPoolCreateInfo DescriptorPoolInformation = {0};
@@ -575,7 +617,8 @@ void GCRendererGraphicsPipeline_CreateDescriptorPool(GCRendererGraphicsPipeline*
 
     GC_VULKAN_VALIDATE(
         vkCreateDescriptorPool(DeviceHandle, &DescriptorPoolInformation, NULL, &GraphicsPipeline->DescriptorPoolHandle),
-        "Failed to create a descriptor pool.");
+        "Failed to create a descriptor pool."
+    );
 
     GCMemory_Free(DescriptorPoolSizes);
 }
@@ -590,45 +633,86 @@ void GCRendererGraphicsPipeline_CreateDescriptorSets(GCRendererGraphicsPipeline*
     DescriptorSetAllocateInformation.descriptorSetCount = 1;
     DescriptorSetAllocateInformation.pSetLayouts = &GraphicsPipeline->DescriptorSetLayoutHandle;
 
-    GC_VULKAN_VALIDATE(vkAllocateDescriptorSets(DeviceHandle, &DescriptorSetAllocateInformation,
-                                                &GraphicsPipeline->DescriptorSetHandle),
-                       "Failed to allocate a descriptor set.");
+    GC_VULKAN_VALIDATE(
+        vkAllocateDescriptorSets(
+            DeviceHandle, &DescriptorSetAllocateInformation, &GraphicsPipeline->DescriptorSetHandle
+        ),
+        "Failed to allocate a descriptor set."
+    );
+
+    GCRendererGraphicsPipeline_UpdateDescriptorSets(GraphicsPipeline);
+}
+
+void GCRendererGraphicsPipeline_UpdateDescriptorSets(GCRendererGraphicsPipeline* const GraphicsPipeline)
+{
+    const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(GraphicsPipeline->Device);
 
     VkWriteDescriptorSet* WriteDescriptorSets =
         (VkWriteDescriptorSet*)GCMemory_AllocateZero(GraphicsPipeline->DescriptorCount * sizeof(VkWriteDescriptorSet));
 
     VkDescriptorBufferInfo DescriptorBufferInformation = {0};
-    DescriptorBufferInformation.buffer = GCRendererUniformBuffer_GetBufferHandle(GraphicsPipeline->UniformBuffer);
-    DescriptorBufferInformation.offset = 0;
-    DescriptorBufferInformation.range = GCRendererUniformBuffer_GetDataSize(GraphicsPipeline->UniformBuffer);
+    VkDescriptorImageInfo DescriptorImageInformation = {0};
+    VkDescriptorImageInfo* DescriptorImageArrayInformation = NULL;
 
-    for (uint32_t Counter = 0; Counter < GraphicsPipeline->Texture2DCount; Counter++)
+    for (uint32_t Counter = 0; Counter < GraphicsPipeline->DescriptorCount; Counter++)
     {
-        VkDescriptorImageInfo DescriptorImageInformation = {0};
-        DescriptorImageInformation.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        DescriptorImageInformation.imageView =
-            GCRendererTexture2D_GetImageViewHandle(GraphicsPipeline->Texture2Ds[Counter]);
-        DescriptorImageInformation.sampler =
-            GCRendererTexture2D_GetSamplerHandle(GraphicsPipeline->Texture2Ds[Counter]);
+        const GCRendererGraphicsPipelineDescriptor Descriptor = GraphicsPipeline->Descriptors[Counter];
 
-        WriteDescriptorSets[Counter + 1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        WriteDescriptorSets[Counter + 1].dstSet = GraphicsPipeline->DescriptorSetHandle;
-        WriteDescriptorSets[Counter + 1].dstBinding = Counter + 1;
-        WriteDescriptorSets[Counter + 1].dstArrayElement = 0;
-        WriteDescriptorSets[Counter + 1].descriptorCount = 1;
-        WriteDescriptorSets[Counter + 1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        WriteDescriptorSets[Counter + 1].pImageInfo = &DescriptorImageInformation;
+        if (Descriptor.Type == GCRendererGraphicsPipelineDescriptorType_UniformBuffer)
+        {
+            DescriptorBufferInformation.buffer = GCRendererUniformBuffer_GetBufferHandle(Descriptor.UniformBuffer);
+            DescriptorBufferInformation.offset = 0;
+            DescriptorBufferInformation.range = GCRendererUniformBuffer_GetDataSize(Descriptor.UniformBuffer);
+        }
+        else if (Descriptor.Type == GCRendererGraphicsPipelineDescriptorType_Texture)
+        {
+            DescriptorImageInformation.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            DescriptorImageInformation.imageView = GCRendererTexture2D_GetImageViewHandle(Descriptor.Texture2D);
+            DescriptorImageInformation.sampler = GCRendererTexture2D_GetSamplerHandle(Descriptor.Texture2D);
+        }
+        else if (Descriptor.Type == GCRendererGraphicsPipelineDescriptorType_TextureArray)
+        {
+            DescriptorImageArrayInformation = (VkDescriptorImageInfo*)GCMemory_AllocateZero(
+                Descriptor.DescriptorCount * sizeof(VkDescriptorImageInfo)
+            );
+
+            for (uint32_t Counter2 = 0; Counter2 < Descriptor.DescriptorCount; Counter2++)
+            {
+                DescriptorImageArrayInformation[Counter2].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                DescriptorImageArrayInformation[Counter2].imageView =
+                    GCRendererTexture2D_GetImageViewHandle(Descriptor.Texture2DArray[Counter2]);
+                DescriptorImageArrayInformation[Counter2].sampler =
+                    GCRendererTexture2D_GetSamplerHandle(Descriptor.Texture2DArray[Counter2]);
+            }
+        }
+
+        WriteDescriptorSets[Counter].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        WriteDescriptorSets[Counter].dstSet = GraphicsPipeline->DescriptorSetHandle;
+        WriteDescriptorSets[Counter].dstBinding = Counter;
+        WriteDescriptorSets[Counter].dstArrayElement = 0;
+        WriteDescriptorSets[Counter].descriptorCount = Descriptor.DescriptorCount;
+        WriteDescriptorSets[Counter].descriptorType = GCRendererGraphicsPipeline_ToVkDescriptorType(Descriptor.Type);
+
+        if (Descriptor.Type == GCRendererGraphicsPipelineDescriptorType_UniformBuffer)
+        {
+            WriteDescriptorSets[Counter].pBufferInfo = &DescriptorBufferInformation;
+        }
+        else if (Descriptor.Type == GCRendererGraphicsPipelineDescriptorType_Texture)
+        {
+            WriteDescriptorSets[Counter].pImageInfo = &DescriptorImageInformation;
+        }
+        else if (Descriptor.Type == GCRendererGraphicsPipelineDescriptorType_TextureArray)
+        {
+            WriteDescriptorSets[Counter].pImageInfo = DescriptorImageArrayInformation;
+        }
     }
 
-    WriteDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    WriteDescriptorSets[0].dstSet = GraphicsPipeline->DescriptorSetHandle;
-    WriteDescriptorSets[0].dstBinding = 0;
-    WriteDescriptorSets[0].dstArrayElement = 0;
-    WriteDescriptorSets[0].descriptorCount = 1;
-    WriteDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    WriteDescriptorSets[0].pBufferInfo = &DescriptorBufferInformation;
-
     vkUpdateDescriptorSets(DeviceHandle, GraphicsPipeline->DescriptorCount, WriteDescriptorSets, 0, NULL);
+
+    if (DescriptorImageArrayInformation)
+    {
+        GCMemory_Free(DescriptorImageArrayInformation);
+    }
 
     GCMemory_Free(WriteDescriptorSets);
 }
@@ -670,8 +754,8 @@ VkFormat GCRendererGraphicsPipeline_ToVkFormat(const GCRendererGraphicsPipelineV
 
         break;
     }
-    case GCRendererGraphicsPipelineVertexInputAttributeFormat_Integer: {
-        return VK_FORMAT_R32_SINT;
+    case GCRendererGraphicsPipelineVertexInputAttributeFormat_UnsignedInteger: {
+        return VK_FORMAT_R32_UINT;
 
         break;
     }
@@ -679,4 +763,26 @@ VkFormat GCRendererGraphicsPipeline_ToVkFormat(const GCRendererGraphicsPipelineV
 
     GC_ASSERT_WITH_MESSAGE(false, "'%d': Invalid GCRendererGraphicsPipelineVertexInputAttributeFormat", Format);
     return VK_FORMAT_UNDEFINED;
+}
+
+VkDescriptorType GCRendererGraphicsPipeline_ToVkDescriptorType(const GCRendererGraphicsPipelineDescriptorType Type)
+{
+    switch (Type)
+    {
+    case GCRendererGraphicsPipelineDescriptorType_UniformBuffer: {
+        return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        break;
+    }
+    case GCRendererGraphicsPipelineDescriptorType_Texture: {
+        return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        break;
+    }
+    case GCRendererGraphicsPipelineDescriptorType_TextureArray: {
+        return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        break;
+    }
+    }
+
+    GC_ASSERT_WITH_MESSAGE(false, "'%d': Invalid GCRendererGraphicsPipelineDescriptorType.", Type);
+    return (VkDescriptorType)-1;
 }

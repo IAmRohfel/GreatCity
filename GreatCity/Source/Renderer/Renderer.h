@@ -36,7 +36,8 @@ extern "C"
         GCVector3 Normal;
         GCVector4 Color;
         GCVector2 TextureCoordinate;
-        uint64_t EntityID;
+        uint32_t TextureIndex;
+        uint32_t EntityID;
 
 #ifdef __cplusplus
         bool operator==(const GCRendererVertex& OtherVertex) const noexcept
@@ -57,13 +58,21 @@ extern "C"
     typedef struct GCRendererGraphicsPipeline GCRendererGraphicsPipeline;
     typedef struct GCRendererFramebuffer GCRendererFramebuffer;
 
-    void GCRenderer_PreInitialize(void);
     void GCRenderer_Initialize(void);
-    void GCRenderer_SetTexture2Ds(GCRendererTexture2D** const Texture2Ds, const uint32_t Texture2DCount);
 
     void GCRenderer_BeginWorld(const GCWorldCamera* const WorldCamera);
-    void GCRenderer_RenderEntity(const GCEntity Entity);
+    void GCRenderer_DrawQuad(const GCVector3 Position, const GCVector2 Size, const GCVector4 Color);
+    void GCRenderer_DrawQuadTexture2D(
+        const GCVector3 Position, const GCVector2 Size, const GCRendererTexture2D* const Texture2D,
+        const GCVector4 TintColor
+    );
+    void GCRenderer_DrawQuadTransform(const GCMatrix4x4* const Transform, const GCVector4 Color);
+    void GCRenderer_DrawQuadTexture2DTransform(
+        const GCMatrix4x4* const Transform, const GCRendererTexture2D* const Texture2D, const GCVector4 TintColor
+    );
+    void GCRenderer_DrawEntity(const GCEntity Entity);
     void GCRenderer_EndWorld(void);
+
     void GCRenderer_BeginImGui(void);
     void GCRenderer_EndImGui(void);
     void GCRenderer_Present(void);

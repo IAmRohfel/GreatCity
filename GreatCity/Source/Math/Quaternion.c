@@ -129,8 +129,10 @@ GCQuaternion GCQuaternion_Conjugate(const GCQuaternion Quaternion)
 
 float GCQuaternion_Magnitude(const GCQuaternion Quaternion)
 {
-    return sqrtf(Quaternion.W * Quaternion.W + Quaternion.X * Quaternion.X + Quaternion.Y * Quaternion.Y +
-                 Quaternion.Z * Quaternion.Z);
+    return sqrtf(
+        Quaternion.W * Quaternion.W + Quaternion.X * Quaternion.X + Quaternion.Y * Quaternion.Y +
+        Quaternion.Z * Quaternion.Z
+    );
 }
 
 GCQuaternion GCQuaternion_Normalize(const GCQuaternion Quaternion)
@@ -154,7 +156,8 @@ GCVector3 GCQuaternion_RotateVector(const GCQuaternion Quaternion, const GCVecto
     GCVector3 Result = GCVector3_MultiplyByScalar(QuaternionAsVector, 2.0f * GCVector3_Dot(QuaternionAsVector, Vector));
     Result = GCVector3_Add(
         Result,
-        GCVector3_MultiplyByScalar(Vector, Scalar * Scalar - GCVector3_Dot(QuaternionAsVector, QuaternionAsVector)));
+        GCVector3_MultiplyByScalar(Vector, Scalar * Scalar - GCVector3_Dot(QuaternionAsVector, QuaternionAsVector))
+    );
     Result =
         GCVector3_Add(Result, GCVector3_MultiplyByScalar(GCVector3_Cross(QuaternionAsVector, Vector), 2.0f * Scalar));
 

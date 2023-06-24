@@ -30,7 +30,7 @@
 
 #include <vulkan/vulkan.h>
 #ifndef VMA_VULKAN_VERSION
-#define VMA_VULKAN_VERSION 1000000
+#define VMA_VULKAN_VERSION 1001000
 #endif
 #include <vk_mem_alloc.h>
 
@@ -87,13 +87,18 @@ GCRendererVertexBuffer* GCRendererVertexBuffer_CreateDynamic(const GCRendererVer
     }
 
     GCRendererVertexBuffer_CreateVertexBufferDynamic(VertexBuffer);
-    GCRendererVertexBuffer_SetVertices(VertexBuffer, VertexBuffer->Vertices, VertexBuffer->VertexSize);
+
+    if (VertexBuffer->Vertices)
+    {
+        GCRendererVertexBuffer_SetVertices(VertexBuffer, VertexBuffer->Vertices, VertexBuffer->VertexSize);
+    }
 
     return VertexBuffer;
 }
 
-void GCRendererVertexBuffer_SetVertices(GCRendererVertexBuffer* const VertexBuffer, const void* const Vertices,
-                                        const size_t VertexSize)
+void GCRendererVertexBuffer_SetVertices(
+    GCRendererVertexBuffer* const VertexBuffer, const void* const Vertices, const size_t VertexSize
+)
 {
     const VmaAllocator AllocatorHandle = GCRendererDevice_GetAllocatorHandle(VertexBuffer->Device);
 
@@ -132,22 +137,26 @@ void GCRendererVertexBuffer_CreateVertexBuffer(GCRendererVertexBuffer* const Ver
     VmaAllocation StagingAllocationHandle = VK_NULL_HANDLE;
     VmaAllocationInfo StagingAllocationInformation = {0};
 
-    GCVulkanUtilities_CreateBuffer(VertexBuffer->Device, VertexBuffer->VertexSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                   VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, VMA_MEMORY_USAGE_AUTO,
-                                   &StagingBufferHandle, &StagingAllocationHandle, &StagingAllocationInformation);
+    GCVulkanUtilities_CreateBuffer(
+        VertexBuffer->Device, VertexBuffer->VertexSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, VMA_MEMORY_USAGE_AUTO, &StagingBufferHandle,
+        &StagingAllocationHandle, &StagingAllocationInformation
+    );
 
     memcpy(StagingAllocationInformation.pMappedData, VertexBuffer->Vertices, VertexBuffer->VertexSize);
     vmaFlushAllocation(AllocatorHandle, StagingAllocationHandle, 0, VK_WHOLE_SIZE);
 
-    GCVulkanUtilities_CreateBuffer(VertexBuffer->Device, VertexBuffer->VertexSize,
-                                   VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 0,
-                                   VMA_MEMORY_USAGE_AUTO, &VertexBuffer->BufferHandle,
-                                   &VertexBuffer->BufferAllocationHandle, NULL);
+    GCVulkanUtilities_CreateBuffer(
+        VertexBuffer->Device, VertexBuffer->VertexSize,
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 0, VMA_MEMORY_USAGE_AUTO,
+        &VertexBuffer->BufferHandle, &VertexBuffer->BufferAllocationHandle, NULL
+    );
 
     const VkCommandBuffer CommandBufferHandle =
         GCRendererCommandList_BeginSingleTimeCommands(VertexBuffer->CommandList);
-    GCVulkanUtilities_CopyBuffer(CommandBufferHandle, StagingBufferHandle, VertexBuffer->BufferHandle,
-                                 VertexBuffer->VertexSize);
+    GCVulkanUtilities_CopyBuffer(
+        CommandBufferHandle, StagingBufferHandle, VertexBuffer->BufferHandle, VertexBuffer->VertexSize
+    );
     GCRendererCommandList_EndSingleTimeCommands(VertexBuffer->CommandList, CommandBufferHandle);
 
     vmaDestroyBuffer(AllocatorHandle, VertexBuffer->BufferHandle, VertexBuffer->BufferAllocationHandle);
@@ -159,7 +168,8 @@ void GCRendererVertexBuffer_CreateVertexBufferDynamic(GCRendererVertexBuffer* co
         VertexBuffer->Device, VertexBuffer->VertexSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
         VMA_MEMORY_USAGE_AUTO, &VertexBuffer->BufferHandle, &VertexBuffer->BufferAllocationHandle,
-        &VertexBuffer->DynamicBufferAllocationInformation);
+        &VertexBuffer->DynamicBufferAllocationInformation
+    );
 }
 
 void GCRendererVertexBuffer_DestroyObjects(GCRendererVertexBuffer* const VertexBuffer)

@@ -43,12 +43,13 @@ HWND GCWindowsWindow_GetWindowHandle(const GCWindowsWindow* const Window);
 HINSTANCE GCWindowsWindow_GetInstanceHandle(const GCWindowsWindow* const Window);
 
 static GCWindowsWindow* GCWindowsWindow_Create(const GCWindowProperties* const Properties);
-static LRESULT CALLBACK GCWindowsWindow_SetupMessageHandler(HWND WindowHandle, UINT Message, WPARAM WParam,
-                                                            LPARAM LParam);
+static LRESULT CALLBACK
+GCWindowsWindow_SetupMessageHandler(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam);
 static LRESULT CALLBACK GCWindowsWindow_MessageHandler(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam);
 static void GCWindowsWindow_ProcessEvents(GCWindowsWindow* const Window);
-static void GCWindowsWindow_GetWindowSize(const GCWindowsWindow* const Window, uint32_t* const Width,
-                                          uint32_t* const Height);
+static void GCWindowsWindow_GetWindowSize(
+    const GCWindowsWindow* const Window, uint32_t* const Width, uint32_t* const Height
+);
 static void GCWindowsWindow_Destroy(GCWindowsWindow* Window);
 
 GCWindow* GCWindow_Create(const GCWindowProperties* const Properties)
@@ -99,9 +100,10 @@ GCWindowsWindow* GCWindowsWindow_Create(const GCWindowProperties* const Properti
     RegisterClassExW(&WindowClass);
 
     wchar_t* WindowTitleUTF16 = GCString_UTF8ToUTF16(Window->Properties.Title);
-    Window->WindowHandle = CreateWindowExW(0, Window->ClassName, WindowTitleUTF16, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
-                                           CW_USEDEFAULT, Window->Properties.Width, Window->Properties.Height, NULL,
-                                           NULL, Window->InstanceHandle, Window);
+    Window->WindowHandle = CreateWindowExW(
+        0, Window->ClassName, WindowTitleUTF16, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
+        Window->Properties.Width, Window->Properties.Height, NULL, NULL, Window->InstanceHandle, Window
+    );
     GCMemory_Free(WindowTitleUTF16);
 
     ShowWindow(Window->WindowHandle, SW_SHOW);
@@ -305,8 +307,9 @@ void GCWindowsWindow_Destroy(GCWindowsWindow* Window)
     GCMemory_Free(Window);
 }
 
-void GCWindowsWindow_SetAnotherMessageCallback(GCWindowsWindow* const Window,
-                                               LRESULT (*MessageCallback)(HWND, UINT, WPARAM, LPARAM))
+void GCWindowsWindow_SetAnotherMessageCallback(
+    GCWindowsWindow* const Window, LRESULT (*MessageCallback)(HWND, UINT, WPARAM, LPARAM)
+)
 {
     Window->AnotherMessageCallback = MessageCallback;
 }

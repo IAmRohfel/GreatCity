@@ -29,8 +29,9 @@ GCEvent GCEvent_Create(const GCEventType EventType, const void* const EventDetai
     return Event;
 }
 
-void GCEvent_Dispatch(const GCEventType EventType, GCEvent* const Event, const GCEventCallbackFunction Callback,
-                      void* CustomData)
+void GCEvent_Dispatch(
+    const GCEventType EventType, GCEvent* const Event, const GCEventCallbackFunction Callback, void* CustomData
+)
 {
     if (EventType == Event->EventType)
     {

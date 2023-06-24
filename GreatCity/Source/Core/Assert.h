@@ -43,7 +43,7 @@
     if (!(Check))                                                                                                      \
     {                                                                                                                  \
         GC_LOG_FATAL("Assertion '%s' failed at %s:%d:", #Check, __FILE__, __LINE__);                                   \
-        GC_LOG_FATAL("[Vulkan Validation]" __VA_ARGS__);                                                               \
+        GC_LOG_FATAL(__VA_ARGS__);                                                                                     \
         GC_DEBUG_BREAK();                                                                                              \
     }
 #endif

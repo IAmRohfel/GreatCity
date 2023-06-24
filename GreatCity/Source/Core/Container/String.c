@@ -48,8 +48,9 @@ char* GCString_UTF16ToUTF8(const wchar_t* const UTF16String)
     if (UTF8StringLength > 0)
     {
         char* UTF8String = (char*)GCMemory_Allocate(UTF8StringLength * sizeof(char));
-        WideCharToMultiByte(CP_UTF8, 0, UTF16String, (int32_t)wcslen(UTF16String) + 1, UTF8String, UTF8StringLength,
-                            NULL, NULL);
+        WideCharToMultiByte(
+            CP_UTF8, 0, UTF16String, (int32_t)wcslen(UTF16String) + 1, UTF8String, UTF8StringLength, NULL, NULL
+        );
 
         return UTF8String;
     }

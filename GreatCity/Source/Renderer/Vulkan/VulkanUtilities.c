@@ -28,14 +28,15 @@
 
 #include <vulkan/vulkan.h>
 #ifndef VMA_VULKAN_VERSION
-#define VMA_VULKAN_VERSION 1000000
+#define VMA_VULKAN_VERSION 1001000
 #endif
 #include <vk_mem_alloc.h>
 
-void GCVulkanUtilities_CreateBuffer(const GCRendererDevice* const Device, const size_t Size,
-                                    const VkBufferUsageFlags Usage, const VmaAllocationCreateFlags AllocationFlags,
-                                    const VmaMemoryUsage MemoryUsage, VkBuffer* BufferHandle,
-                                    VmaAllocation* BufferAllocationHandle, VmaAllocationInfo* AllocationInformation)
+void GCVulkanUtilities_CreateBuffer(
+    const GCRendererDevice* const Device, const size_t Size, const VkBufferUsageFlags Usage,
+    const VmaAllocationCreateFlags AllocationFlags, const VmaMemoryUsage MemoryUsage, VkBuffer* BufferHandle,
+    VmaAllocation* BufferAllocationHandle, VmaAllocationInfo* AllocationInformation
+)
 {
     const VmaAllocator AllocatorHandle = GCRendererDevice_GetAllocatorHandle(Device);
 
@@ -49,17 +50,21 @@ void GCVulkanUtilities_CreateBuffer(const GCRendererDevice* const Device, const 
     BufferAllocationInformation.flags = AllocationFlags;
     BufferAllocationInformation.usage = MemoryUsage;
 
-    GC_VULKAN_VALIDATE(vmaCreateBuffer(AllocatorHandle, &BufferInformation, &BufferAllocationInformation, BufferHandle,
-                                       BufferAllocationHandle, AllocationInformation),
-                       "Failed to create and allocate a buffer.");
+    GC_VULKAN_VALIDATE(
+        vmaCreateBuffer(
+            AllocatorHandle, &BufferInformation, &BufferAllocationInformation, BufferHandle, BufferAllocationHandle,
+            AllocationInformation
+        ),
+        "Failed to create and allocate a buffer."
+    );
 }
 
-void GCVulkanUtilities_CreateImage(const GCRendererDevice* const Device, const uint32_t Width, const uint32_t Height,
-                                   const uint32_t MipLevels, const VkFormat Format, const VkImageTiling Tiling,
-                                   const VkSampleCountFlagBits SampleCount, const VkImageUsageFlags Usage,
-                                   const VmaAllocationCreateFlags AllocationFlags, const VmaMemoryUsage MemoryUsage,
-                                   VkImage* ImageHandle, VmaAllocation* ImageAllocationHandle,
-                                   VmaAllocationInfo* AllocationInformation)
+void GCVulkanUtilities_CreateImage(
+    const GCRendererDevice* const Device, const uint32_t Width, const uint32_t Height, const uint32_t MipLevels,
+    const VkFormat Format, const VkImageTiling Tiling, const VkSampleCountFlagBits SampleCount,
+    const VkImageUsageFlags Usage, const VmaAllocationCreateFlags AllocationFlags, const VmaMemoryUsage MemoryUsage,
+    VkImage* ImageHandle, VmaAllocation* ImageAllocationHandle, VmaAllocationInfo* AllocationInformation
+)
 {
     const VmaAllocator AllocatorHandle = GCRendererDevice_GetAllocatorHandle(Device);
 
@@ -82,14 +87,19 @@ void GCVulkanUtilities_CreateImage(const GCRendererDevice* const Device, const u
     ImageAllocationInformation.flags = AllocationFlags;
     ImageAllocationInformation.usage = MemoryUsage;
 
-    GC_VULKAN_VALIDATE(vmaCreateImage(AllocatorHandle, &ImageInformation, &ImageAllocationInformation, ImageHandle,
-                                      ImageAllocationHandle, AllocationInformation),
-                       "Failed to create and allocate an image.");
+    GC_VULKAN_VALIDATE(
+        vmaCreateImage(
+            AllocatorHandle, &ImageInformation, &ImageAllocationInformation, ImageHandle, ImageAllocationHandle,
+            AllocationInformation
+        ),
+        "Failed to create and allocate an image."
+    );
 }
 
-void GCVulkanUtilities_CreateImageView(const GCRendererDevice* const Device, const VkImage ImageHandle,
-                                       const VkFormat Format, const VkImageAspectFlags ImageAspect,
-                                       const uint32_t MipLevels, VkImageView* ImageViewHandle)
+void GCVulkanUtilities_CreateImageView(
+    const GCRendererDevice* const Device, const VkImage ImageHandle, const VkFormat Format,
+    const VkImageAspectFlags ImageAspect, const uint32_t MipLevels, VkImageView* ImageViewHandle
+)
 {
     const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Device);
 
@@ -108,13 +118,15 @@ void GCVulkanUtilities_CreateImageView(const GCRendererDevice* const Device, con
     ImageViewInformation.subresourceRange.baseArrayLayer = 0;
     ImageViewInformation.subresourceRange.layerCount = 1;
 
-    GC_VULKAN_VALIDATE(vkCreateImageView(DeviceHandle, &ImageViewInformation, NULL, ImageViewHandle),
-                       "Failed to create an image view.");
+    GC_VULKAN_VALIDATE(
+        vkCreateImageView(DeviceHandle, &ImageViewInformation, NULL, ImageViewHandle), "Failed to create an image view."
+    );
 }
 
-void GCVulkanUtilities_CreateSampler(const GCRendererDevice* const Device, const VkFilter Filter,
-                                     const VkSamplerAddressMode AddressMode, const uint32_t MipLevels,
-                                     VkSampler* SamplerHandle)
+void GCVulkanUtilities_CreateSampler(
+    const GCRendererDevice* const Device, const VkFilter Filter, const VkSamplerAddressMode AddressMode,
+    const uint32_t MipLevels, VkSampler* SamplerHandle
+)
 {
     const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(Device);
     const GCRendererDeviceCapabilities DeviceCapabilities = GCRendererDevice_GetDeviceCapabilities(Device);
@@ -147,13 +159,15 @@ void GCVulkanUtilities_CreateSampler(const GCRendererDevice* const Device, const
     SamplerInformation.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
     SamplerInformation.unnormalizedCoordinates = VK_FALSE;
 
-    GC_VULKAN_VALIDATE(vkCreateSampler(DeviceHandle, &SamplerInformation, NULL, SamplerHandle),
-                       "Failed to create a sampler.");
+    GC_VULKAN_VALIDATE(
+        vkCreateSampler(DeviceHandle, &SamplerInformation, NULL, SamplerHandle), "Failed to create a sampler."
+    );
 }
 
-void GCVulkanUtilities_TransitionImageLayout(const VkCommandBuffer CommandBufferHandle, const VkImage ImageHandle,
-                                             const uint32_t MipLevels, const VkImageLayout OldLayout,
-                                             const VkImageLayout NewLayout)
+void GCVulkanUtilities_TransitionImageLayout(
+    const VkCommandBuffer CommandBufferHandle, const VkImage ImageHandle, const uint32_t MipLevels,
+    const VkImageLayout OldLayout, const VkImageLayout NewLayout
+)
 {
     VkImageMemoryBarrier ImageMemoryBarrier = {0};
     ImageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -242,13 +256,15 @@ void GCVulkanUtilities_TransitionImageLayout(const VkCommandBuffer CommandBuffer
     }
     }
 
-    vkCmdPipelineBarrier(CommandBufferHandle, SourceStage, DestinationStage, 0, 0, NULL, 0, NULL, 1,
-                         &ImageMemoryBarrier);
+    vkCmdPipelineBarrier(
+        CommandBufferHandle, SourceStage, DestinationStage, 0, 0, NULL, 0, NULL, 1, &ImageMemoryBarrier
+    );
 }
 
-void GCVulkanUtilities_GenerateMipmap(const GCRendererDevice* const Device, const VkCommandBuffer CommandBufferHandle,
-                                      const VkImage ImageHandle, const uint32_t Width, const uint32_t Height,
-                                      const uint32_t MipLevels, const VkFormat Format)
+void GCVulkanUtilities_GenerateMipmap(
+    const GCRendererDevice* const Device, const VkCommandBuffer CommandBufferHandle, const VkImage ImageHandle,
+    const uint32_t Width, const uint32_t Height, const uint32_t MipLevels, const VkFormat Format
+)
 {
     VkFormatProperties FormatProperties = {0};
     vkGetPhysicalDeviceFormatProperties(GCRendererDevice_GetPhysicalDeviceHandle(Device), Format, &FormatProperties);
@@ -278,8 +294,10 @@ void GCVulkanUtilities_GenerateMipmap(const GCRendererDevice* const Device, cons
         ImageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
         ImageMemoryBarrier.subresourceRange.baseMipLevel = Counter - 1;
 
-        vkCmdPipelineBarrier(CommandBufferHandle, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0,
-                             NULL, 0, NULL, 1, &ImageMemoryBarrier);
+        vkCmdPipelineBarrier(
+            CommandBufferHandle, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, NULL, 0, NULL, 1,
+            &ImageMemoryBarrier
+        );
 
         VkImageBlit ImageBlit = {0};
         ImageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -295,16 +313,20 @@ void GCVulkanUtilities_GenerateMipmap(const GCRendererDevice* const Device, cons
         ImageBlit.dstOffsets[0] = (VkOffset3D){0, 0, 0};
         ImageBlit.dstOffsets[1] = (VkOffset3D){MipWidth > 1 ? MipWidth / 2 : 1, MipHeight > 1 ? MipHeight / 2 : 1, 1};
 
-        vkCmdBlitImage(CommandBufferHandle, ImageHandle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, ImageHandle,
-                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &ImageBlit, VK_FILTER_LINEAR);
+        vkCmdBlitImage(
+            CommandBufferHandle, ImageHandle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, ImageHandle,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &ImageBlit, VK_FILTER_LINEAR
+        );
 
         ImageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
         ImageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
         ImageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
         ImageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-        vkCmdPipelineBarrier(CommandBufferHandle, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                             0, 0, NULL, 0, NULL, 1, &ImageMemoryBarrier);
+        vkCmdPipelineBarrier(
+            CommandBufferHandle, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, NULL, 0,
+            NULL, 1, &ImageMemoryBarrier
+        );
 
         if (MipWidth > 1)
         {
@@ -323,14 +345,17 @@ void GCVulkanUtilities_GenerateMipmap(const GCRendererDevice* const Device, cons
     ImageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     ImageMemoryBarrier.subresourceRange.baseMipLevel = MipLevels - 1;
 
-    vkCmdPipelineBarrier(CommandBufferHandle, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
-                         0, NULL, 0, NULL, 1, &ImageMemoryBarrier);
+    vkCmdPipelineBarrier(
+        CommandBufferHandle, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, NULL, 0, NULL,
+        1, &ImageMemoryBarrier
+    );
 }
 
-void GCVulkanUtilities_CopyImage(const VkCommandBuffer CommandBufferHandle, const VkImage SourceImageHandle,
-                                 const VkImageLayout SourceImageLayout, const VkImage DestinationImageHandle,
-                                 const VkImageLayout DestinationImageLayout, const uint32_t Width,
-                                 const uint32_t Height)
+void GCVulkanUtilities_CopyImage(
+    const VkCommandBuffer CommandBufferHandle, const VkImage SourceImageHandle, const VkImageLayout SourceImageLayout,
+    const VkImage DestinationImageHandle, const VkImageLayout DestinationImageLayout, const uint32_t Width,
+    const uint32_t Height
+)
 {
     VkImageCopy ImageCopyRegion = {0};
     ImageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -347,13 +372,17 @@ void GCVulkanUtilities_CopyImage(const VkCommandBuffer CommandBufferHandle, cons
     ImageCopyRegion.extent.height = Height;
     ImageCopyRegion.extent.depth = 1;
 
-    vkCmdCopyImage(CommandBufferHandle, SourceImageHandle, SourceImageLayout, DestinationImageHandle,
-                   DestinationImageLayout, 1, &ImageCopyRegion);
+    vkCmdCopyImage(
+        CommandBufferHandle, SourceImageHandle, SourceImageLayout, DestinationImageHandle, DestinationImageLayout, 1,
+        &ImageCopyRegion
+    );
 }
 
-void GCVulkanUtilities_CopyImageToBuffer(const VkCommandBuffer CommandBufferHandle, const VkImage SourceImageHandle,
-                                         const VkImageLayout SourceImageLayout, const VkBuffer DestinationBufferHandle,
-                                         const uint32_t Width, const uint32_t Height, const int32_t X, const int32_t Y)
+void GCVulkanUtilities_CopyImageToBuffer(
+    const VkCommandBuffer CommandBufferHandle, const VkImage SourceImageHandle, const VkImageLayout SourceImageLayout,
+    const VkBuffer DestinationBufferHandle, const uint32_t Width, const uint32_t Height, const int32_t X,
+    const int32_t Y
+)
 {
     VkBufferImageCopy BufferImageCopyRegion = {0};
     BufferImageCopyRegion.bufferOffset = 0;
@@ -366,12 +395,15 @@ void GCVulkanUtilities_CopyImageToBuffer(const VkCommandBuffer CommandBufferHand
     BufferImageCopyRegion.imageOffset = (VkOffset3D){X, Y, 0};
     BufferImageCopyRegion.imageExtent = (VkExtent3D){Width, Height, 1};
 
-    vkCmdCopyImageToBuffer(CommandBufferHandle, SourceImageHandle, SourceImageLayout, DestinationBufferHandle, 1,
-                           &BufferImageCopyRegion);
+    vkCmdCopyImageToBuffer(
+        CommandBufferHandle, SourceImageHandle, SourceImageLayout, DestinationBufferHandle, 1, &BufferImageCopyRegion
+    );
 }
 
-void GCVulkanUtilities_CopyBuffer(const VkCommandBuffer CommandBufferHandle, const VkBuffer SourceBufferHandle,
-                                  const VkBuffer DestinationBufferHandle, const VkDeviceSize Size)
+void GCVulkanUtilities_CopyBuffer(
+    const VkCommandBuffer CommandBufferHandle, const VkBuffer SourceBufferHandle,
+    const VkBuffer DestinationBufferHandle, const VkDeviceSize Size
+)
 {
     VkBufferCopy BufferCopyRegion = {0};
     BufferCopyRegion.size = Size;
@@ -379,9 +411,10 @@ void GCVulkanUtilities_CopyBuffer(const VkCommandBuffer CommandBufferHandle, con
     vkCmdCopyBuffer(CommandBufferHandle, SourceBufferHandle, DestinationBufferHandle, 1, &BufferCopyRegion);
 }
 
-void GCVulkanUtilities_CopyBufferToImage(const VkCommandBuffer CommandBufferHandle, const VkBuffer SourceBufferHandle,
-                                         const VkImage DestinationImageHandle, const uint32_t Width,
-                                         const uint32_t Height)
+void GCVulkanUtilities_CopyBufferToImage(
+    const VkCommandBuffer CommandBufferHandle, const VkBuffer SourceBufferHandle, const VkImage DestinationImageHandle,
+    const uint32_t Width, const uint32_t Height
+)
 {
     VkBufferImageCopy BufferImageCopyRegion = {0};
     BufferImageCopyRegion.bufferOffset = 0;
@@ -396,8 +429,10 @@ void GCVulkanUtilities_CopyBufferToImage(const VkCommandBuffer CommandBufferHand
     BufferImageCopyRegion.imageExtent.height = Height;
     BufferImageCopyRegion.imageExtent.depth = 1;
 
-    vkCmdCopyBufferToImage(CommandBufferHandle, SourceBufferHandle, DestinationImageHandle,
-                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &BufferImageCopyRegion);
+    vkCmdCopyBufferToImage(
+        CommandBufferHandle, SourceBufferHandle, DestinationImageHandle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
+        &BufferImageCopyRegion
+    );
 }
 
 VkSampleCountFlagBits GCVulkanUtilities_GetMaximumUsableSampleCount(const GCRendererDevice* const Device)
@@ -436,65 +471,76 @@ VkSampleCountFlagBits GCVulkanUtilities_GetMaximumUsableSampleCount(const GCRend
     return VK_SAMPLE_COUNT_1_BIT;
 }
 
-VkFormat GCVulkanUtilities_ToVkFormat(const GCRendererDevice* const Device, const GCRendererAttachmentFormat Format)
+VkFormat GCVulkanUtilities_ToVkFormat(const GCRendererDevice* const Device, const GCRendererFormat Format)
 {
     (void)Device;
 
     switch (Format)
     {
-    case GCRendererAttachmentFormat_SRGB: {
+    case GCRendererFormat_SRGB: {
         return VK_FORMAT_B8G8R8A8_SRGB;
 
         break;
     }
-    case GCRendererAttachmentFormat_Integer: {
-        return VK_FORMAT_R32_SINT;
+    case GCRendererFormat_RGBA: {
+        return VK_FORMAT_R8G8B8A8_SRGB;
 
         break;
     }
-    case GCRendererAttachmentFormat_D32: {
+    case GCRendererFormat_UnsignedInteger: {
+        return VK_FORMAT_R32_UINT;
+
+        break;
+    }
+    case GCRendererFormat_Byte: {
+        return VK_FORMAT_R8_UNORM;
+
+        break;
+    }
+    case GCRendererFormat_D32: {
         return VK_FORMAT_D32_SFLOAT;
 
         break;
     }
     }
 
-    GC_ASSERT_WITH_MESSAGE(false, "'%d': Invalid GCRendererAttachmentFormat.");
+    GC_ASSERT_WITH_MESSAGE(false, "'%d': Invalid GCRendererFormat.");
     return VK_FORMAT_UNDEFINED;
 }
 
-VkSampleCountFlagBits GCVulkanUtilities_ToVkSampleCountFlagBits(const GCRendererDevice* const Device,
-                                                                const GCRendererAttachmentSampleCount SampleCount)
+VkSampleCountFlagBits GCVulkanUtilities_ToVkSampleCountFlagBits(
+    const GCRendererDevice* const Device, const GCRendererSampleCount SampleCount
+)
 {
     switch (SampleCount)
     {
-    case GCRendererAttachmentSampleCount_1: {
+    case GCRendererSampleCount_1: {
         return VK_SAMPLE_COUNT_1_BIT;
 
         break;
     }
-    case GCRendererAttachmentSampleCount_2: {
+    case GCRendererSampleCount_2: {
         return VK_SAMPLE_COUNT_2_BIT;
 
         break;
     }
-    case GCRendererAttachmentSampleCount_4: {
+    case GCRendererSampleCount_4: {
         return VK_SAMPLE_COUNT_4_BIT;
 
         break;
     }
-    case GCRendererAttachmentSampleCount_8: {
+    case GCRendererSampleCount_8: {
         return VK_SAMPLE_COUNT_8_BIT;
 
         break;
     }
-    case GCRendererAttachmentSampleCount_MaximumUsable: {
+    case GCRendererSampleCount_MaximumUsable: {
         return GCVulkanUtilities_GetMaximumUsableSampleCount(Device);
 
         break;
     }
     }
 
-    GC_ASSERT_WITH_MESSAGE(false, "'%d': Invalid GCRendererAttachmentSampleCount.");
+    GC_ASSERT_WITH_MESSAGE(false, "'%d': Invalid GCRendererSampleCount.");
     return (VkSampleCountFlagBits)-1;
 }

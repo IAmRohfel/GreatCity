@@ -29,6 +29,7 @@
 #include "Renderer/Renderer.h"
 #include "Renderer/RendererCommandList.h"
 #include "Renderer/RendererDevice.h"
+#include "Renderer/RendererEnums.h"
 #include "Renderer/RendererFramebuffer.h"
 #include "Renderer/RendererMesh.h"
 #include "Renderer/RendererModel.h"
@@ -98,11 +99,12 @@ void GCUI_Initialize(void)
         TextureDescription.Device = Device;
         TextureDescription.CommandList = CommandList;
         TextureDescription.TexturePath = std::get<2>(ModelLocation).c_str();
+        TextureDescription.Format = GCRendererFormat_SRGB;
         GCRendererTexture2D* Texture = GCRendererTexture2D_Create(&TextureDescription);
 
-        UIData->UIEntityData[GCRendererModel_CreateFromFile(std::get<0>(ModelLocation).c_str(),
-                                                            std::get<1>(ModelLocation).c_str())] =
-            std::make_pair(Texture, GCImGuiManager_AddTexture(Texture));
+        UIData->UIEntityData[GCRendererModel_CreateFromFile(
+            std::get<0>(ModelLocation).c_str(), std::get<1>(ModelLocation).c_str()
+        )] = std::make_pair(Texture, GCImGuiManager_AddTexture(Texture));
     }
 }
 
@@ -206,8 +208,9 @@ void GCUI_Render(void)
         ImGui::OpenPopup("Add Building");
     }
 
-    ImGui::SetNextWindowPos(ImVec2{UIData->ViewportSize.X / 2.0f, UIData->ViewportSize.Y / 2.0f}, ImGuiCond_Always,
-                            ImVec2{0.5f, 0.5f});
+    ImGui::SetNextWindowPos(
+        ImVec2{UIData->ViewportSize.X / 2.0f, UIData->ViewportSize.Y / 2.0f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f}
+    );
     ImGui::SetNextWindowSize(ImVec2{UIData->ViewportSize.X / 1.25f, UIData->ViewportSize.Y / 1.25f}, ImGuiCond_Always);
 
     if (ImGui::BeginPopupModal("Add Building", nullptr, ImGuiWindowFlags_NoResize))
@@ -217,8 +220,9 @@ void GCUI_Render(void)
 
         for (const auto& UIEntityData : UIData->UIEntityData)
         {
-            if (ImGui::ImageButton(UIEntityData.second.second, ImVec2{100.0f, 100.0f}, ImVec2{0.0f, 1.0f},
-                                   ImVec2{1.0f, 0.0f}))
+            if (ImGui::ImageButton(
+                    UIEntityData.second.second, ImVec2{100.0f, 100.0f}, ImVec2{0.0f, 1.0f}, ImVec2{1.0f, 0.0f}
+                ))
             {
                 static uint32_t ModelCount = 0;
                 const std::string Name{"Model " + ModelCount};
@@ -257,25 +261,29 @@ void GCUI_Render(void)
     const ImVec2 ViewportMaximumRegion = ImGui::GetWindowContentRegionMax();
     const ImVec2 ViewportOffset = ImGui::GetWindowPos();
 
-    UIData->ViewportBounds[0] = {ViewportMinimumRegion.x + ViewportOffset.x,
-                                 ViewportMinimumRegion.y + ViewportOffset.y};
-    UIData->ViewportBounds[1] = {ViewportMaximumRegion.x + ViewportOffset.x,
-                                 ViewportMaximumRegion.y + ViewportOffset.y};
+    UIData->ViewportBounds[0] = {
+        ViewportMinimumRegion.x + ViewportOffset.x, ViewportMinimumRegion.y + ViewportOffset.y};
+    UIData->ViewportBounds[1] = {
+        ViewportMaximumRegion.x + ViewportOffset.x, ViewportMaximumRegion.y + ViewportOffset.y};
 
     UIData->IsViewportHovered = ImGui::IsWindowHovered();
     UIData->IsViewportFocused = ImGui::IsWindowFocused();
 
-    ImGui::Image(static_cast<ImTextureID>(GCImGuiManager_GetTexturePlatform()),
-                 ImVec2{UIData->ViewportSize.X, UIData->ViewportSize.Y});
+    ImGui::Image(
+        static_cast<ImTextureID>(GCImGuiManager_GetTexturePlatform()),
+        ImVec2{UIData->ViewportSize.X, UIData->ViewportSize.Y}
+    );
 
     if (UIData->SelectedEntity != 0 && UIData->SelectedEntity != GCWorld_GetTerrainEntity(GCApplication_GetWorld()) &&
         UIData->GizmoType != -1)
     {
         ImGuizmo::SetOrthographic(false);
         ImGuizmo::SetDrawlist();
-        ImGuizmo::SetRect(UIData->ViewportBounds[0].X, UIData->ViewportBounds[0].Y,
-                          UIData->ViewportBounds[1].X - UIData->ViewportBounds[0].X,
-                          UIData->ViewportBounds[1].Y - UIData->ViewportBounds[0].Y);
+        ImGuizmo::SetRect(
+            UIData->ViewportBounds[0].X, UIData->ViewportBounds[0].Y,
+            UIData->ViewportBounds[1].X - UIData->ViewportBounds[0].X,
+            UIData->ViewportBounds[1].Y - UIData->ViewportBounds[0].Y
+        );
 
         const GCWorldCamera* const WorldCamera = GCWorld_GetCamera(World);
         const GCMatrix4x4* const WorldCameraViewMatrix = GCWorldCamera_GetViewMatrix(WorldCamera);
@@ -299,9 +307,11 @@ void GCUI_Render(void)
             SnapValues = {90.0f, 90.0f, 90.0f};
         }
 
-        ImGuizmo::Manipulate(&WorldCameraViewMatrix->Data[0][0], &WorldCameraProjectionMatrix.Data[0][0],
-                             static_cast<ImGuizmo::OPERATION>(UIData->GizmoType), ImGuizmo::MODE::LOCAL,
-                             &EntityTransform.Data[0][0], nullptr, SnapValues.data());
+        ImGuizmo::Manipulate(
+            &WorldCameraViewMatrix->Data[0][0], &WorldCameraProjectionMatrix.Data[0][0],
+            static_cast<ImGuizmo::OPERATION>(UIData->GizmoType), ImGuizmo::MODE::LOCAL, &EntityTransform.Data[0][0],
+            nullptr, SnapValues.data()
+        );
 
         if (ImGuizmo::IsUsing())
         {
@@ -353,8 +363,9 @@ void GCUI_OnUpdate(void)
         if (MouseX >= 0 && MouseY >= 0 && MouseX < static_cast<std::int32_t>(UIData->ViewportSize.X) &&
             MouseY < static_cast<std::int32_t>(UIData->ViewportSize.Y))
         {
-            const int32_t EntityID = GCRendererFramebuffer_GetPixel(GCRenderer_GetFramebuffer(),
-                                                                    GCRenderer_GetCommandList(), 1, MouseX, MouseY);
+            const int32_t EntityID = GCRendererFramebuffer_GetPixel(
+                GCRenderer_GetFramebuffer(), GCRenderer_GetCommandList(), 1, MouseX, MouseY
+            );
 
             UIData->HoveredEntity = EntityID == -1 ? GCEntity{} : GCEntity{static_cast<uint64_t>(EntityID)};
         }
@@ -384,11 +395,14 @@ void GCUI_Terminate(void)
 
 void GCUI_ResizeAttachment(void)
 {
-    GCRendererFramebuffer_RecreateAttachmentFramebuffer(GCRenderer_GetFramebuffer(),
-                                                        static_cast<uint32_t>(UIData->ViewportSize.X),
-                                                        static_cast<uint32_t>(UIData->ViewportSize.Y));
-    GCWorldCamera_SetSize(GCWorld_GetCamera(GCApplication_GetWorld()), static_cast<uint32_t>(UIData->ViewportSize.X),
-                          static_cast<uint32_t>(UIData->ViewportSize.Y));
+    GCRendererFramebuffer_RecreateAttachmentFramebuffer(
+        GCRenderer_GetFramebuffer(), static_cast<uint32_t>(UIData->ViewportSize.X),
+        static_cast<uint32_t>(UIData->ViewportSize.Y)
+    );
+    GCWorldCamera_SetSize(
+        GCWorld_GetCamera(GCApplication_GetWorld()), static_cast<uint32_t>(UIData->ViewportSize.X),
+        static_cast<uint32_t>(UIData->ViewportSize.Y)
+    );
 }
 
 bool GCUI_OnKeyPressed(GCEvent* const Event, void* CustomData)

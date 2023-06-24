@@ -61,7 +61,6 @@ void GCApplication_Create(void)
 
     Application->Window = GCWindow_Create(&WindowProperties);
 
-    GCRenderer_PreInitialize();
     GCRenderer_Initialize();
     GCUI_Initialize();
 

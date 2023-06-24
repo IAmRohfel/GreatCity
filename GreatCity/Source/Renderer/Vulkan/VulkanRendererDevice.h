@@ -39,8 +39,9 @@ extern "C"
     VkQueue GCRendererDevice_GetGraphicsQueueHandle(const GCRendererDevice* const Device);
     VkQueue GCRendererDevice_GetPresentQueueHandle(const GCRendererDevice* const Device);
     VmaAllocator GCRendererDevice_GetAllocatorHandle(const GCRendererDevice* const Device);
-    uint32_t GCRendererDevice_GetMemoryTypeIndex(const GCRendererDevice* const Device, const uint32_t TypeFilter,
-                                                 const VkMemoryPropertyFlags PropertyFlags);
+    uint32_t GCRendererDevice_GetMemoryTypeIndex(
+        const GCRendererDevice* const Device, const uint32_t TypeFilter, const VkMemoryPropertyFlags PropertyFlags
+    );
 
 #ifdef __cplusplus
 }

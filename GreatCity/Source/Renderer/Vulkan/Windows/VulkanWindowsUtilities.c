@@ -39,6 +39,8 @@ void GCRendererDevice_CreateSurface(const VkInstance InstanceHandle, VkSurfaceKH
     SurfaceInformation.hinstance = GCWindowsWindow_GetInstanceHandle(GCApplication_GetWindow());
     SurfaceInformation.hwnd = GCWindowsWindow_GetWindowHandle(GCApplication_GetWindow());
 
-    GC_VULKAN_VALIDATE(vkCreateWin32SurfaceKHR(InstanceHandle, &SurfaceInformation, NULL, SurfaceHandle),
-                       "Failed to create a Win32 Vulkan surface");
+    GC_VULKAN_VALIDATE(
+        vkCreateWin32SurfaceKHR(InstanceHandle, &SurfaceInformation, NULL, SurfaceHandle),
+        "Failed to create a Win32 Vulkan surface"
+    );
 }

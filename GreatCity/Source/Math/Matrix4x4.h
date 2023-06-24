@@ -41,8 +41,9 @@ extern "C"
     GCMatrix4x4 GCMatrix4x4_CreateRotation(const float Angle, const GCVector3 Axis);
     GCMatrix4x4 GCMatrix4x4_CreateScale(const GCVector3 Scale);
 
-    GCMatrix4x4 GCMatrix4x4_CreatePerspective(const float FoV, const float AspectRatio, const float Near,
-                                              const float Far);
+    GCMatrix4x4 GCMatrix4x4_CreatePerspective(
+        const float FoV, const float AspectRatio, const float Near, const float Far
+    );
 
     GCMatrix4x4 GCMatrix4x4_Multiply(const GCMatrix4x4* const Matrix1, const GCMatrix4x4* const Matrix2);
     GCMatrix4x4 GCMatrix4x4_MultiplyByScalar(const GCMatrix4x4* const Matrix, const float Scalar);
@@ -52,8 +53,9 @@ extern "C"
     GCMatrix4x4 GCMatrix4x4_Inverse(const GCMatrix4x4* const Matrix);
     GCMatrix4x4 GCMatrix4x4_Transpose(const GCMatrix4x4* const Matrix);
 
-    void GCMatrix4x4_Decompose(const GCMatrix4x4* const Matrix, GCVector3* const Translation, GCVector3* const Rotation,
-                               GCVector3* const Scale);
+    void GCMatrix4x4_Decompose(
+        const GCMatrix4x4* const Matrix, GCVector3* const Translation, GCVector3* const Rotation, GCVector3* const Scale
+    );
 
     bool GCMatrix4x4_IsEqual(const GCMatrix4x4* const Matrix1, const GCMatrix4x4* const Matrix2);
 

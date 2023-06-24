@@ -24,7 +24,8 @@ GCMatrix4x4 GCTransformComponent_GetTransform(const GCTransformComponent* const 
 {
     const GCMatrix4x4 Translation = GCMatrix4x4_CreateTranslation(TransformComponent->Translation);
     const GCMatrix4x4 Rotation = GCQuaternion_ToRotationMatrix(GCQuaternion_CreateFromEulerAngles(
-        TransformComponent->Rotation.X, TransformComponent->Rotation.Y, TransformComponent->Rotation.Z));
+        TransformComponent->Rotation.X, TransformComponent->Rotation.Y, TransformComponent->Rotation.Z
+    ));
     const GCMatrix4x4 Scale = GCMatrix4x4_CreateScale(TransformComponent->Scale);
 
     GCMatrix4x4 Transform = GCMatrix4x4_Multiply(&Translation, &Rotation);

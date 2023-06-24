@@ -353,105 +353,121 @@ GCMatrix4x4 GCMatrix4x4_Inverse(const GCMatrix4x4* const Matrix)
 {
     GCMatrix4x4 Result;
 
-    Result.Data[0][0] = +(Matrix->Data[1][1] * Matrix->Data[2][2] * Matrix->Data[3][3] +
-                          Matrix->Data[2][1] * Matrix->Data[3][2] * Matrix->Data[1][3] +
-                          Matrix->Data[3][1] * Matrix->Data[1][2] * Matrix->Data[2][3] -
-                          Matrix->Data[3][1] * Matrix->Data[2][2] * Matrix->Data[1][3] -
-                          Matrix->Data[2][1] * Matrix->Data[1][2] * Matrix->Data[3][3] -
-                          Matrix->Data[1][1] * Matrix->Data[3][2] * Matrix->Data[2][3]);
-    Result.Data[1][0] = -(Matrix->Data[0][1] * Matrix->Data[2][2] * Matrix->Data[3][3] +
-                          Matrix->Data[2][1] * Matrix->Data[3][2] * Matrix->Data[0][3] +
-                          Matrix->Data[3][1] * Matrix->Data[0][2] * Matrix->Data[2][3] -
-                          Matrix->Data[3][1] * Matrix->Data[2][2] * Matrix->Data[0][3] -
-                          Matrix->Data[2][1] * Matrix->Data[0][2] * Matrix->Data[3][3] -
-                          Matrix->Data[0][1] * Matrix->Data[3][2] * Matrix->Data[2][3]);
-    Result.Data[2][0] = +(Matrix->Data[0][1] * Matrix->Data[1][2] * Matrix->Data[3][3] +
-                          Matrix->Data[1][1] * Matrix->Data[3][2] * Matrix->Data[0][3] +
-                          Matrix->Data[3][1] * Matrix->Data[0][2] * Matrix->Data[1][3] -
-                          Matrix->Data[3][1] * Matrix->Data[1][2] * Matrix->Data[0][3] -
-                          Matrix->Data[1][1] * Matrix->Data[0][2] * Matrix->Data[3][3] -
-                          Matrix->Data[0][1] * Matrix->Data[3][2] * Matrix->Data[1][3]);
-    Result.Data[3][0] = -(Matrix->Data[0][1] * Matrix->Data[1][2] * Matrix->Data[2][3] +
-                          Matrix->Data[1][1] * Matrix->Data[2][2] * Matrix->Data[0][3] +
-                          Matrix->Data[2][1] * Matrix->Data[0][2] * Matrix->Data[1][3] -
-                          Matrix->Data[2][1] * Matrix->Data[1][2] * Matrix->Data[0][3] -
-                          Matrix->Data[1][1] * Matrix->Data[0][2] * Matrix->Data[2][3] -
-                          Matrix->Data[0][1] * Matrix->Data[2][2] * Matrix->Data[1][3]);
+    Result.Data[0][0] =
+        +(Matrix->Data[1][1] * Matrix->Data[2][2] * Matrix->Data[3][3] +
+          Matrix->Data[2][1] * Matrix->Data[3][2] * Matrix->Data[1][3] +
+          Matrix->Data[3][1] * Matrix->Data[1][2] * Matrix->Data[2][3] -
+          Matrix->Data[3][1] * Matrix->Data[2][2] * Matrix->Data[1][3] -
+          Matrix->Data[2][1] * Matrix->Data[1][2] * Matrix->Data[3][3] -
+          Matrix->Data[1][1] * Matrix->Data[3][2] * Matrix->Data[2][3]);
+    Result.Data[1][0] =
+        -(Matrix->Data[0][1] * Matrix->Data[2][2] * Matrix->Data[3][3] +
+          Matrix->Data[2][1] * Matrix->Data[3][2] * Matrix->Data[0][3] +
+          Matrix->Data[3][1] * Matrix->Data[0][2] * Matrix->Data[2][3] -
+          Matrix->Data[3][1] * Matrix->Data[2][2] * Matrix->Data[0][3] -
+          Matrix->Data[2][1] * Matrix->Data[0][2] * Matrix->Data[3][3] -
+          Matrix->Data[0][1] * Matrix->Data[3][2] * Matrix->Data[2][3]);
+    Result.Data[2][0] =
+        +(Matrix->Data[0][1] * Matrix->Data[1][2] * Matrix->Data[3][3] +
+          Matrix->Data[1][1] * Matrix->Data[3][2] * Matrix->Data[0][3] +
+          Matrix->Data[3][1] * Matrix->Data[0][2] * Matrix->Data[1][3] -
+          Matrix->Data[3][1] * Matrix->Data[1][2] * Matrix->Data[0][3] -
+          Matrix->Data[1][1] * Matrix->Data[0][2] * Matrix->Data[3][3] -
+          Matrix->Data[0][1] * Matrix->Data[3][2] * Matrix->Data[1][3]);
+    Result.Data[3][0] =
+        -(Matrix->Data[0][1] * Matrix->Data[1][2] * Matrix->Data[2][3] +
+          Matrix->Data[1][1] * Matrix->Data[2][2] * Matrix->Data[0][3] +
+          Matrix->Data[2][1] * Matrix->Data[0][2] * Matrix->Data[1][3] -
+          Matrix->Data[2][1] * Matrix->Data[1][2] * Matrix->Data[0][3] -
+          Matrix->Data[1][1] * Matrix->Data[0][2] * Matrix->Data[2][3] -
+          Matrix->Data[0][1] * Matrix->Data[2][2] * Matrix->Data[1][3]);
 
-    Result.Data[0][1] = -(Matrix->Data[1][0] * Matrix->Data[2][2] * Matrix->Data[3][3] +
-                          Matrix->Data[2][0] * Matrix->Data[3][2] * Matrix->Data[1][3] +
-                          Matrix->Data[3][0] * Matrix->Data[1][2] * Matrix->Data[2][3] -
-                          Matrix->Data[3][0] * Matrix->Data[2][2] * Matrix->Data[1][3] -
-                          Matrix->Data[2][0] * Matrix->Data[1][2] * Matrix->Data[3][3] -
-                          Matrix->Data[1][0] * Matrix->Data[3][2] * Matrix->Data[2][3]);
-    Result.Data[1][1] = +(Matrix->Data[0][0] * Matrix->Data[2][2] * Matrix->Data[3][3] +
-                          Matrix->Data[2][0] * Matrix->Data[3][2] * Matrix->Data[0][3] +
-                          Matrix->Data[3][0] * Matrix->Data[0][2] * Matrix->Data[2][3] -
-                          Matrix->Data[3][0] * Matrix->Data[2][2] * Matrix->Data[0][3] -
-                          Matrix->Data[2][0] * Matrix->Data[0][2] * Matrix->Data[3][3] -
-                          Matrix->Data[0][0] * Matrix->Data[3][2] * Matrix->Data[2][3]);
-    Result.Data[2][1] = -(Matrix->Data[0][0] * Matrix->Data[1][2] * Matrix->Data[3][3] +
-                          Matrix->Data[1][0] * Matrix->Data[3][2] * Matrix->Data[0][3] +
-                          Matrix->Data[3][0] * Matrix->Data[0][2] * Matrix->Data[1][3] -
-                          Matrix->Data[3][0] * Matrix->Data[1][2] * Matrix->Data[0][3] -
-                          Matrix->Data[1][0] * Matrix->Data[0][2] * Matrix->Data[3][3] -
-                          Matrix->Data[0][0] * Matrix->Data[3][2] * Matrix->Data[1][3]);
-    Result.Data[3][1] = +(Matrix->Data[0][0] * Matrix->Data[1][2] * Matrix->Data[2][3] +
-                          Matrix->Data[1][0] * Matrix->Data[2][2] * Matrix->Data[0][3] +
-                          Matrix->Data[2][0] * Matrix->Data[0][2] * Matrix->Data[1][3] -
-                          Matrix->Data[2][0] * Matrix->Data[1][2] * Matrix->Data[0][3] -
-                          Matrix->Data[1][0] * Matrix->Data[0][2] * Matrix->Data[2][3] -
-                          Matrix->Data[0][0] * Matrix->Data[2][2] * Matrix->Data[1][3]);
+    Result.Data[0][1] =
+        -(Matrix->Data[1][0] * Matrix->Data[2][2] * Matrix->Data[3][3] +
+          Matrix->Data[2][0] * Matrix->Data[3][2] * Matrix->Data[1][3] +
+          Matrix->Data[3][0] * Matrix->Data[1][2] * Matrix->Data[2][3] -
+          Matrix->Data[3][0] * Matrix->Data[2][2] * Matrix->Data[1][3] -
+          Matrix->Data[2][0] * Matrix->Data[1][2] * Matrix->Data[3][3] -
+          Matrix->Data[1][0] * Matrix->Data[3][2] * Matrix->Data[2][3]);
+    Result.Data[1][1] =
+        +(Matrix->Data[0][0] * Matrix->Data[2][2] * Matrix->Data[3][3] +
+          Matrix->Data[2][0] * Matrix->Data[3][2] * Matrix->Data[0][3] +
+          Matrix->Data[3][0] * Matrix->Data[0][2] * Matrix->Data[2][3] -
+          Matrix->Data[3][0] * Matrix->Data[2][2] * Matrix->Data[0][3] -
+          Matrix->Data[2][0] * Matrix->Data[0][2] * Matrix->Data[3][3] -
+          Matrix->Data[0][0] * Matrix->Data[3][2] * Matrix->Data[2][3]);
+    Result.Data[2][1] =
+        -(Matrix->Data[0][0] * Matrix->Data[1][2] * Matrix->Data[3][3] +
+          Matrix->Data[1][0] * Matrix->Data[3][2] * Matrix->Data[0][3] +
+          Matrix->Data[3][0] * Matrix->Data[0][2] * Matrix->Data[1][3] -
+          Matrix->Data[3][0] * Matrix->Data[1][2] * Matrix->Data[0][3] -
+          Matrix->Data[1][0] * Matrix->Data[0][2] * Matrix->Data[3][3] -
+          Matrix->Data[0][0] * Matrix->Data[3][2] * Matrix->Data[1][3]);
+    Result.Data[3][1] =
+        +(Matrix->Data[0][0] * Matrix->Data[1][2] * Matrix->Data[2][3] +
+          Matrix->Data[1][0] * Matrix->Data[2][2] * Matrix->Data[0][3] +
+          Matrix->Data[2][0] * Matrix->Data[0][2] * Matrix->Data[1][3] -
+          Matrix->Data[2][0] * Matrix->Data[1][2] * Matrix->Data[0][3] -
+          Matrix->Data[1][0] * Matrix->Data[0][2] * Matrix->Data[2][3] -
+          Matrix->Data[0][0] * Matrix->Data[2][2] * Matrix->Data[1][3]);
 
-    Result.Data[0][2] = +(Matrix->Data[1][0] * Matrix->Data[2][1] * Matrix->Data[3][3] +
-                          Matrix->Data[2][0] * Matrix->Data[3][1] * Matrix->Data[1][3] +
-                          Matrix->Data[3][0] * Matrix->Data[1][1] * Matrix->Data[2][3] -
-                          Matrix->Data[3][0] * Matrix->Data[2][1] * Matrix->Data[1][3] -
-                          Matrix->Data[2][0] * Matrix->Data[1][1] * Matrix->Data[3][3] -
-                          Matrix->Data[1][0] * Matrix->Data[3][1] * Matrix->Data[2][3]);
-    Result.Data[1][2] = -(Matrix->Data[0][0] * Matrix->Data[2][1] * Matrix->Data[3][3] +
-                          Matrix->Data[2][0] * Matrix->Data[3][1] * Matrix->Data[0][3] +
-                          Matrix->Data[3][0] * Matrix->Data[0][1] * Matrix->Data[2][3] -
-                          Matrix->Data[3][0] * Matrix->Data[2][1] * Matrix->Data[0][3] -
-                          Matrix->Data[2][0] * Matrix->Data[0][1] * Matrix->Data[3][3] -
-                          Matrix->Data[0][0] * Matrix->Data[3][1] * Matrix->Data[2][3]);
-    Result.Data[2][2] = +(Matrix->Data[0][0] * Matrix->Data[1][1] * Matrix->Data[3][3] +
-                          Matrix->Data[1][0] * Matrix->Data[3][1] * Matrix->Data[0][3] +
-                          Matrix->Data[3][0] * Matrix->Data[0][1] * Matrix->Data[1][3] -
-                          Matrix->Data[3][0] * Matrix->Data[1][1] * Matrix->Data[0][3] -
-                          Matrix->Data[1][0] * Matrix->Data[0][1] * Matrix->Data[3][3] -
-                          Matrix->Data[0][0] * Matrix->Data[3][1] * Matrix->Data[1][3]);
-    Result.Data[3][2] = -(Matrix->Data[0][0] * Matrix->Data[1][1] * Matrix->Data[2][3] +
-                          Matrix->Data[1][0] * Matrix->Data[2][1] * Matrix->Data[0][3] +
-                          Matrix->Data[2][0] * Matrix->Data[0][1] * Matrix->Data[1][3] -
-                          Matrix->Data[2][0] * Matrix->Data[1][1] * Matrix->Data[0][3] -
-                          Matrix->Data[1][0] * Matrix->Data[0][1] * Matrix->Data[2][3] -
-                          Matrix->Data[0][0] * Matrix->Data[2][1] * Matrix->Data[1][3]);
+    Result.Data[0][2] =
+        +(Matrix->Data[1][0] * Matrix->Data[2][1] * Matrix->Data[3][3] +
+          Matrix->Data[2][0] * Matrix->Data[3][1] * Matrix->Data[1][3] +
+          Matrix->Data[3][0] * Matrix->Data[1][1] * Matrix->Data[2][3] -
+          Matrix->Data[3][0] * Matrix->Data[2][1] * Matrix->Data[1][3] -
+          Matrix->Data[2][0] * Matrix->Data[1][1] * Matrix->Data[3][3] -
+          Matrix->Data[1][0] * Matrix->Data[3][1] * Matrix->Data[2][3]);
+    Result.Data[1][2] =
+        -(Matrix->Data[0][0] * Matrix->Data[2][1] * Matrix->Data[3][3] +
+          Matrix->Data[2][0] * Matrix->Data[3][1] * Matrix->Data[0][3] +
+          Matrix->Data[3][0] * Matrix->Data[0][1] * Matrix->Data[2][3] -
+          Matrix->Data[3][0] * Matrix->Data[2][1] * Matrix->Data[0][3] -
+          Matrix->Data[2][0] * Matrix->Data[0][1] * Matrix->Data[3][3] -
+          Matrix->Data[0][0] * Matrix->Data[3][1] * Matrix->Data[2][3]);
+    Result.Data[2][2] =
+        +(Matrix->Data[0][0] * Matrix->Data[1][1] * Matrix->Data[3][3] +
+          Matrix->Data[1][0] * Matrix->Data[3][1] * Matrix->Data[0][3] +
+          Matrix->Data[3][0] * Matrix->Data[0][1] * Matrix->Data[1][3] -
+          Matrix->Data[3][0] * Matrix->Data[1][1] * Matrix->Data[0][3] -
+          Matrix->Data[1][0] * Matrix->Data[0][1] * Matrix->Data[3][3] -
+          Matrix->Data[0][0] * Matrix->Data[3][1] * Matrix->Data[1][3]);
+    Result.Data[3][2] =
+        -(Matrix->Data[0][0] * Matrix->Data[1][1] * Matrix->Data[2][3] +
+          Matrix->Data[1][0] * Matrix->Data[2][1] * Matrix->Data[0][3] +
+          Matrix->Data[2][0] * Matrix->Data[0][1] * Matrix->Data[1][3] -
+          Matrix->Data[2][0] * Matrix->Data[1][1] * Matrix->Data[0][3] -
+          Matrix->Data[1][0] * Matrix->Data[0][1] * Matrix->Data[2][3] -
+          Matrix->Data[0][0] * Matrix->Data[2][1] * Matrix->Data[1][3]);
 
-    Result.Data[0][3] = -(Matrix->Data[1][0] * Matrix->Data[2][1] * Matrix->Data[3][2] +
-                          Matrix->Data[2][0] * Matrix->Data[3][1] * Matrix->Data[1][2] +
-                          Matrix->Data[3][0] * Matrix->Data[1][1] * Matrix->Data[2][2] -
-                          Matrix->Data[3][0] * Matrix->Data[2][1] * Matrix->Data[1][2] -
-                          Matrix->Data[2][0] * Matrix->Data[1][1] * Matrix->Data[3][2] -
-                          Matrix->Data[1][0] * Matrix->Data[3][1] * Matrix->Data[2][2]);
-    Result.Data[1][3] = +(Matrix->Data[0][0] * Matrix->Data[2][1] * Matrix->Data[3][2] +
-                          Matrix->Data[2][0] * Matrix->Data[3][1] * Matrix->Data[0][2] +
-                          Matrix->Data[3][0] * Matrix->Data[0][1] * Matrix->Data[2][2] -
-                          Matrix->Data[3][0] * Matrix->Data[2][1] * Matrix->Data[0][2] -
-                          Matrix->Data[2][0] * Matrix->Data[0][1] * Matrix->Data[3][2] -
-                          Matrix->Data[0][0] * Matrix->Data[3][1] * Matrix->Data[2][2]);
-    Result.Data[2][3] = -(Matrix->Data[0][0] * Matrix->Data[1][1] * Matrix->Data[3][2] +
-                          Matrix->Data[1][0] * Matrix->Data[3][1] * Matrix->Data[0][2] +
-                          Matrix->Data[3][0] * Matrix->Data[0][1] * Matrix->Data[1][2] -
-                          Matrix->Data[3][0] * Matrix->Data[1][1] * Matrix->Data[0][2] -
-                          Matrix->Data[1][0] * Matrix->Data[0][1] * Matrix->Data[3][2] -
-                          Matrix->Data[0][0] * Matrix->Data[3][1] * Matrix->Data[1][2]);
-    Result.Data[3][3] = +(Matrix->Data[0][0] * Matrix->Data[1][1] * Matrix->Data[2][2] +
-                          Matrix->Data[1][0] * Matrix->Data[2][1] * Matrix->Data[0][2] +
-                          Matrix->Data[2][0] * Matrix->Data[0][1] * Matrix->Data[1][2] -
-                          Matrix->Data[2][0] * Matrix->Data[1][1] * Matrix->Data[0][2] -
-                          Matrix->Data[1][0] * Matrix->Data[0][1] * Matrix->Data[2][2] -
-                          Matrix->Data[0][0] * Matrix->Data[2][1] * Matrix->Data[1][2]);
+    Result.Data[0][3] =
+        -(Matrix->Data[1][0] * Matrix->Data[2][1] * Matrix->Data[3][2] +
+          Matrix->Data[2][0] * Matrix->Data[3][1] * Matrix->Data[1][2] +
+          Matrix->Data[3][0] * Matrix->Data[1][1] * Matrix->Data[2][2] -
+          Matrix->Data[3][0] * Matrix->Data[2][1] * Matrix->Data[1][2] -
+          Matrix->Data[2][0] * Matrix->Data[1][1] * Matrix->Data[3][2] -
+          Matrix->Data[1][0] * Matrix->Data[3][1] * Matrix->Data[2][2]);
+    Result.Data[1][3] =
+        +(Matrix->Data[0][0] * Matrix->Data[2][1] * Matrix->Data[3][2] +
+          Matrix->Data[2][0] * Matrix->Data[3][1] * Matrix->Data[0][2] +
+          Matrix->Data[3][0] * Matrix->Data[0][1] * Matrix->Data[2][2] -
+          Matrix->Data[3][0] * Matrix->Data[2][1] * Matrix->Data[0][2] -
+          Matrix->Data[2][0] * Matrix->Data[0][1] * Matrix->Data[3][2] -
+          Matrix->Data[0][0] * Matrix->Data[3][1] * Matrix->Data[2][2]);
+    Result.Data[2][3] =
+        -(Matrix->Data[0][0] * Matrix->Data[1][1] * Matrix->Data[3][2] +
+          Matrix->Data[1][0] * Matrix->Data[3][1] * Matrix->Data[0][2] +
+          Matrix->Data[3][0] * Matrix->Data[0][1] * Matrix->Data[1][2] -
+          Matrix->Data[3][0] * Matrix->Data[1][1] * Matrix->Data[0][2] -
+          Matrix->Data[1][0] * Matrix->Data[0][1] * Matrix->Data[3][2] -
+          Matrix->Data[0][0] * Matrix->Data[3][1] * Matrix->Data[1][2]);
+    Result.Data[3][3] =
+        +(Matrix->Data[0][0] * Matrix->Data[1][1] * Matrix->Data[2][2] +
+          Matrix->Data[1][0] * Matrix->Data[2][1] * Matrix->Data[0][2] +
+          Matrix->Data[2][0] * Matrix->Data[0][1] * Matrix->Data[1][2] -
+          Matrix->Data[2][0] * Matrix->Data[1][1] * Matrix->Data[0][2] -
+          Matrix->Data[1][0] * Matrix->Data[0][1] * Matrix->Data[2][2] -
+          Matrix->Data[0][0] * Matrix->Data[2][1] * Matrix->Data[1][2]);
 
     Result = GCMatrix4x4_Transpose(&Result);
     Result = GCMatrix4x4_MultiplyByScalar(&Result, 1.0f / GCMatrix4x4_Determinant(Matrix));
@@ -486,8 +502,9 @@ GCMatrix4x4 GCMatrix4x4_Transpose(const GCMatrix4x4* const Matrix)
     return Result;
 }
 
-void GCMatrix4x4_Decompose(const GCMatrix4x4* const Matrix, GCVector3* const Translation, GCVector3* const Rotation,
-                           GCVector3* const Scale)
+void GCMatrix4x4_Decompose(
+    const GCMatrix4x4* const Matrix, GCVector3* const Translation, GCVector3* const Rotation, GCVector3* const Scale
+)
 {
     GCMatrix4x4 TheMatrix = *Matrix;
 
@@ -562,18 +579,21 @@ bool GCMatrix4x4_IsEqual(const GCMatrix4x4* const Matrix1, const GCMatrix4x4* co
 char* GCMatrix4x4_ToString(const GCMatrix4x4* const Matrix)
 {
     const int32_t Length =
-        snprintf(NULL, 0, "(%f, %f, %f, %f)\n(%f, %f, %f, %f)\n(%f, %f, %f, %f)\n(%f, %f, %f, %f)", Matrix->Data[0][0],
-                 Matrix->Data[0][1], Matrix->Data[0][2], Matrix->Data[0][3], Matrix->Data[1][0], Matrix->Data[1][1],
-                 Matrix->Data[1][2], Matrix->Data[1][3], Matrix->Data[2][0], Matrix->Data[2][1], Matrix->Data[2][2],
-                 Matrix->Data[2][3], Matrix->Data[3][0], Matrix->Data[3][1], Matrix->Data[3][2], Matrix->Data[3][3]) +
+        snprintf(
+            NULL, 0, "(%f, %f, %f, %f)\n(%f, %f, %f, %f)\n(%f, %f, %f, %f)\n(%f, %f, %f, %f)", Matrix->Data[0][0],
+            Matrix->Data[0][1], Matrix->Data[0][2], Matrix->Data[0][3], Matrix->Data[1][0], Matrix->Data[1][1],
+            Matrix->Data[1][2], Matrix->Data[1][3], Matrix->Data[2][0], Matrix->Data[2][1], Matrix->Data[2][2],
+            Matrix->Data[2][3], Matrix->Data[3][0], Matrix->Data[3][1], Matrix->Data[3][2], Matrix->Data[3][3]
+        ) +
         1;
 
     char* Buffer = (char*)GCMemory_Allocate(Length * sizeof(char));
-    snprintf(Buffer, Length, "(%f, %f, %f, %f)\n(%f, %f, %f, %f)\n(%f, %f, %f, %f)\n(%f, %f, %f, %f)",
-             Matrix->Data[0][0], Matrix->Data[0][1], Matrix->Data[0][2], Matrix->Data[0][3], Matrix->Data[1][0],
-             Matrix->Data[1][1], Matrix->Data[1][2], Matrix->Data[1][3], Matrix->Data[2][0], Matrix->Data[2][1],
-             Matrix->Data[2][2], Matrix->Data[2][3], Matrix->Data[3][0], Matrix->Data[3][1], Matrix->Data[3][2],
-             Matrix->Data[3][3]);
+    snprintf(
+        Buffer, Length, "(%f, %f, %f, %f)\n(%f, %f, %f, %f)\n(%f, %f, %f, %f)\n(%f, %f, %f, %f)", Matrix->Data[0][0],
+        Matrix->Data[0][1], Matrix->Data[0][2], Matrix->Data[0][3], Matrix->Data[1][0], Matrix->Data[1][1],
+        Matrix->Data[1][2], Matrix->Data[1][3], Matrix->Data[2][0], Matrix->Data[2][1], Matrix->Data[2][2],
+        Matrix->Data[2][3], Matrix->Data[3][0], Matrix->Data[3][1], Matrix->Data[3][2], Matrix->Data[3][3]
+    );
 
     return Buffer;
 }

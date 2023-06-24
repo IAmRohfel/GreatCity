@@ -30,7 +30,7 @@
 
 #include <vulkan/vulkan.h>
 #ifndef VMA_VULKAN_VERSION
-#define VMA_VULKAN_VERSION 1000000
+#define VMA_VULKAN_VERSION 1001000
 #endif
 #include <vk_mem_alloc.h>
 
@@ -62,8 +62,9 @@ GCRendererUniformBuffer* GCRendererUniformBuffer_Create(const GCRendererUniformB
     return UniformBuffer;
 }
 
-void GCRendererUniformBuffer_UpdateUniformBuffer(const GCRendererUniformBuffer* const UniformBuffer,
-                                                 const void* const Data, const size_t DataSize)
+void GCRendererUniformBuffer_UpdateUniformBuffer(
+    const GCRendererUniformBuffer* const UniformBuffer, const void* const Data, const size_t DataSize
+)
 {
     const VmaAllocator AllocatorHandle = GCRendererDevice_GetAllocatorHandle(UniformBuffer->Device);
 
@@ -92,11 +93,12 @@ size_t GCRendererUniformBuffer_GetDataSize(const GCRendererUniformBuffer* const 
 
 void GCRendererUniformBuffer_CreateUniformBuffer(GCRendererUniformBuffer* const UniformBuffer)
 {
-    GCVulkanUtilities_CreateBuffer(UniformBuffer->Device, UniformBuffer->DataSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                   VMA_ALLOCATION_CREATE_MAPPED_BIT |
-                                       VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-                                   VMA_MEMORY_USAGE_AUTO, &UniformBuffer->BufferHandle,
-                                   &UniformBuffer->BufferAllocationHandle, &UniformBuffer->BufferAllocationInformation);
+    GCVulkanUtilities_CreateBuffer(
+        UniformBuffer->Device, UniformBuffer->DataSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        VMA_MEMORY_USAGE_AUTO, &UniformBuffer->BufferHandle, &UniformBuffer->BufferAllocationHandle,
+        &UniformBuffer->BufferAllocationInformation
+    );
 }
 
 void GCRendererUniformBuffer_DestroyObjects(GCRendererUniformBuffer* const UniformBuffer)

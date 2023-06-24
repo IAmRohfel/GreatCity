@@ -99,7 +99,8 @@ void GCWorldCamera_Update(GCWorldCamera* const WorldCamera)
     {
         const GCVector2 CurrentMousePosition = GCInput_GetMousePosition();
         const GCVector2 DeltaMousePosition = GCVector2_MultiplyByScalar(
-            GCVector2_Subtract(CurrentMousePosition, WorldCamera->InitialMousePosition), 0.003f);
+            GCVector2_Subtract(CurrentMousePosition, WorldCamera->InitialMousePosition), 0.003f
+        );
         WorldCamera->InitialMousePosition = CurrentMousePosition;
 
         if (GCInput_IsMouseButtonPressed(GCMouseButtonCode_Left))
@@ -163,9 +164,10 @@ void GCWorldCamera_UpdateView(GCWorldCamera* const WorldCamera)
 void GCWorldCamera_UpdateProjection(GCWorldCamera* const WorldCamera)
 {
     WorldCamera->AspectRatio = WorldCamera->Width / WorldCamera->Height;
-    WorldCamera->ProjectionMatrix =
-        GCMatrix4x4_CreatePerspective(GCMathUtilities_DegreesToRadians(WorldCamera->FoV), WorldCamera->AspectRatio,
-                                      WorldCamera->Near, WorldCamera->Far);
+    WorldCamera->ProjectionMatrix = GCMatrix4x4_CreatePerspective(
+        GCMathUtilities_DegreesToRadians(WorldCamera->FoV), WorldCamera->AspectRatio, WorldCamera->Near,
+        WorldCamera->Far
+    );
 }
 
 bool GCWorldCamera_OnMouseScrolled(GCEvent* const Event, void* CustomData)
@@ -192,13 +194,18 @@ void GCWorldCamera_Pan(GCWorldCamera* const WorldCamera, const GCVector2 MouseDe
         WorldCamera->FocalPoint,
         GCVector3_MultiplyByScalar(
             GCVector3_MultiplyByScalar(GCVector3_MultiplyByScalar(NegativeRightDirection, MouseDelta.X), XSpeed),
-            WorldCamera->Distance));
+            WorldCamera->Distance
+        )
+    );
     WorldCamera->FocalPoint = GCVector3_Add(
         WorldCamera->FocalPoint,
         GCVector3_MultiplyByScalar(
             GCVector3_MultiplyByScalar(
-                GCVector3_MultiplyByScalar(GCWorldCamera_GetUpDirection(WorldCamera), MouseDelta.Y), YSpeed),
-            WorldCamera->Distance));
+                GCVector3_MultiplyByScalar(GCWorldCamera_GetUpDirection(WorldCamera), MouseDelta.Y), YSpeed
+            ),
+            WorldCamera->Distance
+        )
+    );
 }
 
 void GCWorldCamera_Rotate(GCWorldCamera* const WorldCamera, const GCVector2 MouseDelta)
@@ -252,7 +259,8 @@ GCVector3 GCWorldCamera_CalculatePosition(GCWorldCamera* const WorldCamera)
 {
     return GCVector3_MultiplyByScalar(
         GCVector3_Subtract(WorldCamera->FocalPoint, GCWorldCamera_GetForwardDirection(WorldCamera)),
-        WorldCamera->Distance);
+        WorldCamera->Distance
+    );
 }
 
 GCQuaternion GCWorldCamera_GetOrientation(GCWorldCamera* const WorldCamera)

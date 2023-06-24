@@ -34,8 +34,8 @@ extern "C"
     typedef struct GCRendererShader GCRendererShader;
 
     typedef enum GCRendererAttachmentType GCRendererAttachmentType;
-    typedef enum GCRendererAttachmentFormat GCRendererAttachmentFormat;
-    typedef enum GCRendererAttachmentSampleCount GCRendererAttachmentSampleCount;
+    typedef enum GCRendererFormat GCRendererFormat;
+    typedef enum GCRendererSampleCount GCRendererSampleCount;
 
     typedef enum GCRendererGraphicsPipelineVertexInputAttributeFormat
     {
@@ -44,8 +44,22 @@ extern "C"
         GCRendererGraphicsPipelineVertexInputAttributeFormat_Vector3,
         GCRendererGraphicsPipelineVertexInputAttributeFormat_Vector4,
 
-        GCRendererGraphicsPipelineVertexInputAttributeFormat_Integer
+        GCRendererGraphicsPipelineVertexInputAttributeFormat_UnsignedInteger
     } GCRendererGraphicsPipelineVertexInputAttributeFormat;
+
+    typedef enum GCRendererGraphicsPipelineDescriptorType
+    {
+        GCRendererGraphicsPipelineDescriptorType_UniformBuffer,
+        GCRendererGraphicsPipelineDescriptorType_Texture,
+        GCRendererGraphicsPipelineDescriptorType_TextureArray
+    } GCRendererGraphicsPipelineDescriptorType;
+
+    typedef struct GCRendererGraphicsPipelineAttachment
+    {
+        GCRendererAttachmentType Type;
+        GCRendererFormat Format;
+        GCRendererSampleCount SampleCount;
+    } GCRendererGraphicsPipelineAttachment;
 
     typedef struct GCRendererGraphicsPipelineVertexInputBinding
     {
@@ -69,12 +83,15 @@ extern "C"
         uint32_t AttributeCount;
     } GCRendererGraphicsPipelineVertexInput;
 
-    typedef struct GCRendererGraphicsPipelineAttachment
+    typedef struct GCRendererGraphicsPipelineDescriptor
     {
-        GCRendererAttachmentType Type;
-        GCRendererAttachmentFormat Format;
-        GCRendererAttachmentSampleCount SampleCount;
-    } GCRendererGraphicsPipelineAttachment;
+        GCRendererGraphicsPipelineDescriptorType Type;
+        uint32_t DescriptorCount;
+
+        const GCRendererUniformBuffer* UniformBuffer;
+        const GCRendererTexture2D* Texture2D;
+        const GCRendererTexture2D* const* Texture2DArray;
+    } GCRendererGraphicsPipelineDescriptor;
 
     typedef struct GCRendererGraphicsPipelineDescription
     {
@@ -84,17 +101,21 @@ extern "C"
 
         const GCRendererGraphicsPipelineAttachment* Attachments;
         uint32_t AttachmentCount;
-        const GCRendererGraphicsPipelineVertexInput* VertexInput;
-        GCRendererAttachmentSampleCount SampleCount;
+        GCRendererSampleCount SampleCount;
+        GCRendererGraphicsPipelineVertexInput VertexInput;
+        const GCRendererGraphicsPipelineDescriptor* Descriptors;
+        uint32_t DescriptorCount;
 
-        const GCRendererUniformBuffer* UniformBuffer;
-        const GCRendererTexture2D* const* Texture2Ds;
-        uint32_t Texture2DCount;
         const GCRendererShader* Shader;
     } GCRendererGraphicsPipelineDescription;
 
     GCRendererGraphicsPipeline* GCRendererGraphicsPipeline_Create(
-        const GCRendererGraphicsPipelineDescription* const Description);
+        const GCRendererGraphicsPipelineDescription* const Description
+    );
+    void GCRendererGraphicsPipeline_UpdateDescriptors(
+        GCRendererGraphicsPipeline* const GraphicsPipeline,
+        const GCRendererGraphicsPipelineDescriptor* const Descriptors, const uint32_t DescriptorCount
+    );
     void GCRendererGraphicsPipeline_Destroy(GCRendererGraphicsPipeline* GraphicsPipeline);
 
 #ifdef __cplusplus

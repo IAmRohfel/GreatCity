@@ -29,22 +29,24 @@ extern "C"
         GCRendererAttachmentType_DepthStencil
     } GCRendererAttachmentType;
 
-    typedef enum GCRendererAttachmentFormat
+    typedef enum GCRendererFormat
     {
-        GCRendererAttachmentFormat_SRGB,
-        GCRendererAttachmentFormat_Integer,
-        GCRendererAttachmentFormat_D32
-    } GCRendererAttachmentFormat;
+        GCRendererFormat_SRGB,
+        GCRendererFormat_RGBA,
+        GCRendererFormat_UnsignedInteger,
+        GCRendererFormat_Byte,
+        GCRendererFormat_D32
+    } GCRendererFormat;
 
-    typedef enum GCRendererAttachmentSampleCount
+    typedef enum GCRendererSampleCount
     {
-        GCRendererAttachmentSampleCount_1,
-        GCRendererAttachmentSampleCount_2,
-        GCRendererAttachmentSampleCount_4,
-        GCRendererAttachmentSampleCount_8,
+        GCRendererSampleCount_1,
+        GCRendererSampleCount_2,
+        GCRendererSampleCount_4,
+        GCRendererSampleCount_8,
 
-        GCRendererAttachmentSampleCount_MaximumUsable
-    } GCRendererAttachmentSampleCount;
+        GCRendererSampleCount_MaximumUsable
+    } GCRendererSampleCount;
 
 #ifdef __cplusplus
 }

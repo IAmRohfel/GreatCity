@@ -87,13 +87,15 @@ void GCRendererCommandList_ShouldAttachmentResize(GCRendererCommandList* const C
 }
 
 void GCRendererCommandList_SetSwapChainResizeCallback(
-    GCRendererCommandList* const CommandList, const GCRendererCommandListResizeCallbackFunction ResizeCallbackFunction)
+    GCRendererCommandList* const CommandList, const GCRendererCommandListResizeCallbackFunction ResizeCallbackFunction
+)
 {
     CommandList->SwapChainResizeCallbackFunction = ResizeCallbackFunction;
 }
 
 void GCRendererCommandList_SetAttachmentResizeCallback(
-    GCRendererCommandList* const CommandList, const GCRendererCommandListResizeCallbackFunction ResizeCallbackFunction)
+    GCRendererCommandList* const CommandList, const GCRendererCommandListResizeCallbackFunction ResizeCallbackFunction
+)
 {
     CommandList->AttachmentResizeCallbackFunction = ResizeCallbackFunction;
 }
@@ -109,12 +111,14 @@ void GCRendererCommandList_BeginRecord(GCRendererCommandList* const CommandList)
     const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(CommandList->Device);
     const VkSwapchainKHR SwapChainHandle[1] = {GCRendererSwapChain_GetHandle(CommandList->SwapChain)};
 
-    vkWaitForFences(DeviceHandle, 1, &CommandList->InFlightFenceHandles[CommandList->CurrentFrame], VK_TRUE,
-                    UINT64_MAX);
-    VkResult SwapChainCheckResult =
-        vkAcquireNextImageKHR(DeviceHandle, SwapChainHandle[0], UINT64_MAX,
-                              CommandList->ImageAvailableSemaphoreHandles[CommandList->CurrentFrame], VK_NULL_HANDLE,
-                              &CommandList->CurrentImageIndex);
+    vkWaitForFences(
+        DeviceHandle, 1, &CommandList->InFlightFenceHandles[CommandList->CurrentFrame], VK_TRUE, UINT64_MAX
+    );
+    VkResult SwapChainCheckResult = vkAcquireNextImageKHR(
+        DeviceHandle, SwapChainHandle[0], UINT64_MAX,
+        CommandList->ImageAvailableSemaphoreHandles[CommandList->CurrentFrame], VK_NULL_HANDLE,
+        &CommandList->CurrentImageIndex
+    );
 
     if (SwapChainCheckResult == VK_ERROR_OUT_OF_DATE_KHR || SwapChainCheckResult == VK_SUBOPTIMAL_KHR)
     {
@@ -129,15 +133,18 @@ void GCRendererCommandList_BeginRecord(GCRendererCommandList* const CommandList)
     VkCommandBufferBeginInfo CommandBufferBeginInformation = {0};
     CommandBufferBeginInformation.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-    GC_VULKAN_VALIDATE(vkBeginCommandBuffer(CommandList->CommandBufferHandles[CommandList->CurrentFrame],
-                                            &CommandBufferBeginInformation),
-                       "Failed to begin a command buffer.");
+    GC_VULKAN_VALIDATE(
+        vkBeginCommandBuffer(
+            CommandList->CommandBufferHandles[CommandList->CurrentFrame], &CommandBufferBeginInformation
+        ),
+        "Failed to begin a command buffer."
+    );
 }
 
-void GCRendererCommandList_BeginSwapChainRenderPass(const GCRendererCommandList* const CommandList,
-                                                    const GCRendererGraphicsPipeline* const GraphicsPipeline,
-                                                    const GCRendererFramebuffer* const Framebuffer,
-                                                    const float* const ClearColor)
+void GCRendererCommandList_BeginSwapChainRenderPass(
+    const GCRendererCommandList* const CommandList, const GCRendererGraphicsPipeline* const GraphicsPipeline,
+    const GCRendererFramebuffer* const Framebuffer, const float* const ClearColor
+)
 {
     VkRenderPassBeginInfo RenderPassBeginInformation = {0};
     RenderPassBeginInformation.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -153,14 +160,16 @@ void GCRendererCommandList_BeginSwapChainRenderPass(const GCRendererCommandList*
     RenderPassBeginInformation.clearValueCount = 1;
     RenderPassBeginInformation.pClearValues = &ClearValue;
 
-    vkCmdBeginRenderPass(CommandList->CommandBufferHandles[CommandList->CurrentFrame], &RenderPassBeginInformation,
-                         VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(
+        CommandList->CommandBufferHandles[CommandList->CurrentFrame], &RenderPassBeginInformation,
+        VK_SUBPASS_CONTENTS_INLINE
+    );
 }
 
-void GCRendererCommandList_BeginAttachmentRenderPass(const GCRendererCommandList* const CommandList,
-                                                     const GCRendererGraphicsPipeline* const GraphicsPipeline,
-                                                     const GCRendererFramebuffer* const Framebuffer,
-                                                     const float* const ClearColor)
+void GCRendererCommandList_BeginAttachmentRenderPass(
+    const GCRendererCommandList* const CommandList, const GCRendererGraphicsPipeline* const GraphicsPipeline,
+    const GCRendererFramebuffer* const Framebuffer, const float* const ClearColor
+)
 {
     VkRenderPassBeginInfo RenderPassBeginInformation = {0};
     RenderPassBeginInformation.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -172,7 +181,7 @@ void GCRendererCommandList_BeginAttachmentRenderPass(const GCRendererCommandList
     VkClearValue ClearValues[3] = {0};
     memcpy(ClearValues[0].color.float32, ClearColor, sizeof(ClearValues[0].color.float32));
 
-    const int32_t ClearColorInt[4] = {-1, -1, -1, -1};
+    const int32_t ClearColorInt[4] = {0};
     memcpy(ClearValues[1].color.int32, ClearColorInt, sizeof(ClearValues[1].color.int32));
 
     ClearValues[2].depthStencil.depth = 1.0f;
@@ -181,41 +190,53 @@ void GCRendererCommandList_BeginAttachmentRenderPass(const GCRendererCommandList
     RenderPassBeginInformation.clearValueCount = 3;
     RenderPassBeginInformation.pClearValues = ClearValues;
 
-    vkCmdBeginRenderPass(CommandList->CommandBufferHandles[CommandList->CurrentFrame], &RenderPassBeginInformation,
-                         VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(
+        CommandList->CommandBufferHandles[CommandList->CurrentFrame], &RenderPassBeginInformation,
+        VK_SUBPASS_CONTENTS_INLINE
+    );
 }
 
-void GCRendererCommandList_BindVertexBuffer(const GCRendererCommandList* const CommandList,
-                                            const GCRendererVertexBuffer* const VertexBuffer)
+void GCRendererCommandList_BindVertexBuffer(
+    const GCRendererCommandList* const CommandList, const GCRendererVertexBuffer* const VertexBuffer
+)
 {
     const VkBuffer VertexBufferHandle[1] = {GCRendererVertexBuffer_GetHandle(VertexBuffer)};
     const VkDeviceSize Offsets[1] = {0};
 
-    vkCmdBindVertexBuffers(CommandList->CommandBufferHandles[CommandList->CurrentFrame], 0, 1, VertexBufferHandle,
-                           Offsets);
+    vkCmdBindVertexBuffers(
+        CommandList->CommandBufferHandles[CommandList->CurrentFrame], 0, 1, VertexBufferHandle, Offsets
+    );
 }
 
-void GCRendererCommandList_BindIndexBuffer(const GCRendererCommandList* const CommandList,
-                                           const GCRendererIndexBuffer* const IndexBuffer)
+void GCRendererCommandList_BindIndexBuffer(
+    const GCRendererCommandList* const CommandList, const GCRendererIndexBuffer* const IndexBuffer
+)
 {
-    vkCmdBindIndexBuffer(CommandList->CommandBufferHandles[CommandList->CurrentFrame],
-                         GCRendererIndexBuffer_GetHandle(IndexBuffer), 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindIndexBuffer(
+        CommandList->CommandBufferHandles[CommandList->CurrentFrame], GCRendererIndexBuffer_GetHandle(IndexBuffer), 0,
+        VK_INDEX_TYPE_UINT32
+    );
 }
 
-void GCRendererCommandList_BindGraphicsPipeline(const GCRendererCommandList* const CommandList,
-                                                const GCRendererGraphicsPipeline* const GraphicsPipeline)
+void GCRendererCommandList_BindGraphicsPipeline(
+    const GCRendererCommandList* const CommandList, const GCRendererGraphicsPipeline* const GraphicsPipeline
+)
 {
-    vkCmdBindPipeline(CommandList->CommandBufferHandles[CommandList->CurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
-                      GCRendererGraphicsPipeline_GetPipelineHandle(GraphicsPipeline));
+    vkCmdBindPipeline(
+        CommandList->CommandBufferHandles[CommandList->CurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
+        GCRendererGraphicsPipeline_GetPipelineHandle(GraphicsPipeline)
+    );
 
     const VkDescriptorSet DescriptorSetHandle = GCRendererGraphicsPipeline_GetDescriptorSetHandle(GraphicsPipeline);
     vkCmdBindDescriptorSets(
         CommandList->CommandBufferHandles[CommandList->CurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
-        GCRendererGraphicsPipeline_GetPipelineLayoutHandle(GraphicsPipeline), 0, 1, &DescriptorSetHandle, 0, NULL);
+        GCRendererGraphicsPipeline_GetPipelineLayoutHandle(GraphicsPipeline), 0, 1, &DescriptorSetHandle, 0, NULL
+    );
 }
 
-void GCRendererCommandList_SetViewport(const GCRendererCommandList* const CommandList,
-                                       const GCRendererFramebuffer* const Framebuffer)
+void GCRendererCommandList_SetViewport(
+    const GCRendererCommandList* const CommandList, const GCRendererFramebuffer* const Framebuffer
+)
 {
     const VkExtent2D TextureExtent = GCRendererFramebuffer_GetFramebufferSize(Framebuffer);
 
@@ -236,14 +257,16 @@ void GCRendererCommandList_SetViewport(const GCRendererCommandList* const Comman
     vkCmdSetScissor(CommandList->CommandBufferHandles[CommandList->CurrentFrame], 0, 1, &Scissor);
 }
 
-void GCRendererCommandList_Draw(const GCRendererCommandList* const CommandList, const uint32_t VertexCount,
-                                const uint32_t FirstVertex)
+void GCRendererCommandList_Draw(
+    const GCRendererCommandList* const CommandList, const uint32_t VertexCount, const uint32_t FirstVertex
+)
 {
     vkCmdDraw(CommandList->CommandBufferHandles[CommandList->CurrentFrame], VertexCount, 1, FirstVertex, 0);
 }
 
-void GCRendererCommandList_DrawIndexed(const GCRendererCommandList* const CommandList, const uint32_t IndexCount,
-                                       const uint32_t FirstIndex)
+void GCRendererCommandList_DrawIndexed(
+    const GCRendererCommandList* const CommandList, const uint32_t IndexCount, const uint32_t FirstIndex
+)
 {
     vkCmdDrawIndexed(CommandList->CommandBufferHandles[CommandList->CurrentFrame], IndexCount, 1, FirstIndex, 0, 0);
 }
@@ -253,21 +276,25 @@ void GCRendererCommandList_EndSwapChainRenderPass(const GCRendererCommandList* c
     vkCmdEndRenderPass(CommandList->CommandBufferHandles[CommandList->CurrentFrame]);
 }
 
-void GCRendererCommandList_EndAttachmentRenderPass(const GCRendererCommandList* const CommandList,
-                                                   const GCRendererFramebuffer* const Framebuffer)
+void GCRendererCommandList_EndAttachmentRenderPass(
+    const GCRendererCommandList* const CommandList, const GCRendererFramebuffer* const Framebuffer
+)
 {
     vkCmdEndRenderPass(CommandList->CommandBufferHandles[CommandList->CurrentFrame]);
 
-    GCVulkanUtilities_TransitionImageLayout(CommandList->CommandBufferHandles[CommandList->CurrentFrame],
-                                            GCRendererFramebuffer_GetColorAttachmentImageHandle(Framebuffer, 1), 1,
-                                            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    GCVulkanUtilities_TransitionImageLayout(
+        CommandList->CommandBufferHandles[CommandList->CurrentFrame],
+        GCRendererFramebuffer_GetColorAttachmentImageHandle(Framebuffer, 1), 1,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+    );
 }
 
 void GCRendererCommandList_EndRecord(const GCRendererCommandList* const CommandList)
 {
-    GC_VULKAN_VALIDATE(vkEndCommandBuffer(CommandList->CommandBufferHandles[CommandList->CurrentFrame]),
-                       "Failed to end a command buffer.");
+    GC_VULKAN_VALIDATE(
+        vkEndCommandBuffer(CommandList->CommandBufferHandles[CommandList->CurrentFrame]),
+        "Failed to end a command buffer."
+    );
 }
 
 void GCRendererCommandList_SubmitAndPresent(GCRendererCommandList* const CommandList)
@@ -292,9 +319,13 @@ void GCRendererCommandList_SubmitAndPresent(GCRendererCommandList* const Command
     SubmitInformation.signalSemaphoreCount = 1;
     SubmitInformation.pSignalSemaphores = SignalSemaphoreHandle;
 
-    GC_VULKAN_VALIDATE(vkQueueSubmit(GCRendererDevice_GetGraphicsQueueHandle(CommandList->Device), 1,
-                                     &SubmitInformation, CommandList->InFlightFenceHandles[CommandList->CurrentFrame]),
-                       "Failed to submit a queue.");
+    GC_VULKAN_VALIDATE(
+        vkQueueSubmit(
+            GCRendererDevice_GetGraphicsQueueHandle(CommandList->Device), 1, &SubmitInformation,
+            CommandList->InFlightFenceHandles[CommandList->CurrentFrame]
+        ),
+        "Failed to submit a queue."
+    );
 
     VkPresentInfoKHR PresentInformation = {0};
     PresentInformation.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -315,6 +346,8 @@ void GCRendererCommandList_SubmitAndPresent(GCRendererCommandList* const Command
 
         return;
     }
+
+    vkDeviceWaitIdle(GCRendererDevice_GetDeviceHandle(CommandList->Device));
 
     CommandList->CurrentFrame = (CommandList->CurrentFrame + 1) % CommandList->MaximumFramesInFlight;
 }
@@ -339,21 +372,25 @@ VkCommandBuffer GCRendererCommandList_BeginSingleTimeCommands(const GCRendererCo
     CommandBufferAllocateInformation.commandBufferCount = 1;
 
     VkCommandBuffer CommandBufferHandle = VK_NULL_HANDLE;
-    GC_VULKAN_VALIDATE(vkAllocateCommandBuffers(DeviceHandle, &CommandBufferAllocateInformation, &CommandBufferHandle),
-                       "Failed to allocate a command buffer.");
+    GC_VULKAN_VALIDATE(
+        vkAllocateCommandBuffers(DeviceHandle, &CommandBufferAllocateInformation, &CommandBufferHandle),
+        "Failed to allocate a command buffer."
+    );
 
     VkCommandBufferBeginInfo CommandBufferBeginInformation = {0};
     CommandBufferBeginInformation.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     CommandBufferBeginInformation.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-    GC_VULKAN_VALIDATE(vkBeginCommandBuffer(CommandBufferHandle, &CommandBufferBeginInformation),
-                       "Failed to begin a command buffer.");
+    GC_VULKAN_VALIDATE(
+        vkBeginCommandBuffer(CommandBufferHandle, &CommandBufferBeginInformation), "Failed to begin a command buffer."
+    );
 
     return CommandBufferHandle;
 }
 
-void GCRendererCommandList_EndSingleTimeCommands(const GCRendererCommandList* const CommandList,
-                                                 const VkCommandBuffer CommandBufferHandle)
+void GCRendererCommandList_EndSingleTimeCommands(
+    const GCRendererCommandList* const CommandList, const VkCommandBuffer CommandBufferHandle
+)
 {
     const VkDevice DeviceHandle = GCRendererDevice_GetDeviceHandle(CommandList->Device);
     const VkCommandPool TransientCommandPoolHandle = CommandList->TransientCommandPoolHandle;
@@ -388,7 +425,8 @@ void GCRendererCommandList_CreateCommandPool(GCRendererCommandList* const Comman
 
     GC_VULKAN_VALIDATE(
         vkCreateCommandPool(DeviceHandle, &CommandPoolInformation, NULL, &CommandList->CommandPoolHandle),
-        "Failed to create a command pool.");
+        "Failed to create a command pool."
+    );
 
     VkCommandPoolCreateInfo TransientCommandPoolInformation = {0};
     TransientCommandPoolInformation.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -396,9 +434,12 @@ void GCRendererCommandList_CreateCommandPool(GCRendererCommandList* const Comman
     TransientCommandPoolInformation.queueFamilyIndex =
         GCRendererDevice_GetGraphicsFamilyQueueIndex(CommandList->Device);
 
-    GC_VULKAN_VALIDATE(vkCreateCommandPool(DeviceHandle, &TransientCommandPoolInformation, NULL,
-                                           &CommandList->TransientCommandPoolHandle),
-                       "Failed to create a transient command pool.");
+    GC_VULKAN_VALIDATE(
+        vkCreateCommandPool(
+            DeviceHandle, &TransientCommandPoolInformation, NULL, &CommandList->TransientCommandPoolHandle
+        ),
+        "Failed to create a transient command pool."
+    );
 }
 
 void GCRendererCommandList_CreateCommandBuffers(GCRendererCommandList* const CommandList)
@@ -416,7 +457,8 @@ void GCRendererCommandList_CreateCommandBuffers(GCRendererCommandList* const Com
 
     GC_VULKAN_VALIDATE(
         vkAllocateCommandBuffers(DeviceHandle, &CommandBufferAllocateInformation, CommandList->CommandBufferHandles),
-        "Failed to allocate command buffers.");
+        "Failed to allocate command buffers."
+    );
 }
 
 void GCRendererCommandList_CreateSemaphores(GCRendererCommandList* const CommandList)
@@ -433,12 +475,18 @@ void GCRendererCommandList_CreateSemaphores(GCRendererCommandList* const Command
 
     for (uint32_t Counter = 0; Counter < CommandList->MaximumFramesInFlight; Counter++)
     {
-        GC_VULKAN_VALIDATE(vkCreateSemaphore(DeviceHandle, &SemaphoreInformation, NULL,
-                                             &CommandList->ImageAvailableSemaphoreHandles[Counter]),
-                           "Failed to create a semaphore.");
-        GC_VULKAN_VALIDATE(vkCreateSemaphore(DeviceHandle, &SemaphoreInformation, NULL,
-                                             &CommandList->RenderFinishedSemaphoreHandles[Counter]),
-                           "Failed to create a semaphore.");
+        GC_VULKAN_VALIDATE(
+            vkCreateSemaphore(
+                DeviceHandle, &SemaphoreInformation, NULL, &CommandList->ImageAvailableSemaphoreHandles[Counter]
+            ),
+            "Failed to create a semaphore."
+        );
+        GC_VULKAN_VALIDATE(
+            vkCreateSemaphore(
+                DeviceHandle, &SemaphoreInformation, NULL, &CommandList->RenderFinishedSemaphoreHandles[Counter]
+            ),
+            "Failed to create a semaphore."
+        );
     }
 }
 
@@ -457,7 +505,8 @@ void GCRendererCommandList_CreateFences(GCRendererCommandList* const CommandList
     {
         GC_VULKAN_VALIDATE(
             vkCreateFence(DeviceHandle, &FenceInformation, NULL, &CommandList->InFlightFenceHandles[Counter]),
-            "Failed to create a fence.");
+            "Failed to create a fence."
+        );
     }
 }
 

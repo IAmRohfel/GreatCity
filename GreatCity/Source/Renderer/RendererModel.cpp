@@ -45,9 +45,11 @@ template <> struct hash<GCRendererVertex>
     size_t operator()(const GCRendererVertex& Vertex) const
     {
         size_t Seed = 0;
-        GCRendererModel_HashCombine(Seed, Vertex.Position.X, Vertex.Position.Y, Vertex.Position.Z, Vertex.Normal.X,
-                                    Vertex.Normal.Y, Vertex.Normal.Z, Vertex.Color.X, Vertex.Color.Y, Vertex.Color.Z,
-                                    Vertex.Color.W, Vertex.TextureCoordinate.X, Vertex.TextureCoordinate.Y);
+        GCRendererModel_HashCombine(
+            Seed, Vertex.Position.X, Vertex.Position.Y, Vertex.Position.Z, Vertex.Normal.X, Vertex.Normal.Y,
+            Vertex.Normal.Z, Vertex.Color.X, Vertex.Color.Y, Vertex.Color.Z, Vertex.Color.W, Vertex.TextureCoordinate.X,
+            Vertex.TextureCoordinate.Y
+        );
 
         return Seed;
     }
@@ -62,8 +64,9 @@ GCRendererModel* GCRendererModel_CreateFromFile(const char* const ModelPath, con
     return GCRendererModel_CreateFromFiles(ModelPaths, MaterialPaths, 1);
 }
 
-GCRendererModel* GCRendererModel_CreateFromFiles(const char* const* const ModelPaths,
-                                                 const char* const* const MaterialPaths, const uint32_t ModelCount)
+GCRendererModel* GCRendererModel_CreateFromFiles(
+    const char* const* const ModelPaths, const char* const* const MaterialPaths, const uint32_t ModelCount
+)
 {
     GCRendererModel* Model = static_cast<GCRendererModel*>(GCMemory_Allocate(sizeof(GCRendererModel)));
 
@@ -86,8 +89,9 @@ GCRendererModel* GCRendererModel_CreateFromFiles(const char* const* const ModelP
 
             if (!Reader.Error().empty())
             {
-                GC_ASSERT_WITH_MESSAGE(false, "Failed to load an OBJ file: %s with error: %s", ModelPaths[Counter],
-                                       Reader.Error().c_str());
+                GC_ASSERT_WITH_MESSAGE(
+                    false, "Failed to load an OBJ file: %s with error: %s", ModelPaths[Counter], Reader.Error().c_str()
+                );
             }
         }
 
@@ -113,22 +117,27 @@ GCRendererModel* GCRendererModel_CreateFromFiles(const char* const* const ModelP
 
                     if (Index.vertex_index >= 0)
                     {
-                        Vertex.Position = GCVector3_Create(Attribute.vertices[3 * Index.vertex_index + 0],
-                                                           Attribute.vertices[3 * Index.vertex_index + 1],
-                                                           Attribute.vertices[3 * Index.vertex_index + 2]);
+                        Vertex.Position = GCVector3_Create(
+                            Attribute.vertices[3 * Index.vertex_index + 0],
+                            Attribute.vertices[3 * Index.vertex_index + 1],
+                            Attribute.vertices[3 * Index.vertex_index + 2]
+                        );
                     }
 
                     if (Index.normal_index >= 0)
                     {
-                        Vertex.Normal = GCVector3_Create(Attribute.normals[3 * Index.normal_index + 0],
-                                                         Attribute.normals[3 * Index.normal_index + 1],
-                                                         Attribute.normals[3 * Index.normal_index + 2]);
+                        Vertex.Normal = GCVector3_Create(
+                            Attribute.normals[3 * Index.normal_index + 0],
+                            Attribute.normals[3 * Index.normal_index + 1], Attribute.normals[3 * Index.normal_index + 2]
+                        );
                     }
 
                     if (Index.texcoord_index >= 0)
                     {
-                        Vertex.TextureCoordinate = GCVector2_Create(Attribute.texcoords[2 * Index.texcoord_index + 0],
-                                                                    Attribute.texcoords[2 * Index.texcoord_index + 1]);
+                        Vertex.TextureCoordinate = GCVector2_Create(
+                            Attribute.texcoords[2 * Index.texcoord_index + 0],
+                            Attribute.texcoords[2 * Index.texcoord_index + 1]
+                        );
                     }
 
                     const tinyobj::material_t Material = Materials[Shape.mesh.material_ids[FaceIndex]];

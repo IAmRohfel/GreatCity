@@ -40,8 +40,9 @@ extern "C"
     } GCRendererModel;
 
     GCRendererModel* GCRendererModel_CreateFromFile(const char* const ModelPath, const char* const MaterialPath);
-    GCRendererModel* GCRendererModel_CreateFromFiles(const char* const* const ModelPaths,
-                                                     const char* const* const MaterialPaths, const uint32_t ModelCount);
+    GCRendererModel* GCRendererModel_CreateFromFiles(
+        const char* const* const ModelPaths, const char* const* const MaterialPaths, const uint32_t ModelCount
+    );
     void GCRendererModel_Destroy(GCRendererModel* Model);
 
 #ifdef __cplusplus

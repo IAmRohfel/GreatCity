@@ -24,8 +24,9 @@
 
 typedef struct GCPlatformWindow GCWindowsWindow;
 
-extern "C" void GCWindowsWindow_SetAnotherMessageCallback(GCWindowsWindow* const Window,
-                                                          LRESULT (*MessageCallback)(HWND, UINT, WPARAM, LPARAM));
+extern "C" void GCWindowsWindow_SetAnotherMessageCallback(
+    GCWindowsWindow* const Window, LRESULT (*MessageCallback)(HWND, UINT, WPARAM, LPARAM)
+);
 extern "C" HWND GCWindowsWindow_GetWindowHandle(const GCWindowsWindow* const Window);
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);

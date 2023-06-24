@@ -27,15 +27,24 @@ extern "C"
     typedef struct GCRendererDevice GCRendererDevice;
     typedef struct GCRendererCommandList GCRendererCommandList;
 
+    typedef enum GCRendererFormat GCRendererFormat;
+
     typedef struct GCRendererTexture2DDescription
     {
         const GCRendererDevice* Device;
         const GCRendererCommandList* CommandList;
 
         const char* TexturePath;
+        GCRendererFormat Format;
+        uint32_t Width, Height;
     } GCRendererTexture2DDescription;
 
     GCRendererTexture2D* GCRendererTexture2D_Create(const GCRendererTexture2DDescription* const Description);
+    GCRendererTexture2D* GCRendererTexture2D_CreateDynamic(const GCRendererTexture2DDescription* const Description);
+    void GCRendererTexture2D_SetTextureDataDynamic(
+        GCRendererTexture2D* const Texture2D, const uint32_t Width, const uint32_t Height, const void* const Data
+    );
+    void GCRendererTexture2D_FinalizeDynamic(GCRendererTexture2D* const Texture2D);
     void GCRendererTexture2D_Destroy(GCRendererTexture2D* Texture2D);
 
 #ifdef __cplusplus

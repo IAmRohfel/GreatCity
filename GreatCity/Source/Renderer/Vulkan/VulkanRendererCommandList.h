@@ -30,11 +30,13 @@ extern "C"
     typedef struct GCRendererCommandList GCRendererCommandList;
 
     VkCommandBuffer GCRendererCommandList_BeginSingleTimeCommands(const GCRendererCommandList* const CommandList);
-    void GCRendererCommandList_EndSingleTimeCommands(const GCRendererCommandList* const CommandList,
-                                                     const VkCommandBuffer CommandBufferHandle);
+    void GCRendererCommandList_EndSingleTimeCommands(
+        const GCRendererCommandList* const CommandList, const VkCommandBuffer CommandBufferHandle
+    );
 
     VkCommandBuffer GCRendererCommandList_GetCurrentFrameCommandBufferHandle(
-        const GCRendererCommandList* const CommandList);
+        const GCRendererCommandList* const CommandList
+    );
 
 #ifdef __cplusplus
 }

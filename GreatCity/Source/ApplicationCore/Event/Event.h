@@ -47,8 +47,9 @@ extern "C"
     typedef bool (*GCEventCallbackFunction)(GCEvent* const, void*);
 
     GCEvent GCEvent_Create(const GCEventType EventType, const void* const EventDetail);
-    void GCEvent_Dispatch(const GCEventType EventType, GCEvent* const Event, const GCEventCallbackFunction Callback,
-                          void* CustomData);
+    void GCEvent_Dispatch(
+        const GCEventType EventType, GCEvent* const Event, const GCEventCallbackFunction Callback, void* CustomData
+    );
 
 #ifdef __cplusplus
 }

@@ -41,9 +41,11 @@ extern "C"
 
     GCRendererVertexBuffer* GCRendererVertexBuffer_Create(const GCRendererVertexBufferDescription* const Description);
     GCRendererVertexBuffer* GCRendererVertexBuffer_CreateDynamic(
-        const GCRendererVertexBufferDescription* const Description);
-    void GCRendererVertexBuffer_SetVertices(GCRendererVertexBuffer* const VertexBuffer, const void* const Vertices,
-                                            const size_t VertexSize);
+        const GCRendererVertexBufferDescription* const Description
+    );
+    void GCRendererVertexBuffer_SetVertices(
+        GCRendererVertexBuffer* const VertexBuffer, const void* const Vertices, const size_t VertexSize
+    );
     void* GCRendererVertexBuffer_GetVertices(const GCRendererVertexBuffer* const VertexBuffer);
     uint32_t GCRendererVertexBuffer_GetVertexCount(const GCRendererVertexBuffer* const VertexBuffer);
     void GCRendererVertexBuffer_Destroy(GCRendererVertexBuffer* VertexBuffer);
